@@ -1,0 +1,110 @@
+<!-- compose:widget hero/two-col-statement -->
+<%
+  // Two-column hero with text-left, portrait-right.
+  // Used by minimal-statement / single-page-feel home pages where the
+  // source site uses a portrait + multi-paragraph credentials block
+  // rather than a wide centered hero. Designed for site copies of solo
+  // operators (one-person practices and independent consultants).
+  //
+  // Data contract:
+  //   heading              required string (the H1; usually the brand name)
+  //   credentials_lines    optional array<string> (small-caps subtitle stack)
+  //   body_blocks          optional array<string|array<string>>: each block
+  //                        renders as a paragraph cluster; nested arrays
+  //                        render as multiple lines without paragraph spacing
+  //   cta_primary          optional {text, href, icon?: 'message'|'phone'|'mail'}
+  //   secondary_links      optional array<{text, href}>: small button row
+  //   image_url            optional string: portrait URL
+  //   image_alt            optional string
+  //   uppercase_heading    optional bool: render H1 uppercase + tracked
+  var _heading = (typeof heading !== 'undefined' && heading) ? String(heading) : '';
+  var _credentials = (typeof credentials_lines !== 'undefined' && Array.isArray(credentials_lines)) ? credentials_lines : [];
+  var _body = (typeof body_blocks !== 'undefined' && Array.isArray(body_blocks)) ? body_blocks : [];
+  var _cta = (typeof cta_primary !== 'undefined' && cta_primary) ? cta_primary : null;
+  var _secondary = (typeof secondary_links !== 'undefined' && Array.isArray(secondary_links)) ? secondary_links : [];
+  var _img = (typeof image_url !== 'undefined' && image_url) ? image_url : '';
+  var _imgAlt = (typeof image_alt !== 'undefined' && image_alt) ? image_alt : (settings && settings.site_name) || '';
+  var _uppercase = (typeof uppercase_heading !== 'undefined') ? uppercase_heading : true;
+  var _h1Class = _uppercase ? 'uppercase' : '';
+  var _h1Style = _uppercase
+    ? 'color: var(--color-foreground); letter-spacing: 0.05em;'
+    : 'color: var(--color-foreground); letter-spacing: -0.02em;';
+  function _ctaIconSvg(name){
+    if(name === 'message'){
+      return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    } else if (name === 'phone') {
+      return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+    } else if (name === 'mail') {
+      return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
+    }
+    return '';
+  }
+%>
+<section class="py-8 md:py-12" style="background-color: var(--color-background);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+
+      <!-- Text column -->
+      <div class="order-2 md:order-1">
+        <% if (_heading) { %>
+          <h1 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-wider leading-tight mb-6 <%= _h1Class %>" style="<%= _h1Style %>"><%= _heading %></h1>
+        <% } %>
+
+        <% if (_credentials.length > 0) { %>
+          <div class="font-body text-xs md:text-sm uppercase mb-8 space-y-1" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;">
+            <% _credentials.forEach(function(line){ %>
+              <div><%= line %></div>
+            <% }); %>
+          </div>
+        <% } %>
+
+        <% if (_body.length > 0) { %>
+          <div class="font-body text-base leading-relaxed space-y-4" style="color: var(--color-foreground);">
+            <% _body.forEach(function(block){ %>
+              <% if (Array.isArray(block)) { %>
+                <div>
+                  <% block.forEach(function(line){ %>
+                    <p><%= line %></p>
+                  <% }); %>
+                </div>
+              <% } else if (typeof block === 'string' && block) { %>
+                <p><%= block %></p>
+              <% } %>
+            <% }); %>
+          </div>
+        <% } %>
+
+        <% if (_cta && _cta.text && _cta.href) { %>
+          <div class="mt-10">
+            <a href="<%= _cta.href %>" class="inline-flex items-center font-body font-medium px-6 py-3 rounded-md border transition-all hover:opacity-80 min-h-[44px] uppercase" style="border-color: var(--color-border); color: var(--color-foreground); background-color: var(--color-background); gap: 10px; text-decoration: none; letter-spacing: 0.1em;">
+              <% if (_cta.icon) { %><%- _ctaIconSvg(_cta.icon) %><% } %>
+              <span><%= _cta.text %></span>
+            </a>
+          </div>
+        <% } %>
+
+        <% if (_secondary.length > 0) { %>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <% _secondary.forEach(function(link){ %>
+              <a href="<%= link.href %>" class="inline-flex items-center font-body text-xs font-medium px-5 py-2 rounded-md border transition-colors hover:opacity-80 uppercase" style="border-color: var(--color-border); color: var(--color-foreground-muted); background-color: var(--color-background); text-decoration: none; letter-spacing: 0.15em;"><%= link.text %></a>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Image column -->
+      <div class="order-1 md:order-2">
+        <% if (_img) { %>
+          <div style="border-radius: 0.5rem; overflow: hidden;">
+            <img loading="eager" fetchpriority="high"
+                 src="<%= _img %>"
+                 alt="<%= _imgAlt %>"
+                 class="w-full h-auto block"
+                 style="aspect-ratio: 3 / 4; object-fit: cover; object-position: center 20%;" />
+          </div>
+        <% } %>
+      </div>
+
+    </div>
+  </div>
+</section>

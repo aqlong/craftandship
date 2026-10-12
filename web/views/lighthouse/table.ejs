@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title><%= title %></title>
+  <link rel="icon" type="image/png" href="/brand-harbor/harbor-tab-icon.png">
+  <style>
+    /* Phase 1 chat surface for CAS Harbor. Warm paper, lit by lantern.
+       The brand-softened design system from Claude Design will replace
+       this in Phase 2; for now, enough warmth to dogfood without the
+       chrome-modern chat-app feel. */
+    :root {
+      --color-oat:           #e8e0cd;
+      --color-oat-deep:      #ddd1b6;
+      --color-clay:          #b89683;
+      --color-clay-deep:     #a17e6a;
+      --color-sage:          #7d8b6e;
+      --color-dusk-rose:     #c89595;
+      --color-ink-brown:     #3a2f24;
+      /* WCAG AA floor: 0.85 alpha composites to 6.59:1 on oat (#e8e0cd).
+         Lower alphas (0.45-0.7) failed AA for body text per audit
+         docs/audits/lighthouse-a11y-2026-05-27.md and must stay reserved
+         for non-text decoration. */
+      --color-ink-soft:      rgba(58, 47, 36, 0.85);
+      --color-ink-faint:     rgba(58, 47, 36, 0.85);
+      --color-lantern-amber: #f4d29a;
+      --color-lantern-deep:  #ecbf76;
+      --color-slate-blue:    #5e7187;
+      --color-paper-shadow:  rgba(58, 47, 36, 0.08);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--color-oat);
+      /* Subtle paper grain: two faint radial gradients so the surface
+         doesn't read as a flat tech background. */
+      background-image:
+        radial-gradient(circle at 18% 22%, rgba(184, 150, 131, 0.08), transparent 55%),
+        radial-gradient(circle at 78% 70%, rgba(244, 210, 154, 0.10), transparent 55%);
+      color: var(--color-ink-brown);
+      font-family: 'Tiempos Text', 'Iowan Old Style', 'Charter', Georgia, 'Times New Roman', serif;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    .keepers-table {
+      max-width: 720px;
+      margin: 0 auto;
+      /* Bottom padding accommodates the fixed keepers-input area at its
+         maximum auto-resized height (480px textarea + ~80px chrome) so
+         the last turn isn't covered when a verbose keeper expands the
+         compose box. */
+      padding: 56px 32px 580px;
+      /* Safari fix (2026-04-28 tester feedback): without these the
+         scroll feels janky on iOS / mac Safari when momentum scrolling
+         interacts with the fixed compose bar. -webkit-overflow-scrolling
+         enables hardware-accelerated momentum; overscroll-behavior keeps
+         scroll chained inside the conversation container instead of
+         bouncing the whole page. */
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+    /* Top brand bar: small Craft & Ship lighthouse mark + wordmark.
+       Sits ABOVE the Haven header so keepers know whose hands they're
+       in (the parent CAS site) without making it the loud thing on the
+       page. Opens the marketing site in a new tab so the keeper's table
+       conversation is never interrupted. */
+    .cas-brand-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--color-ink-soft);
+      font-family: 'Söhne', 'Inter', system-ui, sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      padding: 4px 8px;
+      border-radius: 3px;
+      margin-bottom: 28px;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+    .cas-brand-bar:hover {
+      color: var(--color-ink-brown);
+      background: rgba(58, 47, 36, 0.04);
+    }
+    .cas-brand-mark {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+    .cas-brand-name {
+      font-family: 'Tiempos Text', 'Iowan Old Style', Georgia, serif;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      color: var(--color-ink-brown);
+    }
+    .cas-brand-name .ampersand {
+      font-family: 'Tiempos Text', 'Iowan Old Style', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .keepers-table-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(58, 47, 36, 0.10);
+      padding-bottom: 18px;
+      margin-bottom: 36px;
+    }
+    .keepers-table-header .haven-header-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex: 0 0 auto;
+      box-shadow: 0 1px 2px var(--color-paper-shadow);
+    }
+    .keepers-table-header .name {
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .keepers-table-header .subtitle {
+      color: #5e4f3a;
+      font-style: italic;
+      font-size: 15px;
+    }
+    .conversation { padding-bottom: 32px; }
+    .turn { margin: 0; line-height: 1.65; font-size: 18px; }
+    /* Small label above each turn bubble naming the speaker so it's
+       always clear who is talking (Haven, or You). Visually quiet
+       so the conversation itself stays the focus. */
+    .turn-name {
+      font-family: 'Söhne', 'Inter', system-ui, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #5e4f3a;
+      margin-bottom: 6px;
+      display: block;
+      font-weight: 500;
+    }
+    .turn-name-keeper {
+      text-align: right;
+    }
+    .turn-keeper {
+      font-family: 'Söhne', 'Inter', system-ui, -apple-system, sans-serif;
+      background: rgba(184, 150, 131, 0.18);
+      border-left: 2px solid var(--color-clay);
+      padding: 14px 18px;
+      border-radius: 4px;
+      font-size: 17px;
+      line-height: 1.55;
+      color: var(--color-ink-brown);
+      white-space: pre-wrap;
+    }
+    /* Keeper turn wrapper: holds the "You" label + bubble together,
+       offset rightward so keeper turns visibly belong to a different
+       speaker than Haven's left-aligned avatar+bubble pairs. */
+    .turn-keeper-wrap {
+      margin: 24px 0 24px 80px;
+    }
+    .turn-companion {
+      font-family: 'Tiempos Text', 'Iowan Old Style', Georgia, serif;
+      background:
+        linear-gradient(180deg, rgba(244, 210, 154, 0.36) 0%, rgba(244, 210, 154, 0.28) 100%);
+      border-left: 2px solid var(--color-lantern-amber);
+      padding: 20px 24px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px var(--color-paper-shadow);
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    /* Companion turn row: avatar + (label + bubble) stacked column.
+       The avatar pulls from the same lighthouse painting world as the
+       brand mark (warm-paper register, oil-painting softness) so it's
+       visually clear that "Haven" is the cute bot avatar shown next to
+       her name in the header. */
+    .turn-row-companion {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 24px 40px 24px 0;
+    }
+    .turn-row-companion > .turn-stack {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .haven-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex: 0 0 auto;
+      box-shadow: 0 1px 2px var(--color-paper-shadow);
+    }
+    .turn-companion p { margin: 0 0 0.85em; }
+    .turn-companion p:last-child { margin-bottom: 0; }
+    .turn-companion ul {
+      margin: 0.4em 0 0.85em;
+      padding-left: 1.4em;
+    }
+    .turn-companion ul:last-child { margin-bottom: 0; }
+    .turn-companion li {
+      margin: 0.2em 0;
+      padding-left: 0.2em;
+    }
+    .turn-companion li::marker { color: var(--color-ink-brown); }
+    .turn-companion strong {
+      color: var(--color-ink-brown);
+      font-weight: 600;
+      font-style: normal;
+    }
+    .turn-companion em {
+      font-style: italic;
+      color: var(--color-ink-brown);
+    }
+    .turn-rail-flag {
+      display: inline-block;
+      font-family: 'Söhne', system-ui, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-slate-blue);
+      margin-top: 10px;
+      opacity: 0.65;
+    }
+    .keepers-input {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background:
+        linear-gradient(180deg, rgba(232, 224, 205, 0) 0%, var(--color-oat) 30%);
+      padding: 32px 32px 24px;
+      pointer-events: none;
+    }
+    .keepers-input-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      pointer-events: auto;
+    }
+    .keepers-input textarea {
+      flex: 1;
+      /* Sized so verbose keepers can write multi-paragraph drafts
+         without the box feeling cramped. The autosize JS below
+         expands up to max-height as the keeper types, then internal
+         scroll kicks in. */
+      min-height: 96px;
+      max-height: 480px;
+      padding: 14px 16px;
+      background: white;
+      border: 1px solid rgba(58, 47, 36, 0.18);
+      border-radius: 4px;
+      color: var(--color-ink-brown);
+      font-family: 'Söhne', 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      resize: none;
+      outline: none;
+      overflow-y: auto;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+    .keepers-input textarea:focus {
+      /* clay #b89683 caps at ~2.07:1 against oat at any alpha; ink-brown at
+         0.7 gives ~4.41:1, passes WCAG 1.4.11. Transparent outline is for
+         forced-colors mode (browsers force its color but drop box-shadow). */
+      border-color: var(--color-ink-brown);
+      box-shadow: 0 0 0 3px rgba(58, 47, 36, 0.7);
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+    .keepers-input button {
+      padding: 14px 22px;
+      /* Primary action: ink-brown bg + oat text matches the Build / Make-changes
+         CTAs and meets WCAG 1.4.3 (oat #e8e0cd on ink-brown #3a2f24 = 9.9:1).
+         The prior clay bg gave only 2.1:1, a serious contrast failure caught
+         by tests/ui/lighthouse-a11y.spec.ts once axe was actually wired up. */
+      background: var(--color-ink-brown);
+      color: var(--color-oat);
+      border: none;
+      border-radius: 4px;
+      font-family: 'Tiempos Text', Georgia, serif;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      min-height: 56px;
+      transition: background-color 140ms ease;
+    }
+    .keepers-input button:hover { background: #4a3d2f; } /* lifted ink-brown, 8.0:1 with oat */
+    .keepers-input button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .keyboard-hint {
+      max-width: 720px;
+      margin: 10px auto 0;
+      font-family: 'Söhne', system-ui, sans-serif;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      color: #5e4f3a;
+      pointer-events: auto;
+      padding: 0 4px;
+      font-weight: 500;
+    }
+    .keyboard-hint kbd {
+      font-family: 'Söhne', 'Inter', system-ui, sans-serif;
+      background: rgba(58, 47, 36, 0.08);
+      border: 1px solid rgba(58, 47, 36, 0.20);
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 13px;
+      color: var(--color-ink-brown);
+    }
+    .pulse-writing {
+      font-family: 'Tiempos Text', Georgia, serif;
+      font-style: italic;
+      color: var(--color-ink-faint);
+      font-size: 14px;
+      margin: 16px 40px 16px 0;
+      padding: 8px 0;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.45; }
+      50% { opacity: 0.9; }
+    }
+    .quiet-link {
+      display: inline-block;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--color-ink-faint);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid rgba(58, 47, 36, 0.15);
+      padding-bottom: 1px;
+      transition: color 140ms ease, border-color 140ms ease;
+    }
+    .quiet-link:hover {
+      color: var(--color-ink-brown);
+      border-color: rgba(58, 47, 36, 0.5);
+    }
+    @media (max-width: 640px) {
+      /* Mobile keeps the bottom padding generous (matches max textarea
+         height) so the last turn never gets covered when the box grows. */
+      .keepers-table { padding: 32px 18px 480px; }
+      .turn-keeper-wrap { margin-left: 24px; }
+      .turn-companion { padding: 16px 18px; }
+      .turn-row-companion { margin-right: 16px; gap: 8px; }
+      .haven-avatar { width: 32px; height: 32px; }
+      .keepers-table-header .haven-header-avatar { width: 36px; height: 36px; }
+      .cas-brand-bar { margin-bottom: 20px; }
+      .cas-brand-name { font-size: 16px; }
+      .cas-brand-mark { width: 26px; height: 26px; }
+      .keepers-input { padding: 24px 18px 18px; }
+      /* Mobile textarea: still larger than the original 56/280, but
+         capped tighter than desktop so it doesn't overwhelm the small
+         viewport. */
+      .keepers-input textarea { min-height: 80px; max-height: 360px; }
+    }
+
+    /* Memory side-panel. Fixed-position on the right on desktop so it
+       feels like an open notebook beside the conversation; collapses to
+       a thin tab on narrow screens that opens an overlay drawer. */
+    .memory-panel {
+      position: fixed;
+      top: 56px;
+      right: 24px;
+      width: 280px;
+      max-height: calc(100vh - 240px);
+      background: rgba(255, 252, 244, 0.92);
+      border: 1px solid rgba(184, 150, 131, 0.32);
+      border-radius: 6px;
+      padding: 18px 16px 14px;
+      font-family: 'Söhne', 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      box-shadow: 0 2px 12px rgba(58, 47, 36, 0.06);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+    }
+    .memory-panel-header {
+      border-bottom: 1px solid rgba(184, 150, 131, 0.22);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .memory-panel-header h2 {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--color-ink-soft);
+      margin: 0;
+    }
+    .memory-panel-meta {
+      font-size: 11px;
+      color: var(--color-ink-faint);
+      font-style: italic;
+    }
+    .memory-panel-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      overflow-y: auto;
+      flex: 1 1 auto;
+    }
+    .memory-panel-list::-webkit-scrollbar { width: 4px; }
+    .memory-panel-list::-webkit-scrollbar-thumb {
+      background: rgba(184, 150, 131, 0.3);
+      border-radius: 2px;
+    }
+    .memory-item {
+      padding: 8px 0;
+      border-bottom: 1px dashed rgba(184, 150, 131, 0.18);
+      color: var(--color-ink-brown);
+      font-size: 13px;
+    }
+    .memory-item:last-child { border-bottom: none; }
+    .memory-item-text { font-family: 'Tiempos Text', Georgia, serif; line-height: 1.5; }
+    .memory-item-meta {
+      font-size: 10px;
+      color: var(--color-ink-faint);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .memory-panel-empty {
+      color: var(--color-ink-faint);
+      font-style: italic;
+      font-size: 13px;
+      padding: 6px 0 12px;
+    }
+    /* Pulse for newly-added items (after a turn). */
+    @keyframes memoryFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .memory-item-new {
+      animation: memoryFadeIn 380ms ease-out;
+      background: rgba(244, 210, 154, 0.20);
+      border-left: 2px solid var(--color-lantern-amber);
+      padding-left: 10px;
+      margin-left: -10px;
+    }
+
+    /* Mobile: turn the panel into a thin tab anchored bottom-right that
+       opens an overlay-drawer when tapped. Default-collapsed; user opens
+       deliberately. */
+    .memory-tab {
+      display: none;
+      position: fixed;
+      right: 16px;
+      bottom: 96px;
+      background: var(--color-ink-brown);
+      color: var(--color-oat);
+      padding: 9px 14px;
+      border-radius: 22px;
+      font-family: 'Söhne', 'Inter', system-ui, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(58, 47, 36, 0.18);
+      z-index: 11;
+      border: none;
+    }
+    @media (max-width: 1080px) {
+      .memory-panel {
+        right: 12px;
+        width: 240px;
+        top: 32px;
+        font-size: 12px;
+      }
+    }
+    @media (max-width: 880px) {
+      .memory-panel { display: none; }
+      .memory-tab { display: inline-flex; align-items: center; gap: 8px; }
+      .memory-panel.is-open {
+        display: flex;
+        position: fixed;
+        top: 0; right: 0; bottom: 0;
+        width: min(380px, 88vw);
+        max-height: 100vh;
+        border-radius: 0;
+        border-right: none;
+        z-index: 20;
+      }
+    }
+    /* Visually-hidden but screen-reader-readable. Used for accessible
+       labels on inputs that have a placeholder but no visible label
+       (compose textarea, email gates, dev bypass form). WCAG 2.1 AA
+       §1.3.1 + §3.3.2. Apparent in source: 2026-05-09 audit. */
+    .cas-sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <%- include('../partials/_harbor-skip-link') %>
+  <%
+    function _shortMemoryText(m) {
+      var raw = (m.keeper_phrase || m.content || '').replace(/\s+/g, ' ').trim();
+      if (raw.length > 140) raw = raw.slice(0, 137) + '...';
+      return raw;
+    }
+    function _formatRelative(d) {
+      try {
+        var diff = (Date.now() - new Date(d).getTime()) / 1000;
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+      } catch (e) { return ''; }
+    }
+  %>
+
+  <!-- Memory side-panel. Server-rendered initial state; client refreshes
+       via /lighthouse/table/recall?format=json after each turn so what
+       Haven catches lands on the page within a second. -->
+  <button id="memory-tab" class="memory-tab" type="button" aria-expanded="false" aria-controls="memory-panel">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="4" y="3" width="14" height="18" rx="1.5"/><path d="M8 8h6M8 12h6M8 16h4"/>
+    </svg>
+    <span><span id="memory-tab-count"><%= initialMemory && initialMemory.length || 0 %></span> notes</span>
+  </button>
+
+  <aside id="memory-panel" class="memory-panel" role="complementary" aria-label="What Haven remembers">
+    <div class="memory-panel-header">
+      <h2>What <%= companionName %> remembers</h2>
+      <span class="memory-panel-meta" id="memory-panel-meta">
+        <span id="memory-panel-count"><%= initialMemory && initialMemory.length || 0 %></span> notes
+      </span>
+    </div>
+    <ul class="memory-panel-list" id="memory-panel-list">
+      <% if (!initialMemory || initialMemory.length === 0) { %>
+        <li class="memory-panel-empty">Haven hasn't caught anything yet. Once you share something concrete, it'll show up here.</li>
+      <% } else { %>
+        <% initialMemory.forEach(function(m) { %>
+          <li class="memory-item" data-memory-id="<%= m.memory_id %>">
+            <div class="memory-item-text"><%= _shortMemoryText(m) %></div>
+            <div class="memory-item-meta"><%= m.category || m.partition || 'note' %> &middot; <%= _formatRelative(m.updated_at) %></div>
+          </li>
+        <% }); %>
+      <% } %>
+    </ul>
+  </aside>
+
+  <main id="main" class="keepers-table">
+    <a class="cas-brand-bar" href="/" target="_blank" rel="noopener noreferrer"
+       title="Craft & Ship; opens in a new tab">
+      <img class="cas-brand-mark" src="/brand-harbor/logo-mark-nav.svg" alt="" width="36" height="36" />
+      <span class="cas-brand-name">Craft <span class="ampersand">&amp;</span> Ship</span>
+    </a>
+    <header class="keepers-table-header" aria-labelledby="keepers-table-name keepers-table-eyebrow">
+      <img class="haven-header-avatar" src="/brand-harbor/haven-avatar-80.png" alt="" />
+      <h1 class="name" id="keepers-table-name"><%= companionName %></h1>
+      <span class="subtitle" id="keepers-table-eyebrow">your companion</span>
+    </header>
+
+    <%# role="log" is an implicit polite live region: turns and the email-gate
+        form that the script appends below are announced to screen readers
+        (WCAG 4.1.3). aria-atomic="false" reads only the new node, not the
+        whole history. Server-rendered turns present at load are not
+        announced. The two data- attributes hand server values to the script
+        without interpolating them into JavaScript source. %>
+    <section class="conversation" id="conversation" role="log" aria-live="polite" aria-atomic="false"
+             aria-label="Conversation with <%= companionName %>"
+             data-companion-name="<%= companionName %>"
+             data-recall-json-url="/lighthouse/table/recall?format=json<%= devTrialQuery ? '&' + devTrialQuery.slice(1) : '' %>">
+      <% turns.forEach(function(t) { %>
+        <% if (t.keeper_text) { %>
+          <div class="turn-keeper-wrap">
+            <span class="turn-name turn-name-keeper">You</span>
+            <div class="turn turn-keeper"><%= t.keeper_text %></div>
+          </div>
+        <% } %>
+        <div class="turn-row turn-row-companion">
+          <img class="haven-avatar" src="/brand-harbor/haven-avatar-80.png" alt="<%= companionName %>" />
+          <div class="turn-stack">
+            <span class="turn-name turn-name-companion"><%= companionName %></span>
+            <div class="turn turn-companion">
+              <%- companionMarkdown(t.companion_text) %>
+              <%# Internal rail flags (for example "crisis, suicide") are stored for
+                  the operator and returned by the turn API, but are deliberately not
+                  shown to the keeper: a label naming their message as a crisis is not
+                  something to print under it. %>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </section>
+
+    <a href="/lighthouse/table/recall<%= devTrialQuery %>" target="_blank" rel="noopener noreferrer" class="quiet-link">what <%= companionName %> remembers about you</a>
+    <span class="quiet-link" aria-hidden="true" style="opacity:0.5;">&middot;</span>
+    <a href="/lighthouse/preview<%= devTrialQuery %>" target="_blank" rel="noopener noreferrer" class="quiet-link">see how your site could look</a>
+
+    <%# Set by the route for a logged-in account whose email address the
+        build engine would refuse (services/harbor_dispatch.ts). Where a build
+        would be offered below, that account is told why it cannot have one
+        instead of being shown a button that would be refused. %>
+    <% var buildBlocked = (typeof buildBlockedMessage !== 'undefined' && buildBlockedMessage) ? buildBlockedMessage : null; %>
+    <% if (isKeeper) { %>
+      <!-- Keeper post-promotion: surface the "build my website" trigger.
+           Idempotent: if handoff_build_id already set, the button shows
+           a link to the in-progress build instead of re-extracting. -->
+      <% if (keeperHandoffBuildId && hasLiveSite) { %>
+        <%# Live site: the button pre-fills the message box with a guided
+            prefix, and what is sent is an ordinary turn, stored under the
+            keeper like any other. Nothing routes it to the operator: the
+            admin Harbor inbox (routes/admin.ts) shows a paid keeper's
+            conversation only as counts and opening words, under its
+            "Paid keepers" filter. %>
+        <div id="change-request-affordance" style="margin-top:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-family:'Söhne','Inter',system-ui,sans-serif;font-size:13px;color:rgba(58,47,36,0.8);">
+          <span>Your site is live<% if (liveUrl) { %> at
+            <a href="<%= httpUrl(liveUrl) %>" target="_blank" rel="noopener noreferrer" style="color:var(--color-ink-brown);">your website</a><% } %>.</span>
+          <button id="change-request-btn" type="button"
+                  style="padding:8px 14px;border:1px solid var(--color-ink-brown);background:transparent;color:var(--color-ink-brown);border-radius:4px;font:inherit;font-size:13px;cursor:pointer;">
+            Make changes to my site
+          </button>
+          <a href="/lighthouse/lamp/<%= keeperHandoffBuildId %>" style="color:var(--color-ink-brown);">Manage your website and subscription</a>
+        </div>
+        <script nonce="<%= cspNonce %>">
+          (function() {
+            var btn = document.getElementById('change-request-btn');
+            var ta = document.getElementById('keeper-text');
+            if (!btn || !ta) return;
+            btn.addEventListener('click', function() {
+              if (!ta.value.trim()) {
+                ta.value = "I'd like to make a change to my site: ";
+              }
+              ta.focus();
+              // Trigger autosize + put cursor at end.
+              ta.dispatchEvent(new Event('input'));
+              var len = ta.value.length;
+              try { ta.setSelectionRange(len, len); } catch (e) {}
+              ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+          })();
+        </script>
+      <% } else if (keeperHandoffBuildId) { %>
+        <div class="quiet-link" style="margin-top:14px;font-family:'Söhne','Inter',system-ui,sans-serif;font-size:13px;color:rgba(58,47,36,0.8);">
+          Your website is being built &middot;
+          <a href="/builds/<%= keeperHandoffBuildId %>" style="color:var(--color-ink-brown);">view status</a>
+        </div>
+      <% } else if (buildBlocked) { %>
+        <p id="build-blocked" style="margin-top:14px;max-width:520px;font-family:'Söhne','Inter',system-ui,sans-serif;font-size:13px;line-height:1.5;color:rgba(58,47,36,0.85);"><%= buildBlocked %></p>
+      <% } else { %>
+        <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-family:'Söhne','Inter',system-ui,sans-serif;font-size:13px;color:rgba(58,47,36,0.8);">
+          <span>Ready to start the build?</span>
+          <button id="build-btn" type="button"
+                  style="padding:8px 16px;border:1px solid var(--color-ink-brown);background:var(--color-ink-brown);color:var(--color-oat);border-radius:4px;font:inherit;font-size:13px;cursor:pointer;">
+            Build my website
+          </button>
+          <span id="build-result" style="font-size:12px;color:rgba(58,47,36,0.6);"></span>
+        </div>
+        <script nonce="<%= cspNonce %>">
+          (function() {
+            var btn = document.getElementById('build-btn');
+            if (!btn) return;
+            btn.addEventListener('click', async function() {
+              btn.disabled = true;
+              var r = document.getElementById('build-result');
+              r.textContent = 'Reading your conversation + drafting the spec...';
+              try {
+                var resp = await fetch('/lighthouse/build', { method: 'POST' });
+                var data = await resp.json().catch(function() { return {}; });
+                if (resp.ok && data.buildId) {
+                  r.textContent = 'Build queued. Redirecting...';
+                  window.location.href = '/builds/' + data.buildId;
+                } else {
+                  // A refusal from the dispatch (too little in the conversation
+                  // yet, a build already made) comes with a sentence for the keeper.
+                  r.textContent = data.message || ('Could not start the build: ' + (data.error || resp.status));
+                  btn.disabled = false;
+                }
+              } catch (e) {
+                r.textContent = 'Build error: ' + (e.message || 'unknown');
+                btn.disabled = false;
+              }
+            });
+          })();
+        </script>
+      <% } %>
+    <% } %>
+
+    <% if (!isKeeper && selfServeBuild && selfServeBuild.state === 'building' && selfServeBuild.buildId) { %>
+      <!-- Self-serve: a free preview build is already underway for this trial. -->
+      <div class="quiet-link" style="margin-top:14px;font-family:'Söhne','Inter',system-ui,sans-serif;font-size:13px;color:rgba(58,47,36,0.8);">
+        Your website is being built &middot;
+        <a href="/lighthouse/lamp/<%= selfServeBuild.buildId %><%= devTrialQuery %>" style="color:var(--color-ink-brown);">see it come to life</a>
+      </div>
+    <% } else if (!isKeeper && selfServeBuild && selfServeBuild.state === 'ready' && buildBlocked) { %>
+      <p id="build-blocked" style="margin-top:14px;max-width:520px;font-family:'Söhne','Inter',system-ui,sans-serif;font-size:13px;line-height:1.5;color:rgba(58,47,36,0.85);"><%= buildBlocked %></p>
+    <% } else if (!isKeeper && selfServeBuild && selfServeBuild.state === 'ready') { %>
+      <!-- Self-serve: enough real conversation. Offer a free preview build.
+           Warm + in-voice (not a transactional survey). The build is free and
+           the link is emailed when it is ready; only thing we need is an email. -->
+      <div id="ss-build" style="margin-top:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-family:'Söhne','Inter',system-ui,sans-serif;font-size:13px;color:rgba(58,47,36,0.85);max-width:560px;">
+        <span style="flex-basis:100%;">When you're ready, I can build you a real preview of your website, free, and send you the link.</span>
+        <% if (!selfServeBuild.hasEmail) { %>
+          <label for="ss-email" class="cas-sr-only">Where should I send your preview link?</label>
+          <input type="email" id="ss-email" name="email" placeholder="you@example.com" autocomplete="email"
+                 style="padding:9px 12px;border:1px solid rgba(58,47,36,0.3);border-radius:4px;font:inherit;font-size:13px;min-width:200px;">
+        <% } %>
+        <button id="ss-build-btn" type="button"
+                style="padding:9px 16px;border:none;background:var(--color-ink-brown);color:var(--color-oat);border-radius:4px;font:inherit;font-size:13px;cursor:pointer;">
+          Build my free preview
+        </button>
+        <span id="ss-result" style="font-size:12px;color:rgba(58,47,36,0.65);flex-basis:100%;"></span>
+      </div>
+      <script nonce="<%= cspNonce %>">
+        (function() {
+          var btn = document.getElementById('ss-build-btn');
+          var emailEl = document.getElementById('ss-email');
+          var result = document.getElementById('ss-result');
+          if (!btn) return;
+          function setBusy(on, msg) {
+            btn.disabled = on;
+            if (emailEl) emailEl.disabled = on;
+            if (msg !== undefined) result.textContent = msg;
+          }
+          btn.addEventListener('click', async function() {
+            var email = emailEl ? (emailEl.value || '').trim() : '';
+            if (emailEl && !email) { result.textContent = 'A quick email so I can send your link.'; emailEl.focus(); return; }
+            setBusy(true, 'Reading our conversation and starting your preview...');
+            try {
+              var body = email ? { email: email } : {};
+              var resp = await fetch('/lighthouse/build', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+              });
+              var data = await resp.json().catch(function() { return {}; });
+              if (resp.ok && (data.redirect || data.buildId)) {
+                result.textContent = 'Your preview is on its way. Taking you there...';
+                window.location.href = data.redirect || ('/lighthouse/lamp/' + data.buildId);
+              } else if (data.requiresEmail && (resp.status === 402 || resp.status === 409)) {
+                // No email yet and none provided (402), or the one given
+                // could not be used (409): reveal an email field inline.
+                if (!emailEl) {
+                  var wrap = document.getElementById('ss-build');
+                  var inp = document.createElement('input');
+                  inp.type = 'email'; inp.id = 'ss-email'; inp.placeholder = 'you@example.com';
+                  inp.style.cssText = 'padding:9px 12px;border:1px solid rgba(58,47,36,0.3);border-radius:4px;font:inherit;font-size:13px;min-width:200px;';
+                  wrap.insertBefore(inp, btn);
+                  emailEl = inp;
+                }
+                setBusy(false, resp.status === 409
+                  ? 'I could not use that email address. Please give me a different one, or log in first if you have an account here.'
+                  : 'Leave your email and I will send you the link.');
+                emailEl.value = '';
+                emailEl.focus();
+              } else if (resp.status === 409 && (data.error === 'not_ready' || data.error === 'barren_spec' || data.error === 'nothing_to_extract')) {
+                setBusy(false, "Let's talk a little more first so I have enough to build something true.");
+              } else if (resp.status === 409 && data.error === 'email_not_buildable' && data.message) {
+                // A logged-in account whose own address the builder cannot
+                // use (the page normally says so instead of showing this
+                // button): the server's sentence explains.
+                setBusy(false, data.message);
+              } else if (resp.status === 429 && data.message) {
+                // Too many attempts, or this account is at its limit for
+                // builds: the server's sentence says which.
+                setBusy(false, data.message);
+              } else if ((resp.status === 502 || resp.status === 503) && data.message) {
+                // The assistant did not answer, answered with something that
+                // could not be used, is busy, or is not set up on this
+                // server: the server's sentence says which.
+                setBusy(false, data.message);
+              } else {
+                setBusy(false, 'I could not start it just now. Please try again in a moment.');
+              }
+            } catch (e) {
+              setBusy(false, 'Something interrupted that. Please try again.');
+            }
+          });
+        })();
+      </script>
+    <% } %>
+
+    <% if (bypassEnabled && !isKeeper) { %>
+      <!-- Local-only Stripe bypass: visible only when
+           CAS_HARBOR_STRIPE_BYPASS=true AND isDevOrTestEnv() (NODE_ENV is
+           exactly development or test).
+           Click promotes this trial to a paid keeper without Stripe.
+           Email is required (acts as the keeper identity for /admin). -->
+      <details class="quiet-link" style="margin-top:12px;border:1px dashed rgba(58,47,36,0.3);padding:10px 14px;border-radius:4px;">
+        <summary style="cursor:pointer;font-family:'Söhne','Inter',system-ui,sans-serif;font-size:12px;letter-spacing:0.04em;color:rgba(58,47,36,0.6);">[dev] skip Stripe + become a keeper now</summary>
+        <form id="bypass-form" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <label for="bypass-email" class="cas-sr-only">Your email</label>
+          <input type="email" id="bypass-email" name="email" required placeholder="you@example.com"
+                 autocomplete="email"
+                 style="flex:1;min-width:240px;padding:8px 10px;border:1px solid rgba(58,47,36,0.2);border-radius:4px;font:inherit;font-size:13px;" />
+          <button type="submit"
+                  style="padding:8px 14px;border:1px solid var(--color-ink-brown);background:transparent;color:var(--color-ink-brown);border-radius:4px;font:inherit;font-size:13px;cursor:pointer;">
+            Bypass Stripe + become keeper
+          </button>
+        </form>
+        <div id="bypass-result" style="margin-top:8px;font-size:12px;color:rgba(58,47,36,0.85);"></div>
+      </details>
+      <script nonce="<%= cspNonce %>">
+        (function() {
+          var f = document.getElementById('bypass-form');
+          if (!f) return;
+          f.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            var email = (document.getElementById('bypass-email').value || '').trim();
+            if (!email) return;
+            var resultEl = document.getElementById('bypass-result');
+            resultEl.textContent = 'Promoting...';
+            try {
+              var resp = await fetch('/lighthouse/bypass', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+              });
+              var data = await resp.json().catch(function() { return {}; });
+              if (resp.ok && data.bypass) {
+                resultEl.textContent =
+                  'Promoted as keeper ' + (data.customerId || '').slice(0, 8) +
+                  '. Reloading...';
+                // Refresh so the page renders with isKeeper=true
+                // and the "Build my website" button appears.
+                setTimeout(function() { window.location.reload(); }, 600);
+              } else {
+                resultEl.textContent = 'Bypass failed: ' + (data.error || resp.status);
+              }
+            } catch (e) {
+              resultEl.textContent = 'Bypass error: ' + (e.message || 'unknown');
+            }
+          });
+        })();
+      </script>
+    <% } %>
+  </main>
+
+  <form class="keepers-input" id="turn-form" autocomplete="off">
+    <div class="keepers-input-inner">
+      <label for="keeper-text" class="cas-sr-only">Your message to <%= companionName %></label>
+      <textarea
+        id="keeper-text"
+        name="keeperText"
+        placeholder="Write to <%= companionName %>..."
+        aria-label="Your message to <%= companionName %>"
+        rows="4"
+        required
+      ></textarea>
+      <button type="submit" id="send-btn">Send</button>
+    </div>
+    <div class="keyboard-hint"><kbd>⌘</kbd> <kbd>Enter</kbd> to send. <kbd>Enter</kbd> for a new line.</div>
+  </form>
+
+  <script nonce="<%= cspNonce %>">
+    // The renderCompanionMarkdown function is the client-side mirror of
+    // web/src/companion/markdown.ts. Both implementations must stay
+    // equivalent; tests/unit/companion/markdown.test.ts asserts parity.
+    <%- renderCompanionMarkdownClientJs %>
+
+    (function() {
+      var form = document.getElementById('turn-form');
+      var textarea = document.getElementById('keeper-text');
+      var sendBtn = document.getElementById('send-btn');
+      var conversation = document.getElementById('conversation');
+      var companionName = conversation.getAttribute('data-companion-name') || 'Haven';
+
+      // Auto-resize textarea as the keeper writes; capped by max-height
+      // in CSS so very long drafts scroll within the box. Cap (480px)
+      // must match the .keepers-input textarea max-height in CSS so
+      // the JS height stops growing exactly when the CSS overflow
+      // kicks in.
+      function autosize() {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 480) + 'px';
+      }
+      textarea.addEventListener('input', autosize);
+      autosize();
+
+      function appendKeeperTurn(text) {
+        // Match the server-render structure: wrapper with "You" label
+        // above the bubble, right-aligned to the keeper margin.
+        var wrap = document.createElement('div');
+        wrap.className = 'turn-keeper-wrap';
+        var label = document.createElement('span');
+        label.className = 'turn-name turn-name-keeper';
+        label.textContent = 'You';
+        wrap.appendChild(label);
+        var div = document.createElement('div');
+        div.className = 'turn turn-keeper';
+        div.textContent = text;
+        wrap.appendChild(div);
+        conversation.appendChild(wrap);
+        scrollToBottom();
+      }
+
+      function appendCompanionTurn(text, railFlags) {
+        // Match the server-render structure: row wrapper with avatar +
+        // (label + bubble) stacked. Keeps client-appended turns
+        // visually identical to turns rendered on first paint.
+        var row = document.createElement('div');
+        row.className = 'turn-row turn-row-companion';
+        var avatar = document.createElement('img');
+        avatar.className = 'haven-avatar';
+        avatar.src = '/brand-harbor/haven-avatar-80.png';
+        avatar.alt = companionName;
+        row.appendChild(avatar);
+        var stack = document.createElement('div');
+        stack.className = 'turn-stack';
+        var label = document.createElement('span');
+        label.className = 'turn-name turn-name-companion';
+        label.textContent = companionName;
+        stack.appendChild(label);
+        var div = document.createElement('div');
+        div.className = 'turn turn-companion';
+        div.innerHTML = renderCompanionMarkdown(text);
+        // railFlags (second argument) is intentionally not rendered; see the server template.
+        stack.appendChild(div);
+        row.appendChild(stack);
+        conversation.appendChild(row);
+        scrollToBottom();
+      }
+
+      function appendPulse() {
+        var div = document.createElement('div');
+        div.className = 'pulse-writing';
+        div.id = 'pulse-writing';
+        div.textContent = companionName + ' is writing.';
+        conversation.appendChild(div);
+        scrollToBottom();
+      }
+
+      function removePulse() {
+        var p = document.getElementById('pulse-writing');
+        if (p) p.remove();
+      }
+
+      function scrollToBottom() {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
+
+      // Email-gate state. Set when /turn returns 402 + requiresEmail.
+      // The next submit re-sends both keeperText + email together.
+      var pendingGateText = null;
+
+      function appendEmailGate(message) {
+        var wrap = document.createElement('div');
+        wrap.className = 'turn turn-companion';
+        wrap.id = 'email-gate-affordance';
+        var gateText = document.createElement('p');
+        gateText.textContent = message || 'Could you leave me an email so we can stay in touch?';
+        wrap.appendChild(gateText);
+        var gateFormHost = document.createElement('div');
+        gateFormHost.innerHTML =
+          '<form id="email-gate-form" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
+          '<label for="email-gate-input" class="cas-sr-only">Your email</label>' +
+          '<input type="email" id="email-gate-input" name="email" required placeholder="you@example.com" ' +
+          'autocomplete="email" aria-required="true" ' +
+          'style="flex:1;min-width:240px;padding:10px 12px;border:1px solid rgba(58,47,36,0.2);border-radius:4px;font:inherit;" />' +
+          '<button type="submit" style="padding:10px 18px;border:1px solid var(--color-ink-brown);background:var(--color-ink-brown);color:var(--color-oat);border-radius:4px;font:inherit;cursor:pointer;">' +
+          'Send + continue</button>' +
+          '</form>';
+        wrap.appendChild(gateFormHost.firstChild);
+        conversation.appendChild(wrap);
+        scrollToBottom();
+        var input = document.getElementById('email-gate-input');
+        if (input) input.focus();
+        var f = document.getElementById('email-gate-form');
+        if (f) {
+          f.addEventListener('submit', function(ev) {
+            ev.preventDefault();
+            var emailVal = (document.getElementById('email-gate-input').value || '').trim();
+            if (!emailVal) return;
+            wrap.remove();
+            sendTurn(pendingGateText, emailVal);
+            pendingGateText = null;
+          });
+        }
+      }
+
+      async function sendTurn(text, email) {
+        sendBtn.disabled = true;
+        appendPulse();
+        var body = email ? { keeperText: text, email: email } : { keeperText: text };
+        try {
+          var resp = await fetch('/lighthouse/table/turn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          removePulse();
+          if (resp.status === 402) {
+            var gate = await resp.json().catch(function() { return {}; });
+            if (gate && gate.requiresEmail) {
+              pendingGateText = text;
+              appendEmailGate(gate.message);
+              return;
+            }
+          }
+          if (!resp.ok) {
+            var err = await resp.json().catch(function() { return { error: 'server error' }; });
+            if (err && err.requiresEmail) {
+              pendingGateText = text;
+              appendEmailGate('That email did not look right. Try again.');
+              return;
+            }
+            // A server that explains itself (not configured, busy) sends a
+            // sentence under `message`; show it as written.
+            if (err && typeof err.message === 'string' && err.message) {
+              appendCompanionTurn('(' + err.message + ')', []);
+              return;
+            }
+            appendCompanionTurn('(I could not reply just now: ' + ((err && err.error) || 'unknown') + '. Please try again.)', []);
+            return;
+          }
+          var data = await resp.json();
+          appendCompanionTurn(data.companionText, data.railFlags);
+          // Memory side-panel: refresh after a successful turn so what
+          // Haven caught surfaces within a second. Best-effort; failure
+          // here doesn't block the user.
+          refreshMemoryPanel().catch(function(){});
+        } catch (e) {
+          removePulse();
+          appendCompanionTurn('(I could not reach you just now. Please try again.)', []);
+        } finally {
+          sendBtn.disabled = false;
+          textarea.focus();
+        }
+      }
+
+      // ---- Memory side-panel refresh ----
+      var memoryList = document.getElementById('memory-panel-list');
+      var memoryCount = document.getElementById('memory-panel-count');
+      var memoryTabCount = document.getElementById('memory-tab-count');
+      var memoryTab = document.getElementById('memory-tab');
+      var memoryPanel = document.getElementById('memory-panel');
+      // Track known memory_ids so we can pulse the new ones on render.
+      var knownMemoryIds = new Set();
+      if (memoryList) {
+        Array.from(memoryList.querySelectorAll('[data-memory-id]')).forEach(function(el){
+          knownMemoryIds.add(el.getAttribute('data-memory-id'));
+        });
+      }
+
+      function shortMemoryText(m) {
+        var raw = String(m.keeper_phrase || m.content || '').replace(/\s+/g, ' ').trim();
+        if (raw.length > 140) raw = raw.slice(0, 137) + '...';
+        return raw;
+      }
+      function formatRelative(d) {
+        try {
+          var diff = (Date.now() - new Date(d).getTime()) / 1000;
+          if (diff < 60) return 'just now';
+          if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+          if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+          return Math.floor(diff / 86400) + 'd ago';
+        } catch (e) { return ''; }
+      }
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function(c){
+          return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+      }
+      async function refreshMemoryPanel() {
+        if (!memoryList) return;
+        var resp = await fetch(conversation.getAttribute('data-recall-json-url'), { credentials: 'same-origin' });
+        if (!resp.ok) return;
+        var data = await resp.json();
+        var items = (data && data.items) || [];
+        var newIds = new Set(items.map(function(m){ return m.memory_id; }));
+        // Build new HTML.
+        if (items.length === 0) {
+          memoryList.innerHTML = '<li class="memory-panel-empty">Haven hasn\'t caught anything yet. Once you share something concrete, it\'ll show up here.</li>';
+        } else {
+          var html = '';
+          items.forEach(function(m){
+            var isNew = !knownMemoryIds.has(m.memory_id);
+            html += '<li class="memory-item' + (isNew ? ' memory-item-new' : '') + '" data-memory-id="' + escapeHtml(m.memory_id) + '">' +
+                    '<div class="memory-item-text">' + escapeHtml(shortMemoryText(m)) + '</div>' +
+                    '<div class="memory-item-meta">' + escapeHtml(m.category || m.partition || 'note') + ' &middot; ' + escapeHtml(formatRelative(m.updated_at)) + '</div>' +
+                    '</li>';
+          });
+          memoryList.innerHTML = html;
+        }
+        if (memoryCount) memoryCount.textContent = String(items.length);
+        if (memoryTabCount) memoryTabCount.textContent = String(items.length);
+        knownMemoryIds = newIds;
+      }
+
+      // Mobile drawer toggle.
+      if (memoryTab && memoryPanel) {
+        function closeMemoryPanel(returnFocus) {
+          if (!memoryPanel.classList.contains('is-open')) return;
+          memoryPanel.classList.remove('is-open');
+          memoryTab.setAttribute('aria-expanded', 'false');
+          if (returnFocus) memoryTab.focus();
+        }
+        memoryTab.addEventListener('click', function() {
+          var isOpen = memoryPanel.classList.toggle('is-open');
+          memoryTab.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+          if (isOpen) {
+            // APG disclosure pattern: move focus into the revealed region so
+            // keyboard-only keepers can navigate the drawer contents.
+            var firstFocusable = memoryPanel.querySelector('a, button, [tabindex]:not([tabindex="-1"])');
+            if (firstFocusable) firstFocusable.focus();
+          }
+        });
+        // Close drawer when tapping outside on mobile.
+        document.addEventListener('click', function(ev) {
+          if (!memoryPanel.classList.contains('is-open')) return;
+          if (memoryPanel.contains(ev.target) || memoryTab.contains(ev.target)) return;
+          closeMemoryPanel(false);
+        });
+        // Escape closes the drawer + returns focus to the toggle (WCAG 2.1.1, 2.1.2).
+        document.addEventListener('keydown', function(ev) {
+          if (ev.key === 'Escape' && memoryPanel.classList.contains('is-open')) {
+            closeMemoryPanel(true);
+          }
+        });
+      }
+
+      form.addEventListener('submit', async function(ev) {
+        ev.preventDefault();
+        var text = (textarea.value || '').trim();
+        if (!text) return;
+        appendKeeperTurn(text);
+        textarea.value = '';
+        autosize();
+        sendTurn(text, null);
+      });
+
+      // Cmd/Ctrl + Enter submits. Enter alone makes a newline (letter register).
+      textarea.addEventListener('keydown', function(ev) {
+        if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
+          ev.preventDefault();
+          form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      });
+
+      // Initial state: scroll to bottom. Autofocus the compose textarea ONLY
+      // when the keeper is returning from another same-origin lighthouse
+      // surface (/recall, /preview, /lamp) so the skip-to-content link wins
+      // the first focus stop on cold load. Defeats WCAG 2.4.1 / 2.4.3 / 3.2.1
+      // otherwise; see docs/audits/keyboard-tab-order-2026-05-27.md AP2.
+      scrollToBottom();
+      try {
+        if (document.referrer) {
+          var refUrl = new URL(document.referrer);
+          if (refUrl.origin === window.location.origin) {
+            textarea.focus();
+          }
+        }
+      } catch (e) { /* malformed referrer; leave focus on skip-link */ }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+#!/bin/sh
+# Runs staging workflow enforcement + golden-file bless gate + dependency
+# audits + unit tests before push. Enable once per clone with
+# `make hooks` (git config core.hooksPath .githooks); verified by
+# scripts/verify_hooks.sh and the .github/workflows/hook-integrity.yml backstop.
+#
+# Gates (in order):
+#   1. Staging: blocks direct pushes to master when use_staging_workflow=true
+#      in scripts/cas-executor-config.json (shipped as false) unless
+#      CAS_PROMOTE=1 or CAS_EXECUTOR=1.
+#   2. Bless-gate: blocks pushes whose commits touch tests/golden/** without
+#      a `bless:` commit-message prefix unless CAS_PROMOTE=1. Skipped for the
+#      first push to a remote that has no origin/master yet (nothing to compare
+#      against).
+#   3. npm audit of web/ (scripts/run_dep_audit.sh; needs network).
+#   4. bandit + pip-audit (scripts/run_python_security_audit.sh; the tools are
+#      optional locally and skipped with a warning when not installed).
+#   5. Web unit tests: scripts/run_web_tests.sh (needs `cd web && npm ci`).
+#
+# CAS_SKIP_AUDIT=1 bypasses gates 3 and 4 only.
+#
+# Protocol note: the pre-push hook receives push refs on stdin exactly once
+# (`local_ref local_sha remote_ref remote_sha\n`). We cat stdin into the
+# PUSH_REFS variable up-front so both the staging block and the bless-gate
+# block can iterate without racing on a closed fd.
+
+ROOT="$(git rev-parse --show-toplevel)"
+PUSH_REFS=$(cat)
+
+# --- Staging workflow enforcement ---
+# Reads target refs from PUSH_REFS (captured above from stdin). Evaluated
+# via awk so the result is available in the parent shell (piping into
+# `while` forks a subshell whose variable assignments do not escape).
+PUSHING_TO_MASTER=$(echo "$PUSH_REFS" | awk '
+  $3 == "refs/heads/master" || $3 == "refs/heads/main" { found=1 }
+  END { print found ? "true" : "false" }
+')
+
+if [ "$PUSHING_TO_MASTER" = "true" ]; then
+  # Check if staging workflow is enabled in executor config
+  STAGING_ENABLED=$(python3 -c "
+import json, sys
+try:
+    c = json.load(open(sys.argv[1]))
+    print('true' if c.get('use_staging_workflow', False) else 'false')
+except Exception:
+    print('false')
+" "$ROOT/scripts/cas-executor-config.json" 2>/dev/null)
+
+  if [ "$STAGING_ENABLED" = "true" ] && [ "$CAS_PROMOTE" != "1" ] && [ "$CAS_EXECUTOR" != "1" ]; then
+    echo ""
+    echo "BLOCKED: Direct push to master is not allowed when staging workflow is enabled."
+    echo ""
+    echo "Use one of these instead:"
+    echo "  ./scripts/promote_staging.sh          # merge staging -> master with full checks"
+    echo "  CAS_PROMOTE=1 git push origin master  # emergency bypass (documented in git log)"
+    echo ""
+    echo "Or push to the staging branch instead:"
+    echo "  git push origin staging"
+    echo ""
+    exit 1
+  fi
+fi
+
+# --- Golden-file bless gate ---
+# Reject pushes that include any commit touching tests/golden/** whose
+# message does not start with `bless:`. CAS_PROMOTE=1 bypasses (appropriate
+# for pushes that touch only docs, CI, hooks, or tests and incidentally
+# re-stage golden fixtures).
+#
+# Pipe-into-while runs in a subshell, so `exit 1` there would only exit
+# the subshell. Instead we write a summary to a temp file and check it
+# back in the parent shell.
+if [ "$CAS_PROMOTE" != "1" ]; then
+  BLESS_GATE_TMP=$(mktemp -t cas-bless-gate.XXXXXX)
+  : > "$BLESS_GATE_TMP"
+  echo "$PUSH_REFS" | while read -r local_ref local_sha remote_ref remote_sha; do
+    # Skip deletes (all-zero local_sha).
+    [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+    # Determine the commit range being pushed.
+    # For a new branch (remote_sha=0), scope to NEW commits only by using
+    # the merge-base with origin/master as the lower bound; otherwise the
+    # gate would scan the entire branch history and trip on legitimate
+    # historical commits that landed before the bless: prefix convention
+    # existed. When origin/master does not exist at all (the very first push
+    # to an empty remote) there is no baseline to compare against, so the
+    # whole initial history is accepted as the baseline.
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+      if ! git rev-parse --verify --quiet refs/remotes/origin/master >/dev/null; then
+        echo "pre-push: no origin/master yet; bless-gate skipped for the initial push."
+        continue
+      fi
+      # The remote-tracking branch by its full name: "origin/master" would
+      # resolve to a tag of that name first.
+      mb=$(git merge-base refs/remotes/origin/master "$local_sha" 2>/dev/null)
+      if [ -n "$mb" ]; then
+        range="$mb..$local_sha"
+      else
+        range="$local_sha"
+      fi
+    else
+      range="$remote_sha..$local_sha"
+    fi
+    # List commits in the range that touch tests/golden/**.
+    GOLDEN_COMMITS=$(git log --format='%H %s' "$range" -- 'tests/golden/' 2>/dev/null)
+    if [ -z "$GOLDEN_COMMITS" ]; then
+      continue
+    fi
+    BAD=$(echo "$GOLDEN_COMMITS" | awk '$2 !~ /^bless:/ {print $0}')
+    if [ -n "$BAD" ]; then
+      echo "$BAD" >> "$BLESS_GATE_TMP"
+    fi
+  done
+  if [ -s "$BLESS_GATE_TMP" ]; then
+    echo ""
+    echo "BLOCKED: push includes commits touching tests/golden/** without 'bless:' prefix:"
+    cat "$BLESS_GATE_TMP"
+    echo ""
+    echo "Fix: amend the commit message to start with 'bless: ...',"
+    echo "or set CAS_PROMOTE=1 to bypass (documented escape hatch)."
+    rm -f "$BLESS_GATE_TMP"
+    exit 1
+  fi
+  rm -f "$BLESS_GATE_TMP"
+fi
+
+# --- Dependency audit (web/ only) ---
+# Catches known-vulnerable npm deps before they reach GitHub / Dependabot.
+# Fast (<2s when clean). Scope = web/ prod deps at high+ severity. See
+# scripts/run_dep_audit.sh for rationale + bypass flag.
+"$ROOT/scripts/run_dep_audit.sh"
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+# --- Python security audit (bandit + pip-audit) ---
+# bandit: static-analysis on Python source (worker, coordinator, ops, cli,
+# compose, scripts) at medium+ severity / medium+ confidence; any finding fails.
+# pip-audit: scans requirements files against PyPI advisory DB.
+# Locally tools-missing -> warn + skip (CI enforces); CI tools-missing -> fail.
+# Honors CAS_SKIP_AUDIT=1. See scripts/run_python_security_audit.sh.
+"$ROOT/scripts/run_python_security_audit.sh"
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+# --- Web unit tests ---
+# Same suite CI runs (the `unit` job in .github/workflows/test.yml). Fails with
+# an install hint when web/node_modules is missing. The Python suite is not run
+# here: it takes minutes and CI runs it on every push.
+echo "Running web unit tests before push..."
+"$ROOT/scripts/run_web_tests.sh"
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "Web tests failed (or web/node_modules is missing). Push aborted."
+  echo "Fix the tests and push again. Do not bypass this hook with --no-verify. The documented bypasses"
+  echo "are per gate and listed at the top of this file (CAS_SKIP_AUDIT=1 for the audits; the 'bless:'"
+  echo "commit prefix or CAS_PROMOTE=1 for the golden-file gate); none of them skips these tests."
+  echo "The hook-integrity CI job re-runs the guardrails server-side."
+  exit 1
+fi
+
+echo "All checks passed."

@@ -1,0 +1,213 @@
+<%
+  var allBuilds = typeof builds !== 'undefined' && Array.isArray(builds) ? builds : [];
+  var statusLabels = typeof statusMessages !== 'undefined' ? statusMessages : {};
+  var activeBuilds = allBuilds.filter(function(b){ return b.status !== 'abandoned' && b.app_name; });
+%>
+
+<section style="padding:64px 0 32px;">
+  <div class="max-site dashboard-head">
+    <div>
+      <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:10px;">Your workspace,</span>
+      <h1 class="display dashboard-title">My website<%= activeBuilds.length === 1 ? '' : 's' %>.</h1>
+      <% if (activeBuilds.length > 0) { %>
+        <p style="font-family:var(--font-display); font-style:italic; font-size:17px; color:var(--color-ink-faded); margin:14px 0 0;">
+          <%= activeBuilds.length %> <%= activeBuilds.length === 1 ? 'project' : 'projects' %> in flight.
+        </p>
+      <% } %>
+    </div>
+    <div class="dashboard-head__actions">
+      <a href="/intake" class="btn btn-primary">New project &rarr;</a>
+      <a href="/export-data" class="btn btn-quiet"><span class="arrow">Export your data</span></a>
+    </div>
+  </div>
+</section>
+
+<section style="padding:8px 0 96px;">
+  <div class="max-site">
+    <% if (allBuilds.length === 0) { %>
+      <div class="dashboard-empty">
+        <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:10px;">When you're ready,</span>
+        <h2 class="display" style="font-size:40px; line-height:1.05; margin:0 0 18px; letter-spacing:-0.012em;">
+          Begin a website.
+        </h2>
+        <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.6; max-width:520px; margin:0 0 28px;">
+          Tell us, in plain English, what your work is. Your site takes shape with you in conversation, is built from a library of tested building blocks, and is kept running for you.
+        </p>
+        <a href="/intake" class="btn btn-primary">Start your first project &rarr;</a>
+      </div>
+    <% } else { %>
+      <div class="dashboard-list">
+        <% allBuilds.forEach(function(build){ %>
+          <article class="build-row">
+            <div class="build-row__main">
+              <% if (build.live_url) { %>
+                <a href="<%= httpUrl(build.live_url) %>" target="_blank" rel="noopener noreferrer" class="build-row__name"><%= build.app_name || 'Unnamed' %> &rarr;</a>
+              <% } else { %>
+                <span class="build-row__name"><%= build.app_name || 'Unnamed' %></span>
+              <% } %>
+              <div class="build-row__meta">
+                <span class="build-row__status build-row__status--<%= build.status %>"><%= statusLabels[build.status] || build.status %></span>
+                <% if (build.status === 'live') { %>
+                  <% if (build.health_consecutive_failures === 0) { %>
+                    <span class="build-row__sep">&middot;</span>
+                    <span class="build-row__health"><span class="lamp-dot"></span> Lit and healthy</span>
+                  <% } else if (build.health_consecutive_failures != null) { %>
+                    <span class="build-row__sep">&middot;</span>
+                    <span class="build-row__health build-row__health--alert">Needs attention</span>
+                  <% } %>
+                <% } %>
+                <span class="build-row__sep">&middot;</span>
+                <span class="build-row__date" data-ts="<%= new Date(build.created_at).toISOString() %>" data-ts-fmt="datetime">
+                  <%= new Date(build.created_at).toISOString().slice(0, 10) %>
+                </span>
+              </div>
+            </div>
+            <div class="build-row__actions">
+              <% if (build.status === 'intake') { %>
+                <a href="/intake/<%= build.id %>" class="btn btn-ghost btn-row">Continue</a>
+              <% } else if (build.status === 'abandoned') { %>
+                <a href="/intake/<%= build.id %>" class="btn btn-ghost btn-row">Resume</a>
+              <% } else if (build.status === 'failed') { %>
+                <form action="/builds/<%= build.id %>/retry" method="POST" style="display:inline;">
+                  <%- include('_csrf-field') %>
+                  <button type="submit" class="btn btn-primary btn-row">Retry</button>
+                </form>
+                <button type="button" class="btn btn-ghost btn-row" data-rebuild-open="<%= build.id %>">Rebuild</button>
+                <a href="/builds/<%= build.id %>" class="btn btn-ghost btn-row">Details</a>
+              <% } else if (build.status === 'live' && build.live_url) { %>
+                <a href="<%= httpUrl(build.live_url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-row">Visit</a>
+                <button type="button" class="btn btn-ghost btn-row" data-rebuild-open="<%= build.id %>">Rebuild</button>
+                <a href="/builds/<%= build.id %>" class="btn btn-ghost btn-row">Details</a>
+                <form action="/builds/<%= build.id %>/gallery-optin" method="POST" style="display:inline;">
+                  <%- include('_csrf-field') %>
+                  <input type="hidden" name="gallery_opted_in" value="<%= build.gallery_opted_in ? 'false' : 'true' %>" />
+                  <button type="submit" class="btn btn-ghost btn-row" title="<%= build.gallery_opted_in ? 'Remove from public gallery' : 'Show in public gallery' %>">
+                    <%= build.gallery_opted_in ? 'In gallery' : 'Add to gallery' %>
+                  </button>
+                </form>
+              <% } else { %>
+                <a href="/builds/<%= build.id %>" class="btn btn-ghost btn-row">View status</a>
+              <% } %>
+            </div>
+          </article>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<div id="rebuild-modal" class="rebuild-modal" style="display:none;">
+  <div class="rebuild-modal__inner">
+    <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:10px;">Rebuild,</span>
+    <h3 class="display" style="font-size:28px; margin:0 0 14px;">A fresh build from the same spec.</h3>
+    <p style="font-size:16px; color:var(--color-ink-soft); line-height:1.55; margin:0 0 18px;">
+      Optionally describe what you want changed.
+    </p>
+    <form id="rebuild-form" method="POST">
+      <%- include('_csrf-field') %>
+      <textarea name="rebuild_request" rows="4" placeholder="Add a dark mode toggle, change the color scheme to sage, etc." class="rebuild-modal__textarea"></textarea>
+      <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:18px;">
+        <button type="button" class="btn btn-quiet" data-rebuild-close><span class="arrow">Cancel</span></button>
+        <button type="submit" class="btn btn-primary">Start the rebuild</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script nonce="<%= cspNonce %>">
+  function openRebuildModal(buildId) {
+    var modal = document.getElementById('rebuild-modal');
+    var form = document.getElementById('rebuild-form');
+    form.action = '/builds/' + buildId + '/rebuild';
+    form.querySelector('textarea').value = '';
+    modal.style.display = 'flex';
+  }
+  function closeRebuildModal() {
+    document.getElementById('rebuild-modal').style.display = 'none';
+  }
+  document.getElementById('rebuild-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeRebuildModal();
+  });
+  // The page's Content-Security-Policy blocks inline onclick="" attributes, so
+  // the buttons carry data-* markers and are handled from here.
+  document.addEventListener('click', function(e) {
+    var opener = e.target.closest('[data-rebuild-open]');
+    if (opener) { openRebuildModal(opener.getAttribute('data-rebuild-open')); return; }
+    if (e.target.closest('[data-rebuild-close]')) closeRebuildModal();
+  });
+</script>
+
+<style>
+  .dashboard-head {
+    display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap;
+  }
+  .dashboard-title { font-size:56px; line-height:1.04; margin:0; letter-spacing:-0.018em; }
+  .dashboard-head__actions { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  @media (max-width: 720px) { .dashboard-title { font-size:40px; } }
+
+  .dashboard-empty {
+    background:var(--color-companion-paper);
+    padding:48px;
+    box-shadow:var(--shadow-letter);
+    border-radius: 5px;
+  }
+  @media (max-width: 600px) { .dashboard-empty { padding:32px 24px; } }
+
+  .dashboard-list {
+    display:flex; flex-direction:column; gap:0;
+    background:var(--color-vellum);
+    border:1px solid var(--color-rule);
+    border-radius: 5px; box-shadow:var(--shadow-slip);
+  }
+  .build-row {
+    display:flex; justify-content:space-between; align-items:center; gap:24px;
+    padding:22px 28px;
+    border-top:1px solid var(--color-rule-soft);
+    flex-wrap:wrap;
+  }
+  .build-row:first-child { border-top:none; }
+  .build-row__name {
+    font-family:var(--font-display); font-size:22px; color:var(--color-ink); text-decoration:none;
+    line-height:1.2; letter-spacing:-0.005em;
+  }
+  a.build-row__name:hover { color:var(--color-clay); }
+  .build-row__meta {
+    margin-top:6px; display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+    font-family:var(--font-display); font-style:italic; font-size:15px; color:var(--color-ink-faded);
+  }
+  .build-row__sep { color:var(--color-rule); }
+  .build-row__tier { color:var(--color-ink-soft); }
+  .build-row__status { color:var(--color-ink-soft); }
+  .build-row__status--live   { color:var(--color-sage); }
+  .build-row__status--preview { color:var(--color-lantern-deep); }
+  .build-row__status--failed { color:#A8552B; }
+  .build-row__health { color:var(--color-ink-soft); display:inline-flex; align-items:center; gap:6px; }
+  .build-row__health--alert { color:#A8552B; }
+  .lamp-dot {
+    display:inline-block; width:8px; height:8px; background:var(--color-lantern);
+    border-radius:50%; box-shadow:0 0 8px var(--color-lantern-glow);
+  }
+  .build-row__actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn-row { padding:7px 14px !important; font-size:13px !important; }
+
+  .rebuild-modal {
+    position:fixed; inset:0; z-index:1000;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(58, 42, 31, 0.55); padding:24px;
+  }
+  .rebuild-modal__inner {
+    background:var(--color-companion-paper);
+    padding:36px;
+    box-shadow:var(--shadow-letter);
+    border-radius: 5px;
+    max-width:520px; width:100%;
+  }
+  .rebuild-modal__textarea {
+    width:100%;
+    font-family:var(--font-body); font-size:16px; color:var(--color-ink);
+    padding:13px 16px; border:1px solid var(--color-rule);
+    background:var(--color-vellum);
+    border-radius: 5px; outline:none; resize:vertical; line-height:1.55;
+  }
+  .rebuild-modal__textarea:focus { border-color:var(--color-ink); }
+</style>

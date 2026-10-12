@@ -1,0 +1,149 @@
+{
+  "app_name": "sample-tradesperson",
+  "archetype": "tradesperson-contractor",
+  "palette": "navy-clean",
+  "font_pair": "inter-inter",
+  "admin_email": "admin@sample-tradesperson.example",
+  "settings": {
+    "site_name": "Ridgeline Plumbing",
+    "site_description": "Licensed + insured residential plumbing across the metro area. Emergency service available.",
+    "hero_tagline": "Family-Run. Licensed. Reliable.",
+    "hero_description": "Third-generation plumbers serving Main City and surrounding areas. Residential repairs, remodels, and emergency service.",
+    "hero_image_url": "https://picsum.photos/seed/plumb-hero/1600/900",
+    "nav_logo_url": "",
+    "about_title": "About Ridgeline",
+    "about_body": "Founded by Wren Ridgeline. Now run by the third generation. Same values, same service area, same phone number.",
+    "about_photo_url": "https://picsum.photos/seed/plumb-about/800/1000",
+    "contact_email": "office@ridgelineplumbing.example",
+    "contact_phone": "(555) 555-0133",
+    "contact_address": "Main City, ST + surrounding areas",
+    "business_name": "Ridgeline Plumbing, Inc.",
+    "support_email": "office@ridgelineplumbing.example",
+    "instagram_url": "", "facebook_url": "https://facebook.example/ridgelineplumbing",
+    "twitter_url": "", "linkedin_url": "", "youtube_url": "", "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "RIDGELINE PLUMBING",
+        "heading": "Family-Run. Licensed. Reliable.",
+        "description": "Third-generation plumbers serving Main City and surrounding areas. Residential repairs, remodels, and emergency service.",
+        "cta_primary": {"text": "Call (555) 555-0133", "href": "tel:5555550133"},
+        "cta_secondary": {"text": "Request a quote", "href": "/contact"}
+      },
+      "trust": {
+        "items": [
+          {"number": "3", "label": "Generations", "sub": "Family-run"},
+          {"number": "4.9", "label": "Google rating", "sub": "320+ reviews"},
+          {"number": "Licensed", "label": "Contractor", "sub": "Sample license line"},
+          {"number": "24/7", "label": "Emergency service", "sub": "Same-day when possible"}
+        ]
+      },
+      "services": {
+        "eyebrow": "SERVICES",
+        "heading": "What We Do",
+        "items": [
+          {"label": "REPAIRS", "title": "Repairs & Diagnostics", "description": "Leaks, clogs, water heaters, garbage disposals, sump pumps. We come out, we diagnose, we quote, we fix.", "cta_text": "Book service", "cta_href": "/contact"},
+          {"label": "REMODELS", "title": "Bathroom & Kitchen", "description": "Full plumbing for remodels. Licensed permits, insured crew, 10-year warranty on workmanship.", "cta_text": "Request estimate", "cta_href": "/contact"},
+          {"label": "EMERGENCY", "title": "24/7 Emergency", "description": "Burst pipes, sewer backups, no hot water. One-hour response window within our service area.", "cta_text": "Call now", "cta_href": "tel:5555550133"}
+        ]
+      },
+      "areas": {
+        "eyebrow": "COVERAGE",
+        "heading": "Service Areas",
+        "items": [
+          {"city": "Main City", "state": "ST", "zip_codes": ["00001", "00002", "00003", "00005"]},
+          {"city": "Nearby Town", "state": "ST", "zip_codes": ["00008", "00009"]},
+          {"city": "North Suburb", "state": "ST", "zip_codes": ["00010", "00011"]},
+          {"city": "South Suburb", "state": "ST", "zip_codes": ["00013"]},
+          {"city": "East Suburb", "state": "ST", "zip_codes": ["00014"]},
+          {"city": "West Suburb", "state": "ST", "zip_codes": ["00015"]}
+        ]
+      },
+      "testimonials": {
+        "eyebrow": "REVIEWS",
+        "heading": "What Neighbors Say",
+        "items": [
+          {"quote": "Called at 11 PM for a burst pipe. Owner answered himself. Had it fixed before midnight. These are the guys.", "author_name": "D. Marlow", "service": "Emergency"},
+          {"quote": "Replaced all the plumbing in our 1920s remodel. On budget, on time, and the inspector literally said 'cleanest work I've seen this year.'", "author_name": "Priya S.", "service": "Remodel"}
+        ]
+      },
+      "cta": {
+        "heading": "Need a plumber?",
+        "description": "Same-day appointments most weekdays. Call for emergencies.",
+        "cta_text": "Request a quote",
+        "cta_href": "/contact"
+      }
+    },
+    "services": {
+      "hero": {"eyebrow": "SERVICES", "heading": "Full Service List"},
+      "items": {
+        "heading": "What We Do",
+        "items": [
+          {"label": "REPAIRS", "title": "Leak Repair", "description": "Kitchen, bath, basement, outdoor.", "price_display": "from $149", "cta_text": "Book", "cta_href": "/contact"},
+          {"label": "REPAIRS", "title": "Drain Cleaning", "description": "Kitchen, bathroom, main line.", "price_display": "from $169", "cta_text": "Book", "cta_href": "/contact"},
+          {"label": "REPAIRS", "title": "Water Heater Replacement", "description": "Gas + electric tank and tankless.", "price_display": "from $1,400", "cta_text": "Get quote", "cta_href": "/contact"},
+          {"label": "INSTALL", "title": "Toilet Installation", "description": "New toilet install, haul-away included.", "price_display": "from $400", "cta_text": "Book", "cta_href": "/contact"},
+          {"label": "INSTALL", "title": "Garbage Disposal", "description": "Install or replace.", "price_display": "from $320", "cta_text": "Book", "cta_href": "/contact"},
+          {"label": "EMERGENCY", "title": "24/7 Emergency", "description": "Burst pipes, sewer backups.", "price_display": "from $249", "cta_text": "Call (555) 555-0133", "cta_href": "tel:5555550133"}
+        ]
+      }
+    },
+    "service_areas": {
+      "hero": {"eyebrow": "COVERAGE", "heading": "Where We Serve", "description": "The metro area. Free estimates within service area."},
+      "items": {
+        "heading": "",
+        "items": [
+          {"city": "Main City", "state": "ST", "zip_codes": ["00001", "00002", "00003", "00004", "00005", "00006", "00007"]},
+          {"city": "Nearby Town", "state": "ST", "zip_codes": ["00008", "00009"]},
+          {"city": "North Suburb", "state": "ST", "zip_codes": ["00010", "00011", "00012"]},
+          {"city": "South Suburb", "state": "ST", "zip_codes": ["00013"]},
+          {"city": "East Suburb", "state": "ST", "zip_codes": ["00014"]},
+          {"city": "West Suburb", "state": "ST", "zip_codes": ["00015"]},
+          {"city": "Far Suburb", "state": "ST", "zip_codes": ["00016"]},
+          {"city": "Outer Town", "state": "ST", "zip_codes": ["00017", "00018"]}
+        ]
+      }
+    },
+    "about": {
+      "hero": {"eyebrow": "ABOUT", "heading": "About Ridgeline", "description": "Founded by Wren Ridgeline. Three generations. Same phone number since day one.", "image_url": "https://picsum.photos/seed/plumb-about/800/1000", "image_alt": "Team photo"},
+      "cta": {"heading": "Need a plumber?", "description": "Call or request a quote.", "cta_text": "Request quote", "cta_href": "/contact"}
+    },
+    "contact": {
+      "hero": {"eyebrow": "REACH OUT", "heading": "Request a Quote", "description": "Fastest way to reach us during business hours is calling. Emergencies 24/7."},
+      "form": {
+        "heading": "Request a Quote",
+        "service_options": ["Leak / drip", "Clog / drain", "Water heater", "Remodel quote", "Emergency", "Other"]
+      }
+    }
+  },
+  "seed_content": {
+    "services": [
+      {"title": "Leak Repair", "description": "Kitchen, bath, basement, outdoor.", "price_display": "from $149", "image_url": "https://picsum.photos/seed/svc-leak/800/600"},
+      {"title": "Drain Cleaning", "description": "Kitchen, bathroom, main line.", "price_display": "from $169", "image_url": "https://picsum.photos/seed/svc-drain/800/600"},
+      {"title": "Water Heater Replacement", "description": "Gas + electric tank and tankless.", "price_display": "from $1,400", "image_url": "https://picsum.photos/seed/svc-water/800/600"},
+      {"title": "Toilet Installation", "description": "New toilet install, haul-away included.", "price_display": "from $400", "image_url": "https://picsum.photos/seed/svc-toilet/800/600"},
+      {"title": "Garbage Disposal", "description": "Install or replace.", "price_display": "from $320", "image_url": "https://picsum.photos/seed/svc-disposal/800/600"},
+      {"title": "24/7 Emergency", "description": "Burst pipes, sewer backups.", "price_display": "from $249", "image_url": "https://picsum.photos/seed/svc-emerg/800/600"}
+    ],
+    "service_areas": [
+      {"city": "Main City", "state": "ST", "zip_codes": "00001,00002,00003,00004,00005,00006,00007", "description": "Main service area, same-day for most repairs.", "sort_order": 1},
+      {"city": "Nearby Town", "state": "ST", "zip_codes": "00008,00009", "description": "Same-day coverage.", "sort_order": 2},
+      {"city": "North Suburb", "state": "ST", "zip_codes": "00010,00011,00012", "description": "Next-day typically.", "sort_order": 3},
+      {"city": "South Suburb", "state": "ST", "zip_codes": "00013", "description": "Same-day coverage.", "sort_order": 4},
+      {"city": "East Suburb", "state": "ST", "zip_codes": "00014", "description": "Same-day coverage.", "sort_order": 5},
+      {"city": "West Suburb", "state": "ST", "zip_codes": "00015", "description": "Next-day typically.", "sort_order": 6},
+      {"city": "Far Suburb", "state": "ST", "zip_codes": "00016", "description": "Next-day typically.", "sort_order": 7},
+      {"city": "Outer Town", "state": "ST", "zip_codes": "00017,00018", "description": "Next-day typically.", "sort_order": 8}
+    ],
+    "reviews": [
+      {"author_name": "D. Marlow", "rating": 5, "body": "Called at 11 PM for a burst pipe. Owner answered himself. Had it fixed before midnight.", "service": "Emergency"},
+      {"author_name": "Priya S.", "rating": 5, "body": "Replaced all the plumbing in our 1920s remodel. On budget, on time.", "service": "Remodel"},
+      {"author_name": "Omar J.", "rating": 5, "body": "Third time using Ridgeline. They remember our house.", "service": "Repairs"},
+      {"author_name": "Lena K.", "rating": 5, "body": "Fair quote. Showed up on time. Clean work.", "service": "Install"}
+    ],
+    "contact_inquiries": [
+      {"name": "Sample Homeowner", "email": "homeowner@example.com", "service_interest": "Water heater", "message": "Our water heater is 15 years old. Looking for a quote on tankless."}
+    ]
+  }
+}

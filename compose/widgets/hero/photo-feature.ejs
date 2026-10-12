@@ -1,0 +1,108 @@
+<!-- compose:widget hero/photo-feature -->
+<%
+  // Photo-feature hero variant. Image leads above the fold inside a wide
+  // rounded frame. Optional slideshow when `slides` is an array of
+  // {url, alt?, caption?} objects (cycles via CSS keyframes, no JS).
+  // Single-image mode is preserved when `image_url` is supplied alone.
+  //
+  // Visual contract; distinct from hero/centered, hero/split-image, and
+  // hero/editorial-stacked:
+  //   - Image (or slideshow) leads above the fold inside a wide rounded
+  //     frame (max-width: 1200px, 16/10 mobile -> 21/9 desktop).
+  //   - Optional short overlay_title is positioned absolutely over the
+  //     image (top-left, cream serif, with a soft top+bottom gradient).
+  //   - Eyebrow (italic), subhead (h1), and description sit BELOW the
+  //     image in a 720px column. Italic accents on the headline use the
+  //     {accent} brace syntax for editorial emphasis.
+  //   - CTAs use the .cas-btn-primary + .cas-btn-quiet utility classes.
+  //
+  // Data contract:
+  //   eyebrow, heading, description, image_url, image_alt, image_caption
+  //   (italic ribbon at bottom-right of image), overlay_title (short
+  //   string; if absent, the image renders without overlaid text),
+  //   cta_primary, cta_secondary, slides (array of {url, alt?, caption?}).
+  //
+  // Use this hero for healer-wellness, coach-consultant, therapist, or
+  // any brand where the practitioner's image carries the trust. Pair
+  // with the editorial-statement template family + cream-espresso
+  // palette for the premium aesthetic.
+  var _imgUrl = (typeof image_url !== 'undefined' && image_url) ? image_url : '';
+  var _alt = (typeof image_alt !== 'undefined' && image_alt) ? image_alt : ((typeof settings !== 'undefined' && settings && settings.site_name) ? settings.site_name : '');
+  var _caption = (typeof image_caption !== 'undefined' && image_caption) ? image_caption : '';
+  var _overlay = (typeof overlay_title !== 'undefined' && overlay_title) ? overlay_title : '';
+  var _heading = (typeof heading !== 'undefined' && heading) ? String(heading) : '';
+  var _eyebrow = (typeof eyebrow !== 'undefined' && eyebrow) ? String(eyebrow) : '';
+  var _desc = (typeof description !== 'undefined' && description) ? String(description) : '';
+  var _slides = (typeof slides !== 'undefined' && Array.isArray(slides)) ? slides.filter(function(s){ return s && s.url; }) : [];
+  var _isSlideshow = _slides.length > 1;
+  function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em class="cas-italic-accent">$1</em>'); }
+  // Slow Ken-Burns slideshow. Each slide gets ~8s visible (with a 1.5s
+  // crossfade and a subtle scale 1.0 -> 1.08 zoom across its visible
+  // window). The total cycle = slide_count * 8s.
+  var _slideCount = _slides.length;
+  var _cycleSec = _slideCount * 8;
+%>
+<section class="cas-photo-hero">
+  <% if (_isSlideshow) { %>
+    <div class="cas-photo-hero-frame cas-photo-hero-slideshow" data-slide-count="<%= _slideCount %>">
+      <% _slides.forEach(function(slide, i) { %>
+        <img class="cas-slide cas-slide-<%= i %>"
+             loading="<%= i === 0 ? 'eager' : 'lazy' %>"
+             fetchpriority="<%= i === 0 ? 'high' : 'auto' %>"
+             src="<%= slide.url %>"
+             alt="<%= slide.alt || _alt %>"
+             style="animation-delay: <%= (i * (_cycleSec / _slideCount)).toFixed(2) %>s; animation-duration: <%= _cycleSec.toFixed(2) %>s;" />
+      <% }); %>
+      <div class="cas-photo-hero-overlay" aria-hidden="true"></div>
+      <% if (_overlay) { %>
+        <div class="cas-photo-hero-title"><%- _accent(_overlay) %></div>
+      <% } %>
+      <% if (_caption) { %>
+        <div class="cas-photo-hero-caption"><%= _caption %></div>
+      <% } %>
+      <div class="cas-photo-hero-dots" aria-hidden="true">
+        <% for (var i = 0; i < _slideCount; i++) { %>
+          <span class="cas-photo-hero-dot" style="animation-delay: <%= (i * (_cycleSec / _slideCount)).toFixed(2) %>s; animation-duration: <%= _cycleSec.toFixed(2) %>s;"></span>
+        <% } %>
+      </div>
+    </div>
+  <% } else if (_imgUrl) { %>
+    <div class="cas-photo-hero-frame">
+      <img loading="eager" fetchpriority="high" src="<%= _imgUrl %>" alt="<%= _alt %>" />
+      <div class="cas-photo-hero-overlay" aria-hidden="true"></div>
+      <% if (_overlay) { %>
+        <div class="cas-photo-hero-title"><%- _accent(_overlay) %></div>
+      <% } %>
+      <% if (_caption) { %>
+        <div class="cas-photo-hero-caption"><%= _caption %></div>
+      <% } %>
+    </div>
+  <% } %>
+  <div class="cas-photo-hero-body">
+    <% if (_eyebrow) { %>
+      <div class="cas-photo-hero-eyebrow"><%= _eyebrow %></div>
+    <% } %>
+    <% if (_heading) { %>
+      <h1 class="cas-photo-hero-subhead"><%- _accent(_heading) %></h1>
+    <% } %>
+    <% if (_desc) { %>
+      <p class="cas-photo-hero-desc"><%= _desc %></p>
+    <% } %>
+    <% if ((typeof cta_primary !== 'undefined' && cta_primary) || (typeof cta_secondary !== 'undefined' && cta_secondary)) { %>
+      <div class="cas-photo-hero-ctas">
+        <% if (typeof cta_primary !== 'undefined' && cta_primary) { %>
+          <a href="<%= cta_primary.href %>" class="cas-btn cas-btn-primary">
+            <span><%= cta_primary.text %></span>
+            <svg class="cas-btn-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+        <% } %>
+        <% if (typeof cta_secondary !== 'undefined' && cta_secondary) { %>
+          <a href="<%= cta_secondary.href %>" class="cas-btn cas-btn-quiet">
+            <span><%= cta_secondary.text %></span>
+            <svg class="cas-btn-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</section>

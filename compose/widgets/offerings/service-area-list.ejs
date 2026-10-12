@@ -1,0 +1,59 @@
+<!-- compose:widget offerings/service-area-list -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<%
+  // Resolve + filter areas BEFORE deciding whether to render the section.
+  // Prior version always rendered the outer <section> chrome (padding,
+  // background) and only hid the inner grid when filtered-empty, leaving
+  // a visible blank band on home pages with no real service-areas data
+  // (for example when the ServiceArea model is excluded via
+  // _harbor_meta.exclude_data_models, so the route renders with items=[]).
+  var _areas = (typeof items !== 'undefined' && items) ? items : (typeof rows !== 'undefined' ? rows : []);
+  _areas = _areas.filter(function(a){
+    var c = String((a.city || a.name || '')).trim().toLowerCase();
+    return c && c !== 'your city' && c !== 'main city';
+  });
+%>
+<% if (_areas.length > 0) { %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-10">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= eyebrow %></div>
+        <% } %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+        <% if (typeof description !== 'undefined' && description) { %>
+          <p class="font-body text-base max-w-2xl mx-auto" style="color: var(--color-foreground-muted);"><%= description %></p>
+        <% } %>
+      </div>
+    <% } %>
+    <div class="cas-card-grid-4">
+      <% _areas.forEach(function(area) { %>
+        <div class="p-4 rounded-lg border text-center transition-opacity hover:opacity-80" style="background-color: var(--color-surface); border-color: var(--color-border);">
+          <div class="font-body font-semibold text-sm" style="color: var(--color-foreground);"><%= area.city || area.name %></div>
+          <% if (area.state) { %>
+            <div class="font-body text-xs" style="color: var(--color-foreground-muted);"><%= area.state %></div>
+          <% } %>
+          <%
+            // zip_codes is stored as a comma-separated TEXT column. A row
+            // with a single zip ("00013") is not JSON for an array: decoded
+            // as JSON it is a bare number with no .length (or, with a
+            // leading zero, not JSON at all), which silently hid every
+            // single-zip card. Always split on comma for
+            // strings; coerce non-array shapes to []; tolerant of arrays
+            // already passed in (harbor flow).
+            var _zips = area.zip_codes;
+            if (typeof _zips === 'string') {
+              _zips = _zips.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+            }
+            if (!Array.isArray(_zips)) _zips = [];
+          %>
+          <% if (_zips.length > 0) { %>
+            <div class="font-body text-xs mt-1" style="color: var(--color-foreground-muted);"><%= _zips.slice(0,3).join(' · ') %><% if (_zips.length > 3) { %>…<% } %></div>
+          <% } %>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>

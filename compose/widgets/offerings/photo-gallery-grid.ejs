@@ -1,0 +1,35 @@
+<!-- compose:widget offerings/photo-gallery-grid -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-12">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= eyebrow %></div>
+        <% } %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+      </div>
+    <% } %>
+    <% var _photos = (typeof items !== 'undefined' && items) ? items : (typeof rows !== 'undefined' ? rows : []); %>
+    <% if (_photos.length === 0) { %>
+      <p class="font-body text-center" style="color: var(--color-foreground-muted);">No photos yet.</p>
+    <% } else { %>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        <% _photos.forEach(function(photo) { %>
+          <figure class="relative overflow-hidden rounded-xl group" style="aspect-ratio: 1/1; background-color: var(--color-surface);">
+            <img loading="lazy" src="<%= photo.image_url %>" alt="<%= photo.title || photo.caption || '' %>" class="w-full h-full object-cover transition-all" style="transition: transform 0.3s ease;" />
+            <% if (photo.caption || photo.title) { %>
+              <figcaption class="absolute bottom-0 left-0 right-0 p-3 opacity-0 transition-opacity" style="background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); color: white;">
+                <div class="font-body text-xs font-medium"><%= photo.title || photo.caption %></div>
+              </figcaption>
+            <% } %>
+          </figure>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>
+<style>
+  figure.group:hover figcaption { opacity: 1 !important; }
+  figure.group:hover img { transform: scale(1.03); }
+</style>

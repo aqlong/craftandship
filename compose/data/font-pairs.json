@@ -1,0 +1,498 @@
+{
+  "version": 1,
+  "updated_at": "2026-05-11",
+  "font_pairs": [
+    {
+      "id": "tangerine-montserrat",
+      "display": {
+        "family": "Tangerine",
+        "weights": [400, 700],
+        "is_serif": true
+      },
+      "body": {
+        "family": "Montserrat",
+        "weights": [400, 500, 600, 700]
+      },
+      "mood": "calligraphic script display + clean sans body, for invitations, ceremonies, celebratory brands",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+    },
+    {
+      "id": "rubik-nunito",
+      "display": {
+        "family": "Rubik",
+        "weights": [
+          400,
+          500,
+          600,
+          700,
+          900
+        ],
+        "is_serif": false
+      },
+      "body": {
+        "family": "Nunito Sans",
+        "weights": [
+          300,
+          400,
+          500,
+          600,
+          700
+        ]
+      },
+      "mood": "modern, friendly, clean",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;900&family=Nunito+Sans:wght@300;400;500;600;700&display=swap"
+    },
+    {
+      "id": "lora-raleway",
+      "display": {
+        "family": "Lora",
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "Raleway",
+        "weights": [
+          300,
+          400,
+          500,
+          600,
+          700
+        ]
+      },
+      "mood": "elegant, readable, editorial",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Raleway:wght@300;400;500;600;700&display=swap"
+    },
+    {
+      "id": "playfair-source-sans",
+      "display": {
+        "family": "Playfair Display",
+        "weights": [
+          400,
+          500,
+          600,
+          700,
+          800,
+          900
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "Source Sans 3",
+        "weights": [
+          300,
+          400,
+          500,
+          600,
+          700
+        ]
+      },
+      "mood": "luxurious, sophisticated, premium",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Source+Sans+3:wght@300;400;500;600;700&display=swap"
+    },
+    {
+      "id": "inter-inter",
+      "display": {
+        "family": "Inter",
+        "weights": [
+          500,
+          600,
+          700,
+          800,
+          900
+        ],
+        "is_serif": false
+      },
+      "body": {
+        "family": "Inter",
+        "weights": [
+          300,
+          400,
+          500,
+          600
+        ]
+      },
+      "mood": "neutral, professional, tech-adjacent",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Inter:wght@300..900&display=swap"
+    },
+    {
+      "id": "cormorant-lato",
+      "display": {
+        "family": "Cormorant Garamond",
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "Lato",
+        "weights": [
+          300,
+          400,
+          700
+        ]
+      },
+      "mood": "literary, classical, refined",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400..700;1,400..700&family=Lato:wght@300;400;700&display=swap"
+    },
+    {
+      "id": "karla-karla",
+      "display": {
+        "family": "Karla",
+        "weights": [
+          500,
+          600,
+          700,
+          800
+        ],
+        "is_serif": false
+      },
+      "body": {
+        "family": "Karla",
+        "weights": [
+          300,
+          400,
+          500
+        ]
+      },
+      "mood": "geometric, warm, accessible",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Karla:wght@300..800&display=swap"
+    },
+    {
+      "id": "lora-inter",
+      "display": {
+        "family": "Lora",
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "Inter",
+        "weights": [
+          300,
+          400,
+          500,
+          600
+        ]
+      },
+      "mood": "editorial serif + practical sans, for authority-with-warmth",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:wght@300..700&display=swap"
+    },
+    {
+      "id": "archivo-dm-sans",
+      "display": {
+        "family": "Archivo",
+        "weights": [
+          500,
+          600,
+          700,
+          800,
+          900
+        ],
+        "is_serif": false
+      },
+      "body": {
+        "family": "DM Sans",
+        "weights": [
+          300,
+          400,
+          500,
+          700
+        ]
+      },
+      "mood": "modern-sharp, for fitness, agencies, bold service brands",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=DM+Sans:wght@300;400;500;700&display=swap"
+    },
+    {
+      "id": "instrument-serif-inter",
+      "display": {
+        "family": "Instrument Serif",
+        "weights": [
+          400
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "Inter",
+        "weights": [
+          300,
+          400,
+          500,
+          600
+        ]
+      },
+      "mood": "editorial italic display, authoritative + soft. Impeccable-grade typography.",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@300..700&display=swap"
+    },
+    {
+      "id": "fraunces-inter",
+      "display": {
+        "family": "Fraunces",
+        "weights": [
+          400,
+          500,
+          600,
+          700,
+          900
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "Inter",
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ]
+      },
+      "mood": "soft modern serif + clean sans, for warm-yet-current healers, indie brands",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700;900&family=Inter:wght@400;500;600;700&display=swap"
+    },
+    {
+      "id": "dm-serif-display-dm-sans",
+      "display": {
+        "family": "DM Serif Display",
+        "weights": [
+          400
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "DM Sans",
+        "weights": [
+          300,
+          400,
+          500,
+          700
+        ]
+      },
+      "mood": "high-contrast editorial display, for statement covers + bold names",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap"
+    },
+    {
+      "id": "space-grotesk-space-mono",
+      "display": {
+        "family": "Space Grotesk",
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ],
+        "is_serif": false
+      },
+      "body": {
+        "family": "Space Mono",
+        "weights": [
+          400,
+          700
+        ]
+      },
+      "mood": "geometric grotesque + mono accent, for technical, considered, deliberate",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+    },
+    {
+      "id": "syne-manrope",
+      "display": {
+        "family": "Syne",
+        "weights": [
+          500,
+          600,
+          700,
+          800
+        ],
+        "is_serif": false
+      },
+      "body": {
+        "family": "Manrope",
+        "weights": [
+          300,
+          400,
+          500,
+          600,
+          700
+        ]
+      },
+      "mood": "experimental geometric, for art-leaning, avant, design-forward",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap"
+    },
+    {
+      "id": "ibm-plex-serif-ibm-plex-sans",
+      "display": {
+        "family": "IBM Plex Serif",
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "IBM Plex Sans",
+        "weights": [
+          300,
+          400,
+          500,
+          600,
+          700
+        ]
+      },
+      "mood": "considered, technical, considered-but-warm, for consultants + studios",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap"
+    },
+    {
+      "id": "crimson-pro-jost",
+      "display": {
+        "family": "Crimson Pro",
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "Jost",
+        "weights": [
+          300,
+          400,
+          500,
+          600
+        ]
+      },
+      "mood": "literary serif + geometric sans, for journals, writers, contemplative practices",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap"
+    },
+    {
+      "id": "bricolage-grotesque-inter",
+      "display": {
+        "family": "Bricolage Grotesque",
+        "weights": [
+          500,
+          600,
+          700,
+          800
+        ],
+        "is_serif": false
+      },
+      "body": {
+        "family": "Inter",
+        "weights": [
+          300,
+          400,
+          500,
+          600
+        ]
+      },
+      "mood": "variable-axis grotesque, for considered-but-current studios, agencies, indie product brands",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@300..600&display=swap"
+    },
+    {
+      "id": "anton-merriweather",
+      "display": {
+        "family": "Anton",
+        "weights": [
+          400
+        ],
+        "is_serif": false
+      },
+      "body": {
+        "family": "Merriweather",
+        "weights": [
+          300,
+          400,
+          700
+        ]
+      },
+      "mood": "condensed display sans + classical serif, for editorial covers, fitness, bold local-service brands",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Anton&family=Merriweather:wght@300;400;700&display=swap"
+    },
+    {
+      "id": "spectral-jetbrains-mono",
+      "display": {
+        "family": "Spectral",
+        "weights": [
+          400,
+          500,
+          600,
+          700,
+          800
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "JetBrains Mono",
+        "weights": [
+          400,
+          500,
+          700
+        ]
+      },
+      "mood": "classical serif + mono accent, for technical-but-warm consultants, dev studios, deliberate craft",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    },
+    {
+      "id": "cormorant-italic-inter-tight",
+      "display": {
+        "family": "Cormorant Garamond",
+        "weights": [
+          300,
+          400,
+          500
+        ],
+        "is_serif": true,
+        "is_italic": true
+      },
+      "body": {
+        "family": "Inter Tight",
+        "weights": [
+          300,
+          400,
+          500,
+          600
+        ]
+      },
+      "mood": "italic editorial display + crisp body, for sanctuary-grade healer + coach + therapist sites that read like quiet print",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Inter+Tight:wght@300;400;500;600&display=swap"
+    },
+    {
+      "id": "newsreader-publicsans",
+      "display": {
+        "family": "Newsreader",
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ],
+        "is_serif": true
+      },
+      "body": {
+        "family": "Public Sans",
+        "weights": [
+          300,
+          400,
+          500,
+          600,
+          700
+        ]
+      },
+      "mood": "letterpress imprint serif (optical-sizing + true italic) + editorial sans, for minimal/letterpress-feel tradesperson, local-service, therapist, and healer sites that want quiet authority without Inter over-exposure",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Public+Sans:wght@300;400;500;600;700&display=swap"
+    }
+  ]
+}

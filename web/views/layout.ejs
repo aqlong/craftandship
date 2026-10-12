@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %> | Craft &amp; Ship</title>
+  <% if (typeof metaDescription !== 'undefined' && metaDescription) { %>
+    <meta name="description" content="<%= metaDescription %>" />
+  <% } else { %>
+    <meta name="description" content="Custom websites for healers, therapists, and event producers, shaped with you in conversation and built from a library of tested building blocks. Every website needs a recorded review approval before it goes live. Choose any amount from $39 down to $19 a month, whatever fits your practice. Hosting included." />
+  <% } %>
+  <link rel="canonical" href="https://craftandship.io<%= typeof canonicalPath !== 'undefined' ? canonicalPath : '' %>" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Craft & Ship" />
+  <meta property="og:title" content="<%- ogAttr(title) %>" />
+  <meta property="og:description" content="<%- ogAttr(typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'Custom websites and a thoughtful companion, made with healers, therapists, and event producers. Every website needs a recorded review approval before it goes live.') %>" />
+  <meta property="og:url" content="https://craftandship.io<%= typeof canonicalPath !== 'undefined' ? canonicalPath : '' %>" />
+  <meta property="og:image" content="https://craftandship.io<%= typeof pageOgImage !== 'undefined' && pageOgImage ? pageOgImage : '/og-default.png' %>" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="<%= title %>" />
+  <meta name="twitter:description" content="<%= typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'Custom websites and a thoughtful companion. Every website needs a recorded review approval before it goes live.' %>" />
+  <meta name="twitter:image" content="https://craftandship.io<%= typeof pageOgImage !== 'undefined' && pageOgImage ? pageOgImage : '/og-default.png' %>" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/brand-harbor/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#F1E4C9" />
+  <!-- Harbor brand chrome on legacy admin shell: Cormorant Garamond display + Source Sans 3 body match the public Harbor pages so the brand identity is unified. The dark-mode surfaces inside the page body still come from /style.css (Tailwind) since admin + project tools rely on dense data-tool styling that doesn't translate cleanly to warm-paper. JetBrains Mono kept for build-engine badges + code blocks. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>" />
+  <style>
+    /* Harbor brand chrome overrides on legacy admin/project shell */
+    .legacy-harbor-chrome .nav-brand-name { font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif; }
+    .legacy-harbor-chrome .nav-brand-name em { font-style: italic; color: #c9a04f; font-weight: 500; }
+    .legacy-harbor-chrome h1, .legacy-harbor-chrome h2, .legacy-harbor-chrome h3,
+    .legacy-harbor-chrome .font-display {
+      font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif;
+      letter-spacing: -0.005em;
+    }
+    .legacy-harbor-chrome .nav-link { font-family: 'Source Sans 3', system-ui, sans-serif; }
+    .legacy-harbor-chrome body, .legacy-harbor-chrome p, .legacy-harbor-chrome span,
+    .legacy-harbor-chrome label, .legacy-harbor-chrome input, .legacy-harbor-chrome button {
+      font-family: 'Source Sans 3', system-ui, sans-serif;
+    }
+  </style>
+  <meta name="csrf-token" content="<%= csrfToken %>" />
+  <% if (typeof analyticsId !== 'undefined' && analyticsId) { %>
+    <script nonce="<%= cspNonce %>" defer data-domain="<%= analyticsId %>" src="https://plausible.io/js/script.js"></script>
+  <% } %>
+</head>
+<body class="min-h-screen flex flex-col legacy-harbor-chrome">
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-50 h-16 transition-all duration-300" id="main-nav"
+       style="background: rgba(12,12,14,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06);">
+    <div class="max-w-site mx-auto px-6 h-full flex items-center justify-between">
+
+      <!-- Wordmark: Harbor lighthouse + Cormorant wordmark to match public Harbor brand. -->
+      <a href="/" class="flex items-center gap-3 no-underline group">
+        <img src="/brand-harbor/logo-mark-nav.svg" alt="" width="32" height="32" class="flex-shrink-0 transition-transform duration-200 group-hover:scale-105" style="display:block;" />
+        <span class="nav-brand-name font-normal" style="font-size:22px;color:#F2EEE5;letter-spacing:-0.005em;line-height:1;white-space:nowrap;">Craft &amp; <em>Ship</em></span>
+      </a>
+
+      <% if (typeof funnelMode === 'undefined' || !funnelMode) { %>
+      <!-- Hamburger (mobile) -->
+      <button class="md:hidden bg-transparent border-none cursor-pointer p-2 rounded-lg transition-colors"
+              style="color:#86868E;" id="nav-hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <% } %>
+
+      <!-- Nav links: mirror the Harbor primary nav so admin shell feels unified -->
+      <div class="<%= (typeof funnelMode !== 'undefined' && funnelMode) ? 'hidden' : 'hidden md:flex' %> items-center gap-0.5" id="nav-links">
+        <a href="/the-companion" class="nav-link no-underline">The companion</a>
+        <a href="/how-it-works" class="nav-link no-underline">How it works</a>
+        <a href="/pricing" class="nav-link no-underline">Pricing</a>
+        <a href="/gallery" class="nav-link no-underline">Gallery</a>
+        <a href="/about" class="nav-link no-underline">About</a>
+        <% if (isLoggedIn) { %>
+          <a href="/dashboard" class="nav-link no-underline">My websites</a>
+          <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+            <a href="/admin/builds" class="nav-link nav-link-admin no-underline">Admin</a>
+          <% } %>
+          <form action="/logout" method="POST" class="inline ml-1">
+            <%- include('_csrf-field') %>
+            <button type="submit" class="nav-link nav-link-ghost">Sign out</button>
+          </form>
+        <% } else { %>
+          <a href="/login" class="nav-link no-underline">Sign in</a>
+          <a href="/try" class="btn btn-primary btn-sm no-underline ml-3">
+            Begin a conversation
+            <svg class="ml-1.5 w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main-content" class="flex-1">
+    <%- body %>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-20" style="background:#0A0A0C; border-top: 1px solid rgba(255,255,255,0.06);">
+    <div class="max-w-site mx-auto px-6 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
+
+        <!-- Brand column -->
+        <div class="md:col-span-2">
+          <div class="flex items-center gap-3 mb-4">
+            <img src="/brand-harbor/logo-mark-nav.svg" alt="" width="28" height="28" style="display:block;" />
+            <span class="nav-brand-name text-sm font-normal" style="color:#F2EEE5; font-size:18px;">Craft &amp; <em>Ship</em></span>
+          </div>
+          <p class="text-sm leading-relaxed max-w-xs" style="color:#86868E;">
+            Custom websites and a thoughtful companion, made with healers, therapists, breathwork facilitators, and event producers. <em style="color:#c9a04f; font-style:italic;">Yours, kept across the years.</em>
+          </p>
+          <p class="text-xs mt-4" style="color:#545460;">&copy; 2026 Craft &amp; Ship LLC &middot; Tended from Austin, Texas</p>
+        </div>
+
+        <!-- The work -->
+        <div>
+          <h4 class="text-xs font-semibold uppercase tracking-[0.15em] mb-4" style="color:#545460;">The work</h4>
+          <nav class="flex flex-col gap-2.5">
+            <a href="/the-companion" class="text-sm no-underline transition-colors footer-link">The companion</a>
+            <a href="/how-it-works" class="text-sm no-underline transition-colors footer-link">How it works</a>
+            <a href="/pricing" class="text-sm no-underline transition-colors footer-link">Pricing</a>
+            <a href="/gallery" class="text-sm no-underline transition-colors footer-link">Gallery</a>
+            <a href="/about" class="text-sm no-underline transition-colors footer-link">About</a>
+          </nav>
+        </div>
+
+        <!-- Provisions -->
+        <div>
+          <h4 class="text-xs font-semibold uppercase tracking-[0.15em] mb-4" style="color:#545460;">Provisions</h4>
+          <nav class="flex flex-col gap-2.5">
+            <a href="/privacy" class="text-sm no-underline transition-colors footer-link">Privacy</a>
+            <a href="/terms" class="text-sm no-underline transition-colors footer-link">Terms</a>
+            <a href="/about#contact" class="text-sm no-underline transition-colors footer-link">Reach Ocean</a>
+          </nav>
+        </div>
+
+      </div>
+    </div>
+  </footer>
+
+  <!-- Logged-in feedback widget (was beta-gated; ungated 2026-05-01 with the tier kill). -->
+  <% if (isLoggedIn) { %>
+  <div id="feedback-widget" style="position:fixed;bottom:5rem;right:1.5rem;z-index:998;">
+    <button id="feedback-toggle" class="btn btn-primary rounded-full shadow-lg text-sm px-5 py-2" aria-label="Send feedback">Feedback</button>
+    <div id="feedback-panel" class="hidden absolute bottom-12 right-0 w-80 rounded-2xl shadow-2xl p-5" style="background:#141416;border:1px solid rgba(255,255,255,0.08);">
+      <h3 class="text-sm font-semibold mb-3" style="color:#F2EEE5;">Send feedback</h3>
+      <select id="feedback-category" class="form-input mb-3">
+        <option value="bug">Bug Report</option>
+        <option value="suggestion">Suggestion</option>
+        <option value="question">Question</option>
+        <option value="other">Other</option>
+      </select>
+      <textarea id="feedback-message" class="form-input h-24 resize-none mb-3" placeholder="Tell us what you think..."></textarea>
+      <div class="flex justify-end gap-2">
+        <button id="feedback-cancel" class="btn btn-ghost btn-sm">Cancel</button>
+        <button id="feedback-submit" class="btn btn-primary btn-sm">Send</button>
+      </div>
+      <p id="feedback-status" class="text-xs mt-2 hidden"></p>
+    </div>
+  </div>
+  <script nonce="<%= cspNonce %>">
+  (function(){
+    var toggle=document.getElementById('feedback-toggle'),panel=document.getElementById('feedback-panel');
+    var submit=document.getElementById('feedback-submit'),cancel=document.getElementById('feedback-cancel');
+    var status=document.getElementById('feedback-status'),csrf=document.querySelector('meta[name="csrf-token"]');
+    toggle.addEventListener('click',function(){panel.classList.toggle('hidden');});
+    cancel.addEventListener('click',function(){panel.classList.add('hidden');});
+    submit.addEventListener('click',function(){
+      var cat=document.getElementById('feedback-category').value;
+      var msg=document.getElementById('feedback-message').value.trim();
+      if(!msg){status.textContent='Please enter a message.';status.className='text-xs mt-2 text-red-400';status.classList.remove('hidden');return;}
+      submit.disabled=true;submit.textContent='Sending...';
+      fetch('/feedback',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf?csrf.content:''},body:JSON.stringify({category:cat,message:msg,page_url:window.location.pathname})})
+      .then(function(r){return r.json().then(function(d){return{ok:r.ok,data:d};});})
+      .then(function(res){
+        if(res.ok){status.textContent='Thank you!';status.className='text-xs mt-2';status.style.color='#0187a0';status.classList.remove('hidden');document.getElementById('feedback-message').value='';setTimeout(function(){panel.classList.add('hidden');status.classList.add('hidden');},2000);}
+        else{status.textContent=res.data.error||'Failed to send.';status.className='text-xs mt-2 text-red-400';status.classList.remove('hidden');}
+      }).catch(function(){status.textContent='Network error.';status.className='text-xs mt-2 text-red-400';status.classList.remove('hidden');})
+      .finally(function(){submit.disabled=false;submit.textContent='Send';});
+    });
+  })();
+  </script>
+  <% } %>
+
+  <script nonce="<%= cspNonce %>" src="/nav.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>" defer></script>
+  <% if (typeof funnelMode === 'undefined' || !funnelMode) { %>
+  <script nonce="<%= cspNonce %>" src="/support-chat.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>" defer></script>
+  <% } %>
+  <script nonce="<%= cspNonce %>">
+  (function() {
+    // Mobile nav toggle
+    var btn = document.getElementById('nav-hamburger');
+    var nav = document.getElementById('nav-links');
+    if (btn && nav) {
+      btn.addEventListener('click', function() {
+        var open = nav.classList.toggle('nav-open');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
+
+    // Styled typed-confirm modal. Built lazily on first use; shared across forms.
+    var typedConfirmModal = null;
+    function ensureTypedConfirmModal() {
+      if (typedConfirmModal) return typedConfirmModal;
+      var overlay = document.createElement('div');
+      overlay.className = 'typed-confirm-overlay';
+      overlay.setAttribute('hidden', '');
+      overlay.setAttribute('role', 'presentation');
+      overlay.innerHTML =
+        '<div class="typed-confirm-card" role="dialog" aria-modal="true" aria-labelledby="typed-confirm-title">' +
+          '<h2 id="typed-confirm-title" class="typed-confirm-title">Confirm deletion</h2>' +
+          '<p class="typed-confirm-body"></p>' +
+          '<label class="typed-confirm-label" for="typed-confirm-input">Type <code class="typed-confirm-code"></code> to confirm:</label>' +
+          '<input type="text" id="typed-confirm-input" class="typed-confirm-input" autocomplete="off" spellcheck="false" autocapitalize="off" />' +
+          '<div class="typed-confirm-actions">' +
+            '<button type="button" class="btn btn-ghost typed-confirm-cancel">Cancel</button>' +
+            '<button type="button" class="btn btn-danger typed-confirm-submit" disabled>Delete</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      var input = overlay.querySelector('#typed-confirm-input');
+      var body = overlay.querySelector('.typed-confirm-body');
+      var codeEl = overlay.querySelector('.typed-confirm-code');
+      var cancelBtn = overlay.querySelector('.typed-confirm-cancel');
+      var submitBtn = overlay.querySelector('.typed-confirm-submit');
+      var pendingForm = null;
+      var expected = '';
+
+      function close() {
+        overlay.setAttribute('hidden', '');
+        input.value = '';
+        submitBtn.disabled = true;
+        pendingForm = null;
+        expected = '';
+      }
+      function confirmAndSubmit() {
+        if (input.value.trim() !== expected) return;
+        var form = pendingForm;
+        close();
+        form.dataset.typedConfirmed = '1';
+        if (typeof form.requestSubmit === 'function') form.requestSubmit();
+        else form.submit();
+      }
+      input.addEventListener('input', function() {
+        submitBtn.disabled = input.value.trim() !== expected;
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !submitBtn.disabled) { e.preventDefault(); confirmAndSubmit(); }
+      });
+      cancelBtn.addEventListener('click', close);
+      overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !overlay.hasAttribute('hidden')) close();
+      });
+      submitBtn.addEventListener('click', confirmAndSubmit);
+
+      typedConfirmModal = {
+        open: function(form, typedValue) {
+          pendingForm = form;
+          expected = typedValue;
+          body.textContent = 'This will permanently delete ' + typedValue + ' (CAS row + Railway project if attached).';
+          codeEl.textContent = typedValue;
+          overlay.removeAttribute('hidden');
+          setTimeout(function() { input.focus(); }, 10);
+        },
+      };
+      return typedConfirmModal;
+    }
+
+    // Double-submit guard + confirm prompts.
+    //   data-confirm="Are you sure?"        → simple yes/no (native confirm)
+    //   data-confirm-typed="my-app-name"    → user must type the exact string (modal)
+    // Typed-confirm takes precedence when both are present. Used for destructive
+    // admin actions (e.g. delete build + Railway project) to defeat muscle-memory.
+    document.querySelectorAll('form:not([data-no-submit-guard])').forEach(function(form) {
+      form.addEventListener('submit', function(e) {
+        if (form.dataset.typedConfirmed === '1') {
+          delete form.dataset.typedConfirmed;
+        } else {
+          var typed = form.dataset.confirmTyped;
+          if (typed) {
+            e.preventDefault();
+            ensureTypedConfirmModal().open(form, typed);
+            return;
+          }
+          var msg = form.dataset.confirm;
+          if (msg && !confirm(msg)) { e.preventDefault(); return; }
+        }
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn && !btn.disabled) {
+          btn.disabled = true;
+          btn.dataset.originalText = btn.textContent;
+          btn.textContent = 'Processing...';
+          setTimeout(function() { btn.disabled = false; btn.textContent = btn.dataset.originalText; }, 10000);
+        }
+      });
+    });
+
+    // Declarative replacements for inline on* attributes. The site's
+    // Content-Security-Policy has no 'unsafe-inline' for scripts, so
+    // onclick="..." / onchange="..." never run; a nonce cannot authorise an
+    // attribute. Views use these data attributes instead:
+    //   data-click="name" [data-arg="x"]   click runs one allow-listed action
+    //   data-change="name"                 change runs one allow-listed action
+    //   data-nav-select="/path?key="       select change navigates to that URL + value
+    //   data-href="/path"                  clicking the element navigates (same-site paths only)
+    //   data-toggle-next                   click toggles .hidden on the next sibling
+    var ACTIONS = {
+      toggleDetail: function(el) { if (typeof window.toggleDetail === 'function') window.toggleDetail(el.getAttribute('data-arg')); },
+      copySpec: function() { if (typeof window.copySpec === 'function') window.copySpec(); },
+      runAnalysis: function(el) { if (typeof window.runAnalysis === 'function') window.runAnalysis(el.getAttribute('data-arg') === 'true'); },
+      toggleForceNew: function(el) { if (typeof window.toggleForceNew === 'function') window.toggleForceNew(el); }
+    };
+    document.addEventListener('click', function(e) {
+      var action = e.target.closest('[data-click]');
+      if (action) {
+        var run = ACTIONS[action.getAttribute('data-click')];
+        if (run) run(action);
+        return;
+      }
+      var toggle = e.target.closest('[data-toggle-next]');
+      if (toggle) {
+        if (toggle.nextElementSibling) toggle.nextElementSibling.classList.toggle('hidden');
+        return;
+      }
+      var row = e.target.closest('[data-href]');
+      if (row && !e.target.closest('a, button, input, select, textarea, form')) {
+        var href = row.getAttribute('data-href') || '';
+        if (href.charAt(0) === '/' && href.charAt(1) !== '/') window.location.href = href;
+      }
+    });
+    document.addEventListener('change', function(e) {
+      var nav = e.target.closest('[data-nav-select]');
+      if (nav) {
+        var base = nav.getAttribute('data-nav-select') || '';
+        if (base.charAt(0) === '/' && base.charAt(1) !== '/') window.location.href = base + encodeURIComponent(nav.value);
+        return;
+      }
+      var change = e.target.closest('[data-change]');
+      if (change) {
+        var run = ACTIONS[change.getAttribute('data-change')];
+        if (run) run(change);
+      }
+    });
+
+    // Local timezone date formatting. All timestamps rendered on CAS
+    // pages go through this pass so they display in the viewer's browser
+    // TZ with a short TZ abbreviation (CDT, PST, etc.) for unambiguous
+    // reading across customers, support, and engineering.
+    //   data-ts-fmt="date"     → "Apr 20, 2026"  (default)
+    //   data-ts-fmt="datetime" → "Apr 20, 3:42 PM CDT"
+    //   data-ts-fmt="time"     → "3:42:15 PM CDT"  (time-only + TZ)
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('[data-ts]').forEach(function(el) {
+        var ts = el.getAttribute('data-ts');
+        if (!ts) return;
+        try {
+          var d = new Date(ts);
+          var fmt = el.getAttribute('data-ts-fmt') || 'date';
+          if (fmt === 'datetime') {
+            el.textContent = d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
+          } else if (fmt === 'time') {
+            el.textContent = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true, timeZoneName: 'short' });
+          } else {
+            el.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          }
+        } catch(e) {}
+      });
+    });
+  })();
+  </script>
+  <style>
+    @media (max-width: 767px) {
+      #nav-links {
+        display: none;
+        position: absolute;
+        top: 4rem;
+        left: 0;
+        right: 0;
+        background: #0C0C0E;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        flex-direction: column;
+        padding: 1rem 1.5rem;
+        gap: 0.25rem;
+        z-index: 999;
+      }
+      #nav-links.nav-open { display: flex; }
+      #nav-links a, #nav-links form { width: 100%; }
+      #nav-links a { padding: 0.625rem 0.75rem; }
+      #nav-links form .btn { width: 100%; text-align: center; }
+    }
+
+    /* Footer links (was inline onmouseover/onmouseout, which the CSP blocks) */
+    .footer-link { color: #86868E; }
+    .footer-link:hover { color: #F2EEE5; }
+
+    /* Typed-confirm modal */
+    .typed-confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      animation: typed-confirm-fade 120ms ease-out;
+    }
+    .typed-confirm-overlay[hidden] { display: none; }
+    @keyframes typed-confirm-fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .typed-confirm-card {
+      background: #141417;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(239, 68, 68, 0.08);
+      padding: 1.5rem;
+      max-width: 480px;
+      width: 100%;
+      color: #e5e7eb;
+      animation: typed-confirm-slide 140ms ease-out;
+    }
+    @keyframes typed-confirm-slide {
+      from { transform: translateY(8px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .typed-confirm-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fca5a5;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: 0.01em;
+    }
+    .typed-confirm-body {
+      font-size: 0.875rem;
+      color: #9ca3af;
+      margin: 0 0 1rem 0;
+      line-height: 1.5;
+    }
+    .typed-confirm-label {
+      display: block;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 0.4rem;
+    }
+    .typed-confirm-code {
+      background: rgba(239, 68, 68, 0.12);
+      color: #fca5a5;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+    }
+    .typed-confirm-input {
+      width: 100%;
+      background: #0c0c0e;
+      color: #f3f4f6;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.9rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      outline: none;
+      transition: border-color 120ms ease;
+    }
+    .typed-confirm-input:focus {
+      border-color: rgba(239, 68, 68, 0.6);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+    }
+    .typed-confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
+    }
+    .typed-confirm-actions .btn {
+      min-width: 96px;
+    }
+    .typed-confirm-submit:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  </style>
+</body>
+</html>

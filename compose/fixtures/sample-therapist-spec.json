@@ -1,0 +1,190 @@
+{
+  "app_name": "sample-therapist",
+  "archetype": "therapist-counselor",
+  "palette": "ocean-blue",
+  "font_pair": "lora-inter",
+  "admin_email": "admin@sample-therapist.example",
+  "settings": {
+    "site_name": "Still Waters Therapy",
+    "site_description": "Licensed counseling for anxiety, grief, and life transitions. In-person sessions and secure telehealth.",
+    "hero_tagline": "Compassionate Counseling",
+    "hero_description": "Individual therapy with a grounded, evidence-based approach. Dr. Maren Sato is an LCSW and EMDR-certified clinician specializing in anxiety, grief, and relationship transitions.",
+    "hero_image_url": "https://picsum.photos/seed/therapist-hero/1200/900",
+    "nav_logo_url": "",
+    "about_title": "About Dr. Maren Sato, LCSW",
+    "about_body": "Fifteen years supporting adults moving through anxiety, grief, and major life transitions. Integrative approach drawing from EMDR, IFS (Internal Family Systems), and somatic work.",
+    "about_photo_url": "https://picsum.photos/seed/therapist-about/800/1000",
+    "contact_email": "hello@stillwaterstherapy.example",
+    "contact_phone": "(555) 555-0142",
+    "contact_address": "100 Example St, Sample City, ST + Telehealth",
+    "business_name": "Still Waters Therapy, LLC",
+    "support_email": "hello@stillwaterstherapy.example",
+    "instagram_url": "",
+    "facebook_url": "",
+    "twitter_url": "",
+    "linkedin_url": "https://linkedin.example/in/marensato",
+    "youtube_url": "",
+    "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "STILL WATERS THERAPY",
+        "heading": "Compassionate Counseling for Anxiety, Grief & Transitions",
+        "description": "Evidence-based individual therapy, in person and by telehealth. EMDR, IFS, and somatic work woven into a warm, relational approach.",
+        "image_url": "https://picsum.photos/seed/therapist-hero/1200/900",
+        "image_alt": "Window light on a reading chair",
+        "cta_primary": {"text": "Book a free consultation", "href": "/contact"},
+        "cta_secondary": {"text": "Read the approach", "href": "/approach"}
+      },
+      "offerings": {
+        "eyebrow": "SPECIALTIES",
+        "heading": "Areas I Work With",
+        "items": [
+          {"label": "ANXIETY", "title": "Anxiety & Overthinking", "description": "For adults whose nervous system runs hot. We work with both the story and the body to bring the system back toward regulation.", "cta_text": "Learn more", "cta_href": "/approach"},
+          {"label": "GRIEF", "title": "Grief & Loss", "description": "Grief for loved ones, for chapters closing, for the life you expected. Room-to-feel therapy, paced to your nervous system.", "cta_text": "Learn more", "cta_href": "/approach"},
+          {"label": "TRANSITIONS", "title": "Life Transitions", "description": "Career shifts, relationship endings, becoming a parent, midlife reckonings. Support for the in-between.", "cta_text": "Learn more", "cta_href": "/approach"}
+        ]
+      },
+      "testimonials": {
+        "eyebrow": "WHAT CLIENTS SAY",
+        "heading": "Client Voices",
+        "items": [
+          {"quote": "Maren's approach felt different from day one. She listened deeply before offering anything. Six months in, I'm calmer than I've been in years.", "author_name": "Anonymous client", "service": "Anxiety"},
+          {"quote": "EMDR with Maren moved things that years of talk therapy couldn't touch. Gentle, patient, and highly skilled.", "author_name": "Anonymous client", "service": "EMDR"}
+        ]
+      },
+      "cta": {
+        "heading": "Ready to begin?",
+        "description": "The first call is free. We'll talk briefly about what's bringing you here and whether we're a fit.",
+        "cta_text": "Schedule a consultation",
+        "cta_href": "/contact"
+      }
+    },
+    "about": {
+      "hero": {
+        "eyebrow": "ABOUT",
+        "heading": "About Dr. Maren Sato, LCSW",
+        "description": "Licensed clinical social worker with fifteen years of experience supporting adults through anxiety, grief, and major life transitions. EMDR-certified (EMDRIA), trained in IFS, and an ongoing student of somatic therapies.",
+        "image_url": "https://picsum.photos/seed/therapist-about/800/1000",
+        "image_alt": "Portrait of Dr. Maren Sato"
+      },
+      "cta": {
+        "heading": "Work together?",
+        "description": "Schedule a free 20-minute consultation call.",
+        "cta_text": "Get in touch",
+        "cta_href": "/contact"
+      }
+    },
+    "approach": {
+      "hero": {
+        "eyebrow": "HOW I WORK",
+        "heading": "My Approach",
+        "description": "I draw from multiple evidence-based frameworks, EMDR, IFS, somatic therapy, and weave them together in service of your healing."
+      },
+      "modalities": {
+        "eyebrow": "MODALITIES",
+        "heading": "Ways We'll Work",
+        "items": [
+          {"label": "EMDR", "title": "EMDR", "description": "Eye Movement Desensitization and Reprocessing. Effective for trauma, anxiety, and stuck emotional patterns. EMDRIA certified.", "cta_text": "", "cta_href": ""},
+          {"label": "IFS", "title": "Internal Family Systems", "description": "A parts-work approach that invites gentleness toward the full complexity of your inner experience.", "cta_text": "", "cta_href": ""},
+          {"label": "SOMATIC", "title": "Somatic Work", "description": "Meeting what the body is carrying. We work slowly, always within what your nervous system can tolerate.", "cta_text": "", "cta_href": ""}
+        ]
+      },
+      "credentials": {
+        "heading": "Credentials",
+        "license_text": "Licensed Clinical Social Worker (LCSW). Sample license line.",
+        "items": [
+          {"label": "Education", "value": "MSW", "sub": "Clinical concentration"},
+          {"label": "Certifications", "value": "EMDR Certified (EMDRIA)", "sub": "Level II"},
+          {"label": "Training", "value": "Internal Family Systems (IFS)", "sub": "Level 1"},
+          {"label": "Memberships", "value": "NASW, EMDRIA", "sub": "Active member"}
+        ]
+      }
+    },
+    "fees_insurance": {
+      "hero": {
+        "eyebrow": "FEES",
+        "heading": "Fees & Insurance",
+        "description": "Transparent pricing. I do not bill insurance directly but can provide superbills for out-of-network reimbursement."
+      },
+      "plans": {
+        "heading": "Session Rates",
+        "items": [
+          {"name": "50-minute session", "price_display": "$175", "billing_period": "session", "features": ["Individual counseling", "In-person or telehealth", "Superbill for OON reimbursement"], "cta_text": "Schedule", "cta_href": "/contact"},
+          {"name": "80-minute session", "price_display": "$260", "billing_period": "session", "features": ["Extended session", "Recommended for EMDR or intensive work", "Superbill provided"], "cta_text": "Schedule", "cta_href": "/contact", "featured": true},
+          {"name": "Sliding scale", "price_display": "$90 – $140", "billing_period": "session", "features": ["Limited sliding-scale spots", "Needs-based, no questions asked", "Ask about availability"], "cta_text": "Inquire", "cta_href": "/contact"}
+        ]
+      },
+      "faq": {
+        "heading": "Common questions about fees",
+        "items": [
+          {"question": "Do you accept insurance?", "answer": "I am an out-of-network provider. I can provide a detailed superbill each month which many clients use to get partial reimbursement from their insurance. Call the number on the back of your insurance card and ask about 'out-of-network mental health benefits'."},
+          {"question": "What is your cancellation policy?", "answer": "Cancellations with more than 24 hours notice are free. Less than 24 hours or missed sessions are charged at the full session fee."},
+          {"question": "How do I pay?", "answer": "Credit card on file, charged after each session. I accept all major cards through Ivy Pay, a HIPAA-compliant payment platform."}
+        ]
+      }
+    },
+    "faq": {
+      "hero": {
+        "eyebrow": "ANSWERS",
+        "heading": "Frequently Asked Questions"
+      },
+      "items": {
+        "items": [
+          {"question": "What's the first session like?", "answer": "The first session is a conversation, we talk about what's bringing you in, what you're hoping for, and whether we're a good fit. You won't be asked to dive into anything you're not ready for."},
+          {"question": "How long does therapy last?", "answer": "That depends entirely on you and what you're working on. Some clients come for 6-8 sessions to work through a specific issue; others stay for years. We'll check in together regularly about what's working."},
+          {"question": "Do you offer telehealth?", "answer": "Yes. I offer secure video sessions via a HIPAA-compliant platform to clients across the state."},
+          {"question": "Is what we discuss confidential?", "answer": "Yes, with limited legal exceptions (imminent danger to self or others, suspected child abuse). I'll explain the details of confidentiality in our first session."},
+          {"question": "Do you work with couples or families?", "answer": "Not currently. I see adult individuals only."},
+          {"question": "What's the difference between EMDR, IFS, and somatic work?", "answer": "EMDR is a specific protocol for processing trauma. IFS is a framework for working with different parts of yourself. Somatic work invites the body into therapy. I blend all three depending on what a session needs."}
+        ]
+      }
+    },
+    "contact": {
+      "hero": {
+        "eyebrow": "REACH OUT",
+        "heading": "Get in Touch",
+        "description": "The first 20-minute call is free. We'll talk briefly about what's bringing you in and whether we're a fit."
+      },
+      "form": {
+        "heading": "Send a Message",
+        "service_options": ["Anxiety", "Grief & Loss", "Life Transitions", "EMDR", "Not sure yet"]
+      }
+    }
+  },
+  "seed_content": {
+    "testimonials": [
+      {"author_name": "Anonymous client", "quote": "Maren's approach felt different from day one. She listened deeply before offering anything. Six months in, I'm calmer than I've been in years.", "service": "Anxiety", "published": true},
+      {"author_name": "Anonymous client", "quote": "EMDR with Maren moved things that years of talk therapy couldn't touch. Gentle, patient, and highly skilled.", "service": "EMDR", "published": true},
+      {"author_name": "Anonymous client", "quote": "I came in grieving my mother. Maren gave me room to feel without rushing me. I finally felt like someone was walking through it with me.", "service": "Grief", "published": true},
+      {"author_name": "Anonymous client", "quote": "The somatic work has changed how I experience anxiety. I used to fight it; now I can actually be with it, and it passes.", "service": "Somatic", "published": true}
+    ],
+    "modalities": [
+      {"name": "EMDR", "description": "Eye Movement Desensitization and Reprocessing, evidence-based treatment for trauma, anxiety, and stuck emotional patterns.", "image_url": "https://picsum.photos/seed/emdr/800/600", "sort_order": 1},
+      {"name": "Internal Family Systems (IFS)", "description": "A parts-work approach that honors the complexity of your inner experience with curiosity and compassion.", "image_url": "https://picsum.photos/seed/ifs/800/600", "sort_order": 2},
+      {"name": "Somatic Therapy", "description": "Integrating the body into therapeutic work. Gently supporting the nervous system back toward regulation.", "image_url": "https://picsum.photos/seed/somatic/800/600", "sort_order": 3},
+      {"name": "Grief Work", "description": "Room-to-feel therapy paced to your nervous system. Grief for loved ones, for chapters closing, for the life you expected.", "image_url": "https://picsum.photos/seed/grief/800/600", "sort_order": 4}
+    ],
+    "pricing_plans": [
+      {"name": "50-minute session", "price_display": "$175", "billing_period": "session", "features": "Individual counseling\nIn-person or telehealth\nSuperbill for OON reimbursement", "cta_text": "Schedule", "cta_href": "/contact", "featured": false, "sort_order": 1},
+      {"name": "80-minute session", "price_display": "$260", "billing_period": "session", "features": "Extended session\nRecommended for EMDR or intensive work\nSuperbill provided", "cta_text": "Schedule", "cta_href": "/contact", "featured": true, "sort_order": 2},
+      {"name": "Sliding scale", "price_display": "$90 – $140", "billing_period": "session", "features": "Limited sliding-scale spots\nNeeds-based, no questions asked\nAsk about availability", "cta_text": "Inquire", "cta_href": "/contact", "featured": false, "sort_order": 3}
+    ],
+    "faqs": [
+      {"question": "What's the first session like?", "answer": "The first session is a conversation, we talk about what's bringing you in, what you're hoping for, and whether we're a good fit. You won't be asked to dive into anything you're not ready for.", "category": "Getting started", "sort_order": 1},
+      {"question": "How long does therapy last?", "answer": "That depends entirely on you and what you're working on. Some clients come for 6-8 sessions; others stay for years. We'll check in together regularly about what's working.", "category": "Getting started", "sort_order": 2},
+      {"question": "Do you offer telehealth?", "answer": "Yes. I offer secure video sessions via a HIPAA-compliant platform to clients across the state.", "category": "Logistics", "sort_order": 3},
+      {"question": "Is what we discuss confidential?", "answer": "Yes, with limited legal exceptions (imminent danger to self or others, suspected child abuse). I'll explain the details of confidentiality in our first session.", "category": "Logistics", "sort_order": 4},
+      {"question": "Do you accept insurance?", "answer": "I am an out-of-network provider. I can provide a detailed superbill each month which many clients use to get partial reimbursement.", "category": "Fees", "sort_order": 5},
+      {"question": "What is your cancellation policy?", "answer": "Cancellations with more than 24 hours notice are free. Less than 24 hours or missed sessions are charged the full fee.", "category": "Fees", "sort_order": 6}
+    ],
+    "contact_inquiries": [
+      {"name": "Sam Kapoor", "email": "sam.kapoor@example.com", "service_interest": "Anxiety", "message": "I've been in the same anxiety loop for over a year. Looking for someone who does more than just CBT worksheets. Your approach sounds right."}
+    ],
+    "newsletter_subscribers": [
+      {"email": "client1@example.com"},
+      {"email": "client2@example.com"}
+    ]
+  }
+}

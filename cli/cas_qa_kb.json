@@ -1,0 +1,72 @@
+{
+  "Ops API builds list": {
+    "category": "ops_api",
+    "first_seen_iteration": 1,
+    "occurrences": 2,
+    "fixed": true,
+    "fix_description": "",
+    "last_error": "Expected 200, got 401",
+    "last_seen_iteration": 2,
+    "fixed_at_iteration": 2
+  },
+  "Ops API stats endpoint": {
+    "category": "ops_api",
+    "first_seen_iteration": 1,
+    "occurrences": 3,
+    "fixed": true,
+    "fix_description": "",
+    "last_error": "Missing stats data: ['builds', 'customers', 'emails']",
+    "last_seen_iteration": 2,
+    "fixed_at_iteration": 3
+  },
+  "Ops API errors endpoint": {
+    "category": "ops_api",
+    "first_seen_iteration": 1,
+    "occurrences": 2,
+    "fixed": true,
+    "fix_description": "",
+    "last_error": "Expected 200, got 401",
+    "last_seen_iteration": 2,
+    "fixed_at_iteration": 2
+  },
+  "Ops API intake analytics": {
+    "category": "ops_api",
+    "first_seen_iteration": 1,
+    "occurrences": 2,
+    "fixed": true,
+    "fix_description": "",
+    "last_error": "Expected 200, got 401",
+    "last_seen_iteration": 2,
+    "fixed_at_iteration": 2
+  },
+  "Ops API 404 for invalid build": {
+    "category": "ops_api",
+    "first_seen_iteration": 1,
+    "occurrences": 2,
+    "fixed": true,
+    "fix_description": "",
+    "last_error": "Expected 404, got 401",
+    "last_seen_iteration": 2,
+    "fixed_at_iteration": 2
+  },
+  "Ops API requeue invalid build": {
+    "category": "ops_api",
+    "first_seen_iteration": 1,
+    "occurrences": 2,
+    "fixed": true,
+    "fix_description": "",
+    "last_error": "Expected 404, got 401",
+    "last_seen_iteration": 2,
+    "fixed_at_iteration": 2
+  },
+  "No x-powered-by header": {
+    "category": "security",
+    "first_seen_iteration": 1,
+    "occurrences": 1,
+    "fixed": true,
+    "fix_description": "",
+    "last_error": "x-powered-by header leaks server info: Express",
+    "last_seen_iteration": 1,
+    "fixed_at_iteration": 2
+  }
+}

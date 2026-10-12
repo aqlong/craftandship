@@ -1,0 +1,19 @@
+<!-- compose:widget auth/magic-link-sent; letterpress-shell confirmation
+     shown after POST /request-magic-link. Always renders the same generic
+     copy so a stranger can not enumerate which emails are registered. -->
+<%
+var _site = (typeof settings !== 'undefined' && settings) ? settings : {};
+var _bodyHtml =
+  '<p class="cas-auth-letterpress__lead">If that email is registered, a sign-in link is on its way.</p>' +
+  '<p class="cas-auth-letterpress__lead">The link expires in 24 hours and is good for one sign-in.</p>';
+var _footerHtml = '<p class="cas-auth-letterpress__foot-line"><a href="/login">Back to sign in</a></p>';
+%>
+<%- include('widgets/auth/letterpress', {
+  siteName: _site.site_name || 'Site',
+  brandHref: '/',
+  eyebrow: 'Check your email',
+  formHeading: 'Check your email',
+  formSubheading: '',
+  bodyHtml: _bodyHtml,
+  footerHtml: _footerHtml,
+}) %>

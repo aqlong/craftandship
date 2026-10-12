@@ -1,0 +1,59 @@
+<!-- compose:widget offerings/book-spotlight - ONE featured book.
+     The author-forward home leads with a single spotlight entity
+     ("Start with the series") instead of cloning the catalog page.
+     Picks the first row with featured_on_home set, else
+     the first row by the listing sort. Renders via book-card's
+     spotlight treatment.
+     Include args:
+       - items: books rows (db:books)
+       - heading / eyebrow (optional): section title pair
+       - browse_text / browse_href (optional): link to the full catalog -->
+<%
+function _bsAccent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); }
+var _bsItems = (typeof items !== 'undefined' && Array.isArray(items)) ? items : [];
+_bsItems = _bsItems.filter(function(b){
+  if (b == null) return false;
+  if (Object.prototype.hasOwnProperty.call(b, 'published')) {
+    return b.published === true || b.published === 't' || b.published === 1;
+  }
+  return true;
+});
+_bsItems.sort(function(a, b){
+  var ao = (a && typeof a.sort_order === 'number') ? a.sort_order : 9999;
+  var bo = (b && typeof b.sort_order === 'number') ? b.sort_order : 9999;
+  if (ao !== bo) return ao - bo;
+  return ((a && a.id) || 0) - ((b && b.id) || 0);
+});
+var _bsFeatured = null;
+for (var _bi = 0; _bi < _bsItems.length; _bi++) {
+  var _f = _bsItems[_bi].featured_on_home;
+  if (_f === true || _f === 't' || _f === 1) { _bsFeatured = _bsItems[_bi]; break; }
+}
+if (!_bsFeatured && _bsItems.length > 0) _bsFeatured = _bsItems[0];
+var _bsHeading = (typeof heading !== 'undefined' && heading) ? heading : '';
+var _bsEyebrow = (typeof eyebrow !== 'undefined' && eyebrow) ? eyebrow : '';
+var _bsBrowseText = (typeof browse_text !== 'undefined' && browse_text) ? browse_text : '';
+var _bsBrowseHref = (typeof browse_href !== 'undefined' && browse_href) ? browse_href : '/books';
+%>
+<% if (_bsFeatured) { %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <% if (_bsHeading || _bsEyebrow) { %>
+    <div class="text-center mb-10">
+      <% if (_bsEyebrow) { %>
+        <div class="font-body text-xs font-bold uppercase mb-3" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;"><%= _bsEyebrow %></div>
+      <% } %>
+      <% if (_bsHeading) { %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground); letter-spacing: -0.02em;"><%- _bsAccent(_bsHeading) %></h2>
+      <% } %>
+    </div>
+    <% } %>
+    <%- include('./book-card.ejs', { book: _bsFeatured, show_series_badge: true, spotlight: true }) %>
+    <% if (_bsBrowseText) { %>
+      <div class="text-center mt-8">
+        <a href="<%= _bsBrowseHref %>" class="font-body text-base font-medium transition-opacity hover:opacity-70" style="color: var(--color-primary);"><%= _bsBrowseText %> →</a>
+      </div>
+    <% } %>
+  </div>
+</section>
+<% } %>

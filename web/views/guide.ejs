@@ -1,0 +1,284 @@
+<section class="guide-hero">
+  <div class="max-site guide-hero-inner">
+    <span class="eyebrow" style="font-size:17px; display:block; margin-bottom:16px;">A free guide,</span>
+    <h1 class="display guide-title">A Free Guide for Practitioners Who Want a Digital Home That's Truly Theirs.</h1>
+    <p class="guide-subtitle">No lock-in. No templates. Just practical clarity.</p>
+  </div>
+</section>
+
+<section class="guide-intro-section">
+  <div class="max-site" style="max-width:680px;">
+    <p class="guide-body">
+      Most healers, therapists, and event producers didn't choose their website platform so much as drift into it. A friend used it. A course recommended it. It was free, or close enough. And then, quietly, it became permanent.
+    </p>
+    <p class="guide-body">
+      The page builder owns your content. The template owns your look. The subscription owns your urgency. This is platform lock-in, and it operates just below the surface of awareness, costing your practice more than money.
+    </p>
+    <p class="guide-body">
+      Digital sovereignty, for the kind of practitioner who reads this sentence, isn't a technical concept. It's a relational one. It's about whether your online home actually belongs to you, whether it holds the energy of your work or the branding of a corporation, and whether you could leave tomorrow without losing a year of your life.
+    </p>
+    <p class="guide-body">
+      This guide is a quiet introduction to that question. Five parts. No sales pitch. Just the clarity I wish someone had handed me.
+    </p>
+    <p class="guide-body" style="font-family:var(--font-display); font-style:italic; color:var(--color-clay);">
+      Ocean Longnion, Senior Web Craftsman<br>
+      <span style="font-size:15px; font-family:var(--font-body); font-style:normal; color:var(--color-ink-soft);">Austin, TX &middot; I hold space too.</span>
+    </p>
+  </div>
+</section>
+
+<section class="guide-chapters-section">
+  <div class="max-site" style="max-width:680px;">
+    <span class="eyebrow" style="font-size:16px; display:block; margin-bottom:40px;">What's inside,</span>
+
+    <div class="guide-chapter">
+      <div class="guide-chapter-num">1</div>
+      <div class="guide-chapter-body">
+        <h2 class="guide-chapter-title">The Invisible Handcuffs</h2>
+        <p class="guide-chapter-desc">
+          Platform lock-in rarely announces itself. It arrives disguised as convenience, then settles into your workflow until leaving feels impossible. This part names what it actually costs your practice: creatively, financially, and energetically. Recognizing the shape of the trap is the first step toward choosing differently.
+        </p>
+      </div>
+    </div>
+
+    <div class="guide-chapter">
+      <div class="guide-chapter-num">2</div>
+      <div class="guide-chapter-body">
+        <h2 class="guide-chapter-title">The Ownership Litmus Test</h2>
+        <p class="guide-chapter-desc">
+          Three questions to ask any web builder before you commit a single hour of your practice to their platform. They are quiet questions, not confrontational ones. But the answers will tell you immediately whether you are building a home or renting a room in someone else's building.
+        </p>
+      </div>
+    </div>
+
+    <div class="guide-chapter">
+      <div class="guide-chapter-num">3</div>
+      <div class="guide-chapter-body">
+        <h2 class="guide-chapter-title">Why Care Matters</h2>
+        <p class="guide-chapter-desc">
+          The people who come to healers, therapists, and conscious event makers are often sensitive to energy, to authenticity, to the difference between something made with care and something mass-produced. Your website communicates before a single word is read. This part explores what it means for a website to feel trustworthy, and what tends to break that feeling.
+        </p>
+      </div>
+    </div>
+
+    <div class="guide-chapter">
+      <div class="guide-chapter-num">4</div>
+      <div class="guide-chapter-body">
+        <h2 class="guide-chapter-title">The Gentle Exit Strategy</h2>
+        <p class="guide-chapter-desc">
+          If you are already on a platform that doesn't serve you, leaving can feel overwhelming. What happens to your content? Your SEO? Your email list? This part walks through a calm, methodical way to move your digital home without losing your footing or your search presence. Small steps, taken in order, without panic.
+        </p>
+      </div>
+    </div>
+
+    <div class="guide-chapter">
+      <div class="guide-chapter-num">5</div>
+      <div class="guide-chapter-body">
+        <h2 class="guide-chapter-title">What Freedom Feels Like</h2>
+        <p class="guide-chapter-desc">
+          What tends to change once a website feels like yours: how practitioners talk about it, how they keep it up, and how clients arrive at their first session. A quiet look at what freedom feels like, and why it lasts.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="guide-gate-section" id="get-the-guide">
+  <div class="max-site" style="max-width:560px;">
+    <span class="eyebrow" style="font-size:16px; display:block; margin-bottom:16px;">Get the full guide,</span>
+    <h2 class="display" style="font-size:40px; margin:0 0 20px; line-height:1.1;">Free. No noise.</h2>
+    <p class="guide-body" style="margin-bottom:32px;">
+      The full guide is ready to read right now, with no sign-up needed. If you would like to be on the list for notes from Ocean on digital sovereignty, leave your email below.
+    </p>
+
+    <% if (locals.submitted) { %>
+      <div class="guide-success">
+        <p style="font-family:var(--font-display); font-style:italic; font-size:20px; color:var(--color-clay); margin:0 0 8px;">Thank you.</p>
+        <p style="font-size:17px; color:var(--color-ink-soft); margin:0 0 20px;">Your address is on the list. The full guide is ready to read now.</p>
+      <a href="/guide/read" style="font-size:17px; color:var(--color-clay); text-decoration:underline; text-underline-offset:3px;">Read the full guide now →</a>
+      </div>
+    <% } else { %>
+      <% if (locals.guideError) { %>
+        <p class="guide-form-error"><%= guideError %></p>
+      <% } %>
+      <form class="guide-form" method="POST" action="/guide">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <%# POST /guide stores the address in newsletter_subscribers. Nothing in this repository sends mail to that table. %>
+        <div class="guide-form-row">
+          <label for="guide-email" class="guide-label">Email address</label>
+          <input
+            id="guide-email"
+            type="email"
+            name="email"
+            required
+            autocomplete="email"
+            placeholder="you@example.com"
+            class="guide-input"
+            <% if (locals.formEmail) { %>value="<%= formEmail %>"<% } %>
+          />
+        </div>
+        <button type="submit" class="guide-submit">Join the list</button>
+      </form>
+      <p class="guide-reassurance">Or <a href="/guide/read" style="color:var(--color-clay);">read it right now without signing up</a>.</p>
+    <% } %>
+  </div>
+</section>
+
+<footer class="guide-footer-note">
+  <div class="max-site">
+    <p style="font-family:var(--font-display); font-style:italic; font-size:16px; color:var(--color-ink-faded); text-align:center; margin:0;">
+      Made with care.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .guide-hero {
+    padding: 96px 0 48px;
+  }
+  .guide-hero-inner {
+    max-width: 780px;
+  }
+  .guide-title {
+    font-size: 58px;
+    line-height: 1.06;
+    margin: 0 0 24px;
+    letter-spacing: -0.018em;
+  }
+  .guide-subtitle {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 20px;
+    color: var(--color-ink-faded);
+    margin: 0;
+  }
+
+  .guide-intro-section {
+    padding: 48px 0 80px;
+    border-top: 1px solid var(--color-rule-soft);
+  }
+  .guide-body {
+    font-size: 18px;
+    line-height: 1.75;
+    color: var(--color-ink-soft);
+    margin: 0 0 22px;
+  }
+  .guide-body:last-child { margin-bottom: 0; }
+
+  .guide-chapters-section {
+    padding: 80px 0 96px;
+    background: var(--color-paper-soft);
+    border-top: 1px solid var(--color-rule-soft);
+    border-bottom: 1px solid var(--color-rule-soft);
+  }
+  .guide-chapter {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    margin-bottom: 52px;
+  }
+  .guide-chapter:last-child { margin-bottom: 0; }
+  .guide-chapter-num {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 500;
+    color: var(--color-clay);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 44px;
+    padding-top: 6px;
+    opacity: 0.55;
+  }
+  .guide-chapter-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 26px;
+    margin: 0 0 10px;
+    color: var(--color-ink);
+    letter-spacing: -0.005em;
+  }
+  .guide-chapter-desc {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--color-ink-soft);
+    margin: 0;
+  }
+
+  .guide-gate-section {
+    padding: 96px 0 80px;
+  }
+  .guide-form { margin-bottom: 16px; }
+  .guide-form-row { margin-bottom: 16px; }
+  .guide-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-ink-soft);
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+  .guide-input {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 17px;
+    font-family: var(--font-body);
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border: 1px solid var(--color-rule);
+    border-radius: 6px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .guide-input:focus {
+    border-color: var(--color-clay);
+    box-shadow: 0 0 0 3px rgba(184, 150, 131, 0.18);
+  }
+  .guide-submit {
+    display: inline-block;
+    padding: 14px 32px;
+    background: var(--color-ink);
+    color: var(--color-vellum);
+    font-size: 17px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  .guide-submit:hover { background: var(--color-clay); }
+  .guide-reassurance {
+    font-size: 14px;
+    color: var(--color-ink-faded);
+    margin: 12px 0 0;
+  }
+  .guide-form-error {
+    font-size: 15px;
+    color: #b04040;
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    background: rgba(176, 64, 64, 0.07);
+    border-radius: 5px;
+  }
+  .guide-success {
+    padding: 28px 32px;
+    background: var(--color-paper-soft);
+    border: 1px solid var(--color-rule-soft);
+    border-radius: 8px;
+  }
+
+  .guide-footer-note {
+    padding: 40px 0 64px;
+    border-top: 1px solid var(--color-rule-soft);
+  }
+
+  @media (max-width: 680px) {
+    .guide-title { font-size: 38px; }
+    .guide-hero { padding: 64px 0 32px; }
+    .guide-chapter { gap: 16px; }
+    .guide-chapter-num { font-size: 36px; width: 32px; }
+    .guide-chapter-title { font-size: 22px; }
+  }
+</style>

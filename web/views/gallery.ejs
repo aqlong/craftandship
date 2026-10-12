@@ -1,0 +1,389 @@
+<%
+  var apps = typeof apps !== 'undefined' && Array.isArray(apps) ? apps : [];
+  var categories = typeof categories !== 'undefined' && Array.isArray(categories) ? categories : [];
+  var current = typeof currentCategory !== 'undefined' ? currentCategory : null;
+
+  // Derive a friendly page label from a path. Returns ONLY the page-name portion
+  // (no "Admin · " prefix); the carousel's pill renders "ADMIN ·" or "PUBLIC ·"
+  // statically and we append this. So /admin -> "Dashboard", /admin/events ->
+  // "Events", /work-with-me -> "Work With Me".
+  function pageLabel(p) {
+    if (!p || p === '/') return 'Home';
+    if (p === '/admin') return 'Dashboard';
+    var clean = String(p).replace(/^\//, '');
+    if (clean.indexOf('admin/') === 0) clean = clean.slice('admin/'.length);
+    return clean.split('-').map(function(s){return s.charAt(0).toUpperCase()+s.slice(1);}).join(' ');
+  }
+  function isAdminPage(p) { return p && String(p).indexOf('/admin') === 0; }
+%>
+
+<section style="padding:80px 0 32px;">
+  <div class="max-site" style="max-width:1280px;">
+    <span class="eyebrow" style="font-size:19px; display:block; margin-bottom:14px;">Recently launched,</span>
+    <h1 class="display gallery-title">A short list of <em style="color:var(--color-clay);">recent websites.</em></h1>
+    <p style="font-size:20px; color:var(--color-ink-soft); line-height:1.55; max-width:640px; margin:24px 0 0;">
+      Each one belongs to a real practitioner doing real work. Names where the owner has shared one with us; otherwise, the work and the place.
+    </p>
+  </div>
+</section>
+
+<% if (categories && categories.length > 1) { %>
+  <section style="padding:24px 0 0;">
+    <div class="max-site" style="max-width:1280px;">
+      <div class="gallery-filters">
+        <a href="/gallery" class="chip<%= !current ? ' is-active' : '' %>">All</a>
+        <% categories.forEach(function(cat){ %>
+          <a href="/gallery?category=<%= encodeURIComponent(cat) %>" class="chip<%= current === cat ? ' is-active' : '' %>"><%= cat %></a>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+<% } %>
+
+<section style="padding:48px 0 96px;">
+  <div class="max-site" style="max-width:1280px;">
+    <% if (apps.length === 0) { %>
+      <div class="gallery-empty">
+        <p style="font-family:var(--font-display); font-style:italic; font-size:22px; color:var(--color-ink-soft); margin:0 0 18px; line-height:1.5;">
+          The gallery is just beginning to fill in. We'll publish work here as practitioners ask us to.
+        </p>
+        <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+      </div>
+    <% } else { %>
+      <div class="gallery-grid">
+        <% apps.forEach(function(app, cardIdx){ %>
+          <%
+            // Reorder so public pages come first, admin pages after; preserves
+            // intra-group order. If no shots, falls through to the blank tile.
+            var shots = (app.screenshot_urls || []).slice();
+            shots.sort(function(a,b){
+              var aa = isAdminPage(a.page) ? 1 : 0;
+              var bb = isAdminPage(b.page) ? 1 : 0;
+              return aa - bb;
+            });
+            var hasShots = shots.length > 0;
+          %>
+          <article class="harbor-card" data-card-idx="<%= cardIdx %>">
+            <a class="harbor-card__link" href="<%= httpUrl(app.live_url) %>"<% if (httpUrl(app.live_url) !== '#') { %> target="_blank" rel="noopener noreferrer"<% } %> aria-label="Visit <%= app.display_name %>"></a>
+
+            <% if (hasShots) { %>
+              <div class="harbor-card__carousel" data-frame-count="<%= shots.length %>">
+                <% shots.forEach(function(shot, i){ %>
+                  <div class="harbor-card__frame<%= i === 0 ? ' is-active' : '' %>"
+                       data-frame-idx="<%= i %>"
+                       data-page-label="<%= pageLabel(shot.page) %>"
+                       data-page-kind="<%= isAdminPage(shot.page) ? 'admin' : 'public' %>">
+                    <img src="<%= shot.url %>"
+                         alt="<%= app.display_name %>: <%= pageLabel(shot.page) %>"
+                         loading="<%= i === 0 ? 'eager' : 'lazy' %>" />
+                  </div>
+                <% }); %>
+                <div class="harbor-card__labels" aria-hidden="true">
+                  <% shots.forEach(function(shot, i){ %>
+                    <span class="harbor-card__label harbor-card__label--<%= isAdminPage(shot.page) ? 'admin' : 'public' %><%= i === 0 ? ' is-active' : '' %>"
+                          data-label-idx="<%= i %>">
+                      <span class="harbor-card__label-kind"><%= isAdminPage(shot.page) ? 'Admin' : 'Public' %></span>
+                      <span class="harbor-card__label-sep">·</span>
+                      <span class="harbor-card__label-name"><%= pageLabel(shot.page) %></span>
+                    </span>
+                  <% }); %>
+                </div>
+                <div class="harbor-card__dots" aria-hidden="true">
+                  <% shots.forEach(function(_, i){ %>
+                    <span class="harbor-card__dot<%= i === 0 ? ' is-active' : '' %>" data-dot-idx="<%= i %>"></span>
+                  <% }); %>
+                </div>
+              </div>
+            <% } else { %>
+              <div class="harbor-card__carousel harbor-card__carousel--blank">
+                <span class="hand"><%= app.display_name %></span>
+              </div>
+            <% } %>
+
+            <div class="harbor-card__body">
+              <div class="harbor-card__meta">
+                <% if (app.category) { %>
+                  <span class="harbor-card__category"><%= app.category %></span>
+                <% } %>
+                <% if (app.featured) { %>
+                  <span class="harbor-card__featured">★ Featured</span>
+                <% } %>
+              </div>
+              <h3 class="display harbor-card__name"><%= app.display_name %></h3>
+              <% if (app.description) { %>
+                <p class="harbor-card__desc"><%= app.description %></p>
+              <% } %>
+              <% if (app.live_url) { %>
+                <span class="harbor-card__visit">
+                  Visit the website
+                  <span class="harbor-card__arrow" aria-hidden="true">&rarr;</span>
+                </span>
+              <% } %>
+            </div>
+          </article>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<section style="padding:0 0 120px;">
+  <div class="max-site" style="max-width:760px;">
+    <div class="gallery-cta">
+      <span class="eyebrow" style="font-size:19px; display:block; margin-bottom:14px;">When you're ready,</span>
+      <h2 class="display" style="font-size:44px; margin:0 0 22px; line-height:1.05;">
+        Make yours.
+      </h2>
+      <p style="font-size:19px; color:var(--color-ink-soft); line-height:1.6; max-width:520px; margin:0 0 28px;">
+        Tell us about your work. Your companion will write back. Talk for as long as it feels right. When it's time, you decide.
+      </p>
+      <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+        <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+        <a href="/pricing" class="btn btn-quiet"><span class="arrow">See pricing</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .gallery-title { font-size:72px; line-height:1.03; margin:0; letter-spacing:-0.020em; }
+  @media (max-width: 900px) { .gallery-title { font-size:48px; } }
+
+  .gallery-filters { display:flex; flex-wrap:wrap; gap:8px; }
+  .gallery-filters .chip.is-active {
+    background:var(--color-ink); color:var(--color-vellum); border-color:var(--color-ink);
+  }
+
+  /* Bigger card grid: 2 cols on desktop (was 3), 1 on tablet/mobile. */
+  .gallery-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:48px; }
+  @media (max-width: 1100px) { .gallery-grid { grid-template-columns:1fr; gap:36px; } }
+
+  .harbor-card {
+    position:relative;
+    display:flex; flex-direction:column;
+    background:var(--color-vellum);
+    border:1px solid var(--color-rule);
+    border-radius: 6px;
+    text-decoration:none; color:var(--color-ink);
+    box-shadow:0 1px 0 rgba(255, 250, 235, 0.40) inset, 0 8px 24px rgba(58, 42, 31, 0.08);
+    overflow:hidden;
+    transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+  }
+  .harbor-card:hover {
+    transform: translateY(-4px);
+    box-shadow:0 1px 0 rgba(255, 250, 235, 0.40) inset, 0 18px 36px rgba(58, 42, 31, 0.16);
+    border-color: var(--color-companion-rule);
+  }
+  /* Whole-card-clickable: position an anchor over the card, with body/labels
+     on top so dots + visible body remain interactive-feeling. */
+  .harbor-card__link {
+    position:absolute; inset:0; z-index:2;
+    text-decoration:none;
+  }
+
+  /* Carousel: 16:10 frame stack. Frames absolutely positioned, fade in/out
+     via opacity. JS rotates every 4s. prefers-reduced-motion disables. */
+  .harbor-card__carousel {
+    position:relative;
+    aspect-ratio: 16 / 10;
+    overflow:hidden;
+    background:var(--color-paper-soft);
+    border-bottom:1px solid var(--color-rule);
+  }
+  .harbor-card__carousel--blank {
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, var(--color-paper-soft) 0%, var(--color-companion-paper) 100%);
+    text-align:center; padding:24px;
+  }
+  .harbor-card__carousel--blank .hand {
+    color:var(--color-ink-pencil); font-size:26px;
+  }
+  .harbor-card__frame {
+    position:absolute; inset:0;
+    opacity:0; visibility:hidden;
+    transition: opacity .55s ease;
+    will-change: opacity;
+  }
+  .harbor-card__frame.is-active { opacity:1; visibility:visible; }
+  .harbor-card__frame img {
+    display:block; width:100%; height:100%; object-fit:cover; object-position: top center;
+  }
+
+  /* Label badge: top-right corner; switches with the active frame. */
+  .harbor-card__labels {
+    position:absolute; top:14px; right:14px; z-index:3;
+    pointer-events:none;
+  }
+  .harbor-card__label {
+    position:absolute; top:0; right:0;
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 12px;
+    border-radius:999px;
+    font-family: var(--font-body);
+    font-size:12px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+    backdrop-filter: blur(8px);
+    background: rgba(255, 250, 240, 0.86);
+    color: var(--color-ink);
+    box-shadow: 0 2px 8px rgba(58, 42, 31, 0.12);
+    white-space:nowrap;
+    opacity:0; visibility:hidden;
+    transition: opacity .35s ease;
+  }
+  .harbor-card__label.is-active { opacity:1; visibility:visible; }
+  .harbor-card__label--admin .harbor-card__label-kind { color: var(--color-clay); }
+  .harbor-card__label--public .harbor-card__label-kind { color: var(--color-lantern-deep); }
+  .harbor-card__label-sep { color: rgba(58, 42, 31, 0.3); }
+
+  /* Dots row: bottom-center, indicates current frame. Clickable to jump. */
+  .harbor-card__dots {
+    position:absolute; left:0; right:0; bottom:12px; z-index:3;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    pointer-events:none;
+  }
+  .harbor-card__dot {
+    width:7px; height:7px; border-radius:50%;
+    background: rgba(255, 250, 240, 0.55);
+    box-shadow: 0 1px 3px rgba(58, 42, 31, 0.25);
+    transition: width .22s ease, background .22s ease, transform .22s ease;
+  }
+  .harbor-card__dot.is-active {
+    width:20px; border-radius:4px;
+    background: var(--color-vellum);
+  }
+
+  .harbor-card__body {
+    position:relative; z-index:3;
+    padding:26px 30px 30px;
+    display:flex; flex-direction:column; gap:12px;
+    flex:1;
+    pointer-events:none; /* anchor underneath handles the click */
+  }
+  .harbor-card__meta {
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    min-height: 18px;
+  }
+  .harbor-card__category {
+    color: var(--color-clay);
+    font-family: var(--font-body);
+    text-transform: none;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .harbor-card__featured {
+    color: var(--color-lantern-deep);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .harbor-card__name {
+    font-size:30px; line-height:1.12; margin:0; letter-spacing:-0.008em;
+  }
+  .harbor-card__desc {
+    font-family:var(--font-display); font-style:italic; font-size:18px;
+    color:var(--color-ink-soft); margin:0; line-height:1.55;
+    flex:1;
+  }
+  .harbor-card__visit {
+    margin-top:18px; padding-top:16px;
+    border-top:1px dashed var(--color-rule);
+    font-family: var(--font-body); font-size:15px; font-weight:600; letter-spacing:0.01em;
+    color:var(--color-ink-soft);
+    display:flex; align-items:center; gap:8px;
+  }
+  .harbor-card__arrow {
+    color: var(--color-clay);
+    transition: transform .18s ease;
+    display: inline-block;
+  }
+  .harbor-card:hover .harbor-card__arrow { transform: translateX(4px); color: var(--color-lantern-deep); }
+
+  .gallery-empty {
+    padding:64px 32px;
+    background:var(--color-companion-paper);
+    box-shadow:var(--shadow-slip); border-radius: 5px;
+    text-align:center;
+  }
+  .gallery-cta {
+    background:var(--color-companion-paper);
+    padding:48px 48px 44px;
+    box-shadow:var(--shadow-letter); border-radius: 5px;
+  }
+  @media (max-width: 600px) {
+    .gallery-cta { padding:32px 24px 28px; }
+    .harbor-card__body { padding:22px 22px 24px; }
+    .harbor-card__name { font-size:24px; }
+    .harbor-card__desc { font-size:16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .harbor-card__frame { transition: none; }
+    .harbor-card__label { transition: none; }
+    .harbor-card__carousel[data-frame-count] { /* JS bails out when reduced-motion is set */ }
+  }
+</style>
+
+<script nonce="<%= typeof cspNonce !== 'undefined' ? cspNonce : '' %>">
+(function() {
+  'use strict';
+  if (typeof document === 'undefined') return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return; // honor user preference: no auto-rotate
+
+  var INTERVAL_MS = 4000;
+
+  document.querySelectorAll('.harbor-card__carousel[data-frame-count]').forEach(function(carousel) {
+    var n = parseInt(carousel.getAttribute('data-frame-count'), 10);
+    if (!(n > 1)) return; // single frame, nothing to rotate
+    var frames = carousel.querySelectorAll('.harbor-card__frame');
+    var labels = carousel.querySelectorAll('.harbor-card__label');
+    var dots = carousel.querySelectorAll('.harbor-card__dot');
+    var idx = 0;
+    var timer = null;
+    var paused = false;
+
+    function setActive(next) {
+      frames.forEach(function(f, i) { f.classList.toggle('is-active', i === next); });
+      labels.forEach(function(l, i) { l.classList.toggle('is-active', i === next); });
+      dots.forEach(function(d, i) { d.classList.toggle('is-active', i === next); });
+      idx = next;
+    }
+    function tick() {
+      if (paused) return;
+      setActive((idx + 1) % n);
+    }
+    function start() {
+      if (timer) return;
+      timer = setInterval(tick, INTERVAL_MS);
+    }
+    function stop() {
+      if (!timer) return;
+      clearInterval(timer);
+      timer = null;
+    }
+
+    // Pause on hover, resume on leave; keeps the carousel from advancing
+    // while a customer is reading a specific frame.
+    var card = carousel.closest('.harbor-card');
+    if (card) {
+      card.addEventListener('mouseenter', function() { paused = true; });
+      card.addEventListener('mouseleave', function() { paused = false; });
+    }
+
+    // Only rotate when the card is on-screen; saves CPU + improves
+    // perceived smoothness if the page is long.
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) start(); else stop();
+        });
+      }, { threshold: 0.25 });
+      io.observe(carousel);
+    } else {
+      start();
+    }
+  });
+})();
+</script>

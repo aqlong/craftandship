@@ -1,0 +1,19 @@
+# gitleaks configuration. Default rules are used unchanged.
+# Run: gitleaks detect --config .gitleaks.toml
+title = "Craft & Ship gitleaks config"
+
+[extend]
+useDefault = true
+
+# The only allowlist entry. Golden-file snapshots are maps of
+# "generated file path" -> "sha256 of its contents" (see
+# scripts/bless_golden.py). A sha256 digest on a line whose key contains
+# the word "password" (views/set-password.ejs) trips the generic-api-key
+# rule. The values are content hashes of test output, not credentials.
+# Scope: that file pattern only, and only 64-character hex values.
+[[allowlists]]
+description = "sha256 content hashes in golden-file snapshots"
+condition = "AND"
+paths = ['''tests/golden/[^/]+/artifact\.snapshot\.json$''']
+regexes = ['''^[0-9a-f]{64}$''']
+regexTarget = "secret"

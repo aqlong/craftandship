@@ -1,0 +1,61 @@
+<%
+  // Comparison hub view (mounted at the SEO comparison route). Lists every
+  // comparison page so AI-engine crawlers and human visitors landing on
+  // the "alternative to" keyword cluster can navigate. Visible body stays
+  // affirmative; competitor names enter through the per-page link labels
+  // (page.pageTitle) which themselves come from the data file.
+%>
+<section style="padding:80px 0 32px;">
+  <div class="max-site" style="max-width:760px;">
+    <span class="eyebrow" style="font-size:19px; display:block; margin-bottom:14px;">For practitioners shopping around,</span>
+    <h1 class="display compare-hub-title">A real alternative to template website builders.</h1>
+    <p style="font-size:21px; color:var(--color-ink-soft); line-height:1.55; max-width:680px; margin:24px 0 0;">
+      Craft &amp; Ship makes custom websites with healers, therapists, breathwork facilitators, and small studios. Built from a library of tested building blocks, with a recorded review approval before it goes live, kept across the years.
+    </p>
+  </div>
+</section>
+
+<section style="padding:24px 0 96px;">
+  <div class="max-site" style="max-width:760px;">
+    <h2 class="display" style="font-size:30px; margin:0 0 24px;">Pages for the platforms practitioners often outgrow.</h2>
+    <ul style="list-style:none; padding:0; margin:0;">
+      <% pages.forEach(function(page) { %>
+        <li style="border-top:1px solid var(--color-rule); padding:20px 0;">
+          <%# brand-voice-allow-competitor: link to SEO comparison page %>
+          <a href="<%= '/vs/' + page.slug %>" style="display:flex; flex-direction:column; gap:6px; text-decoration:none; color:inherit;">
+            <span class="display" style="font-size:24px; color:var(--color-ink);">
+              <%= page.pageTitle %> &rarr;
+            </span>
+            <span style="color:var(--color-ink-soft); font-size:17px; line-height:1.55;">
+              <%= page.tagline %>
+            </span>
+          </a>
+        </li>
+      <% }) %>
+    </ul>
+  </div>
+</section>
+
+<section style="padding:0 0 120px;">
+  <div class="max-site" style="max-width:760px;">
+    <div class="pricing-final-cta" style="background:var(--color-companion-paper); padding:48px 48px 44px; box-shadow:var(--shadow-letter);">
+      <span class="eyebrow" style="font-size:19px; display:block; margin-bottom:14px;">When you're ready,</span>
+      <h2 class="display" style="font-size:44px; margin:0 0 22px; line-height:1.05;">
+        Begin a conversation.
+      </h2>
+      <p style="font-size:19px; color:var(--color-ink-soft); line-height:1.6; max-width:540px; margin:0 0 28px;">
+        Tell us about your work. Your companion will write back. Talk for as long as it feels right. When it's time, you decide.
+      </p>
+      <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+        <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+        <a href="/how-it-works" class="btn btn-quiet"><span class="arrow">See how it works</span></a>
+        <a href="/pricing" class="btn btn-quiet"><span class="arrow">See pricing</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .compare-hub-title { font-size:60px; line-height:1.05; margin:0; letter-spacing:-0.018em; }
+  @media (max-width: 900px) { .compare-hub-title { font-size:40px; } }
+</style>

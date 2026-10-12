@@ -1,0 +1,56 @@
+<!-- compose:widget offerings/staff-card-grid -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<% var _staff = (typeof items !== 'undefined' && items) ? items : (typeof rows !== 'undefined' ? rows : []); %>
+<%
+  // Content-integrity rule: render nothing when there are no real staff.
+  // Prior version rendered the section chrome + heading + a "Team coming
+  // soon." message even when items was empty, leaving an awkward empty
+  // band on home pages (e.g. salon-home-default + salon-home-trust-first
+  // + salon-home-editorial). The dedicated /staff page returns empty
+  // until the customer adds real team members via /admin/staff.
+%>
+<% if (_staff.length > 0) { %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-10">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= eyebrow %></div>
+        <% } %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+      </div>
+    <% } %>
+      <div class="cas-card-grid-3">
+        <% _staff.forEach(function(person) { %>
+          <article class="rounded-xl border overflow-hidden" style="background-color: var(--color-surface); border-color: var(--color-border);">
+            <% if (person.photo_url || person.image_url) { %>
+              <div style="aspect-ratio: 4/5; background-color: var(--color-background); overflow: hidden;">
+                <img src="<%= person.photo_url || person.image_url %>" alt="<%= person.name %>" class="w-full h-full object-cover" loading="lazy" />
+              </div>
+            <% } %>
+            <div class="p-5">
+              <h3 class="font-display text-lg font-bold mb-1" style="color: var(--color-foreground);"><%= person.name %></h3>
+              <% if (person.role || person.title) { %>
+                <div class="font-body text-xs font-bold uppercase tracking-widest mb-2" style="color: var(--color-primary);"><%= person.role || person.title %></div>
+              <% } %>
+              <% if (person.bio) { %>
+                <p class="font-body text-sm leading-relaxed mb-3" style="color: var(--color-foreground-muted);"><%= (person.bio.length > 180 ? person.bio.substring(0, 180) + '…' : person.bio) %></p>
+              <% } %>
+              <% var _spec = person.specialties; if (typeof _spec === 'string') { try { _spec = JSON.parse(_spec); } catch(e) { _spec = _spec.split(',').map(function(s){return s.trim();}); } } _spec = _spec || []; %>
+              <% if (_spec.length > 0) { %>
+                <div class="flex flex-wrap gap-1 mb-3">
+                  <% _spec.forEach(function(s) { %>
+                    <span class="inline-block px-2 py-1 rounded-full font-body text-xs" style="background-color: var(--color-secondary); color: var(--color-primary);"><%= s %></span>
+                  <% }); %>
+                </div>
+              <% } %>
+              <% if (person.booking_url) { %>
+                <a href="<%= person.booking_url %>" class="font-body text-sm font-medium transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">Book with <%= person.name.split(' ')[0] %> →</a>
+              <% } %>
+            </div>
+          </article>
+        <% }); %>
+      </div>
+  </div>
+</section>
+<% } %>

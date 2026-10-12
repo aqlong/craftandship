@@ -1,0 +1,54 @@
+{
+  "spec_version": "v1",
+  "app_name": "sample-event-producer-v1",
+  "description": "Small event producer running seasonal art shows and pop-up markets across city neighborhoods",
+  "admin_email": "events@example.com",
+  "user_roles": [
+    {"role": "admin", "description": "Producer; manages events, venues, registrations"}
+  ],
+  "data_models": [
+    {
+      "name": "Venue",
+      "fields": [
+        {"name": "name", "type": "string", "required": true},
+        {"name": "address", "type": "string"},
+        {"name": "city", "type": "string"},
+        {"name": "capacity", "type": "integer"}
+      ]
+    },
+    {
+      "name": "Event",
+      "belongs_to": "Venue",
+      "fields": [
+        {"name": "title", "type": "string", "required": true},
+        {"name": "event_date", "type": "date", "required": true},
+        {"name": "start_time", "type": "time"},
+        {"name": "description", "type": "text"},
+        {"name": "price", "type": "integer"},
+        {"name": "published", "type": "boolean"}
+      ]
+    },
+    {
+      "name": "Registration",
+      "belongs_to": "Event",
+      "fields": [
+        {"name": "name", "type": "string", "required": true},
+        {"name": "email", "type": "email", "required": true},
+        {"name": "phone", "type": "phone"},
+        {"name": "tickets", "type": "integer"}
+      ]
+    }
+  ],
+  "pages": [
+    {"path": "/events", "title": "Upcoming Events", "purpose": "Browse upcoming shows"},
+    {
+      "path": "/register",
+      "title": "Register",
+      "purpose": "Reserve tickets for an upcoming show",
+      "form_target": "Registration",
+      "allowed_fields": ["name", "email", "phone", "tickets"],
+      "submit_text": "Get Tickets",
+      "success_message": "Registered. Your ticket info is on the way."
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+<%# Fixture source: builds/medicine-waves-v12-4e89d606/views/admin/settings.ejs %>
+<%# Captured: 2026-04-17 (do not edit; regenerate via copy if upstream changes) %>
+<div class="max-w-4xl mx-auto py-8 px-4">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-slate-200">Site Settings</h1>
+    <a href="/admin" class="text-sm text-white hover:underline">&larr; Back to Dashboard</a>
+  </div>
+
+  <% if (typeof flash !== 'undefined' && flash) { %>
+    <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
+      <%= flash %>
+    </div>
+  <% } %>
+
+  <form method="POST" action="/admin/settings" class="space-y-8">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <!-- Contact Information -->
+    <div class="card-premium p-6">
+      <h2 class="text-lg font-semibold text-slate-300 mb-4">Contact Information</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="business_name" class="block text-sm font-medium text-slate-400 mb-1">Business Name</label>
+          <input type="text" id="business_name" name="business_name"
+                 value="<%= (typeof settings !== 'undefined' && settings.business_name) || '' %>"
+                 class="input-premium w-full" placeholder="Your Business Name">
+        </div>
+        <div>
+          <label for="support_email" class="block text-sm font-medium text-slate-400 mb-1">Support Email</label>
+          <input type="email" id="support_email" name="support_email"
+                 value="<%= (typeof settings !== 'undefined' && settings.support_email) || '' %>"
+                 class="input-premium w-full" placeholder="hello@example.com">
+        </div>
+        <div>
+          <label for="phone" class="block text-sm font-medium text-slate-400 mb-1">Phone Number</label>
+          <input type="tel" id="phone" name="phone"
+                 value="<%= (typeof settings !== 'undefined' && settings.phone) || '' %>"
+                 class="input-premium w-full" placeholder="(555) 555-0100">
+        </div>
+        <div>
+          <label for="address" class="block text-sm font-medium text-slate-400 mb-1">Address</label>
+          <input type="text" id="address" name="address"
+                 value="<%= (typeof settings !== 'undefined' && settings.address) || '' %>"
+                 class="input-premium w-full" placeholder="123 Main St, City, State">
+        </div>
+      </div>
+    </div>
+
+    <!-- Social Media Links -->
+    <div class="card-premium p-6">
+      <h2 class="text-lg font-semibold text-slate-300 mb-4">Social Media Links</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="instagram_url" class="block text-sm font-medium text-slate-400 mb-1">Instagram</label>
+          <input type="url" id="instagram_url" name="instagram_url"
+                 value="<%= (typeof settings !== 'undefined' && settings.instagram_url) || '' %>"
+                 class="input-premium w-full" placeholder="https://instagram.com/yourpage">
+        </div>
+        <div>
+          <label for="facebook_url" class="block text-sm font-medium text-slate-400 mb-1">Facebook</label>
+          <input type="url" id="facebook_url" name="facebook_url"
+                 value="<%= (typeof settings !== 'undefined' && settings.facebook_url) || '' %>"
+                 class="input-premium w-full" placeholder="https://facebook.com/yourpage">
+        </div>
+        <div>
+          <label for="youtube_url" class="block text-sm font-medium text-slate-400 mb-1">YouTube</label>
+          <input type="url" id="youtube_url" name="youtube_url"
+                 value="<%= (typeof settings !== 'undefined' && settings.youtube_url) || '' %>"
+                 class="input-premium w-full" placeholder="https://youtube.com/@yourchannel">
+        </div>
+        <div>
+          <label for="tiktok_url" class="block text-sm font-medium text-slate-400 mb-1">TikTok</label>
+          <input type="url" id="tiktok_url" name="tiktok_url"
+                 value="<%= (typeof settings !== 'undefined' && settings.tiktok_url) || '' %>"
+                 class="input-premium w-full" placeholder="https://tiktok.com/@yourpage">
+        </div>
+        <div>
+          <label for="twitter_url" class="block text-sm font-medium text-slate-400 mb-1">Twitter / X</label>
+          <input type="url" id="twitter_url" name="twitter_url"
+                 value="<%= (typeof settings !== 'undefined' && settings.twitter_url) || '' %>"
+                 class="input-premium w-full" placeholder="https://twitter.com/yourpage">
+        </div>
+        <div>
+          <label for="linkedin_url" class="block text-sm font-medium text-slate-400 mb-1">LinkedIn</label>
+          <input type="url" id="linkedin_url" name="linkedin_url"
+                 value="<%= (typeof settings !== 'undefined' && settings.linkedin_url) || '' %>"
+                 class="input-premium w-full" placeholder="https://linkedin.com/company/yourco">
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:opacity-90 transition font-medium">
+        Save Settings
+      </button>
+    </div>
+  </form>
+</div>

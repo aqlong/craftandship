@@ -1,0 +1,133 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <div class="flex items-center gap-4 mb-4 flex-wrap">
+    <span class="admin-badge bg-surface-2 text-muted"><%= total %> total</span>
+    <span class="text-subtle text-sm">Showing last 50 per page</span>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-xs text-subtle mb-1">Sent Today</div>
+      <div class="text-xl sm:text-2xl font-bold text-brand"><%= todayStats.sent %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-xs text-subtle mb-1">Failed Today</div>
+      <div class="text-xl sm:text-2xl font-bold text-red-400"><%= todayStats.failed %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-xs text-subtle mb-1">Skipped Today</div>
+      <div class="text-xl sm:text-2xl font-bold text-subtle"><%= todayStats.skipped %></div>
+    </div>
+  </div>
+
+  <form class="bg-surface-3 rounded-[10px] p-3 sm:p-4 mb-6 flex flex-col sm:flex-row gap-3 flex-wrap items-stretch sm:items-end" method="GET" action="/admin/emails">
+    <div>
+      <label class="text-muted text-xs block mb-1">Status</label>
+      <select name="status" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm min-w-[140px]">
+        <option value="" <%= filters.status === '' ? 'selected' : '' %>>All</option>
+        <option value="sent" <%= filters.status === 'sent' ? 'selected' : '' %>>Sent</option>
+        <option value="failed" <%= filters.status === 'failed' ? 'selected' : '' %>>Failed</option>
+        <option value="skipped" <%= filters.status === 'skipped' ? 'selected' : '' %>>Skipped</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-muted text-xs block mb-1">Template</label>
+      <select name="template" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm min-w-[140px]">
+        <option value="" <%= filters.template === '' ? 'selected' : '' %>>All</option>
+        <option value="welcome" <%= filters.template === 'welcome' ? 'selected' : '' %>>welcome</option>
+        <option value="app_live" <%= filters.template === 'app_live' ? 'selected' : '' %>>app_live</option>
+        <option value="build_failed" <%= filters.template === 'build_failed' ? 'selected' : '' %>>build_failed</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-muted text-xs block mb-1">Search</label>
+      <input type="text" name="q" value="<%= filters.q %>" placeholder="email, subject, or template" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full sm:min-w-[200px] sm:w-auto" />
+    </div>
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </form>
+
+  <!-- Desktop table -->
+  <div class="hidden lg:block bg-surface-3 rounded-[10px] overflow-x-auto">
+    <% if (logs.length === 0) { %>
+      <div class="text-center py-12 text-subtle">No email attempts found.</div>
+    <% } else { %>
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr>
+            <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Timestamp</th>
+            <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">To</th>
+            <th class="hidden xl:table-cell px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Template</th>
+            <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Subject</th>
+            <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Status</th>
+            <th class="hidden 2xl:table-cell px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Code</th>
+            <th class="hidden 2xl:table-cell px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Duration</th>
+            <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Error</th>
+            <th class="hidden 2xl:table-cell px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Resend ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const log of logs) { %>
+            <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2 cursor-pointer" data-href="/admin/emails/<%= log.id %>">
+              <td class="px-2.5 py-2.5 text-subtle text-xs whitespace-nowrap"><span data-ts="<%= new Date(log.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(log.created_at).toISOString().replace('T', ' ').slice(0, 19) %> UTC</span></td>
+              <td class="px-2.5 py-2.5 text-gray-200"><div class="max-w-[220px] overflow-hidden text-ellipsis whitespace-nowrap" title="<%= log.to_email %>"><%= log.to_email %></div></td>
+              <td class="hidden xl:table-cell px-2.5 py-2.5 font-mono text-brand-sky text-xs"><%= log.template %></td>
+              <td class="px-2.5 py-2.5 text-gray-200"><div class="max-w-[260px] overflow-hidden text-ellipsis whitespace-nowrap"><a class="text-gray-200 no-underline hover:text-brand hover:underline" href="/admin/emails/<%= log.id %>" title="<%= log.subject %>"><%= log.subject %></a></div></td>
+              <td class="px-2.5 py-2.5"><span class="admin-badge admin-badge-<%= log.status %>"><%= log.status %></span></td>
+              <td class="hidden 2xl:table-cell px-2.5 py-2.5 font-mono text-muted text-xs"><%= log.status_code != null ? log.status_code : '' %></td>
+              <td class="hidden 2xl:table-cell px-2.5 py-2.5 text-muted whitespace-nowrap text-xs"><%= log.duration_ms != null ? log.duration_ms + 'ms' : '' %></td>
+              <td class="px-2.5 py-2.5 text-red-300 text-xs"><% if (log.error_message) { %><div class="max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap" title="<%= log.error_message %>"><%= log.error_message %></div><% } %></td>
+              <td class="hidden 2xl:table-cell px-2.5 py-2.5 font-mono text-muted text-[0.75rem]"><div class="max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap" title="<%= log.resend_id || '' %>"><%= log.resend_id ? log.resend_id.slice(0, 16) + '...' : '' %></div></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <!-- Mobile/tablet card view -->
+  <div class="lg:hidden space-y-3">
+    <% if (logs.length === 0) { %>
+      <div class="text-center py-12 text-subtle">No email attempts found.</div>
+    <% } else { %>
+      <% for (const log of logs) { %>
+        <a href="/admin/emails/<%= log.id %>" class="block bg-surface rounded-lg p-4 no-underline">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-gray-200 text-sm font-semibold flex-1 mr-2 break-words" title="<%= log.subject %>"><%= log.subject.length > 60 ? log.subject.slice(0, 60) + '...' : log.subject %></span>
+            <span class="admin-badge admin-badge-<%= log.status %> shrink-0"><%= log.status %></span>
+          </div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-subtle">To</span>
+            <span class="text-gray-300"><%= log.to_email %></span>
+          </div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-subtle">Template</span>
+            <span class="font-mono text-brand-sky"><%= log.template %></span>
+          </div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-subtle">Time</span>
+            <span class="text-muted"><span data-ts="<%= new Date(log.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(log.created_at).toISOString().replace('T', ' ').slice(0, 19) %> UTC</span></span>
+          </div>
+          <% if (log.error_message) { %>
+          <div class="text-xs mt-2 text-red-300 break-words" title="<%= log.error_message %>"><%= log.error_message.length > 100 ? log.error_message.slice(0, 100) + '...' : log.error_message %></div>
+          <% } %>
+        </a>
+      <% } %>
+    <% } %>
+  </div>
+
+  <% const totalPages = Math.ceil(total / 50); %>
+  <% if (totalPages > 1) { %>
+    <div class="flex gap-3 mt-5 justify-center sm:justify-end flex-wrap items-center">
+      <% if (page > 1) { %>
+        <a class="bg-surface-3 text-muted border border-border rounded-md px-4 py-2 min-h-[44px] flex items-center no-underline text-sm hover:bg-surface-2 hover:text-gray-100" href="/admin/emails?page=<%= page - 1 %>&status=<%= filters.status %>&template=<%= filters.template %>&q=<%= encodeURIComponent(filters.q) %>">Previous</a>
+      <% } %>
+      <span class="text-subtle text-sm">Page <%= page %> of <%= totalPages %></span>
+      <% if (page < totalPages) { %>
+        <a class="bg-surface-3 text-muted border border-border rounded-md px-4 py-2 min-h-[44px] flex items-center no-underline text-sm hover:bg-surface-2 hover:text-gray-100" href="/admin/emails?page=<%= page + 1 %>&status=<%= filters.status %>&template=<%= filters.template %>&q=<%= encodeURIComponent(filters.q) %>">Next</a>
+      <% } %>
+    </div>
+  <% } %>
+
+  <%- include("partials/_admin-auto-refresh", { intervalSeconds: 60 }) %>
+</section>

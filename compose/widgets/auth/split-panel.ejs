@@ -1,0 +1,49 @@
+<!-- compose:widget auth/split-panel; reusable two-column auth shell.
+     Left panel: deep palette-primary surface; right panel: cream
+     form-content slot. The hexagon repeat-pattern overlay is rendered
+     by default but can be suppressed with `noDecoration: true` to keep
+     the dark panel as a solid field (preferred for letterpress and
+     editorial-statement template families). The active default auth
+     shell is now widgets/auth/letterpress.ejs (single-column); this
+     widget is retained for callers that opt into the split layout.
+     Caller passes pre-rendered HTML for the form via locals.bodyHtml;
+     other locals are siteName, tagline, brandHref, brandLogoUrl,
+     formHeading, formSubheading, noDecoration. CSS lives in style.css
+     under .cas-auth-split-* classes. -->
+<%
+var _site = (typeof siteName !== 'undefined' && siteName) ? siteName : ((locals.settings && locals.settings.site_name) || 'Site');
+var _tagline = (typeof tagline !== 'undefined' && tagline) ? tagline : ((locals.settings && locals.settings.site_description) || '');
+var _brandHref = (typeof brandHref !== 'undefined' && brandHref) ? brandHref : '/';
+var _logo = (typeof brandLogoUrl !== 'undefined' && brandLogoUrl) ? brandLogoUrl : ((locals.settings && locals.settings.nav_logo_url) || '');
+var _heading = (typeof formHeading !== 'undefined' && formHeading) ? formHeading : '';
+var _sub = (typeof formSubheading !== 'undefined' && formSubheading) ? formSubheading : '';
+var _body = (typeof bodyHtml !== 'undefined' && bodyHtml) ? bodyHtml : '';
+var _noDecoration = (typeof noDecoration !== 'undefined') ? !!noDecoration : false;
+%>
+<section class="cas-auth-split">
+  <aside class="cas-auth-split__brand" aria-hidden="true">
+    <% if (!_noDecoration) { %>
+      <div class="cas-auth-split__brand-pattern"></div>
+    <% } %>
+    <a class="cas-auth-split__brand-content" href="<%= _brandHref %>">
+      <% if (_logo) { %>
+        <img src="<%= _logo %>" alt="" class="cas-auth-split__brand-logo" />
+      <% } %>
+      <p class="cas-auth-split__brand-mark"><%= _site %></p>
+      <% if (_tagline) { %>
+        <p class="cas-auth-split__brand-tagline"><%= _tagline %></p>
+      <% } %>
+    </a>
+  </aside>
+  <main class="cas-auth-split__form" role="main">
+    <div class="cas-auth-split__form-inner">
+      <% if (_heading) { %>
+        <h1 class="cas-auth-split__form-heading"><%= _heading %></h1>
+      <% } %>
+      <% if (_sub) { %>
+        <p class="cas-auth-split__form-subheading"><%= _sub %></p>
+      <% } %>
+      <%- _body %>
+    </div>
+  </main>
+</section>

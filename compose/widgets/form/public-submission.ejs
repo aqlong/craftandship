@@ -1,0 +1,62 @@
+<!-- compose:widget form/public-submission -->
+<%
+// Generic public form bound to a data model. Takes {heading, description,
+// fields, action, submit_text, submitted}. Fields list is {name, field_type,
+// label, required, help?, options?}. Includes CSRF hidden input + honeypot +
+// flash zones. The POST handler in routes/pages.js checks the CSRF token and
+// every submitted field, stores the row, sets a session flash and redirects
+// back to this form; a rejected submission comes back with what was typed.
+%>
+<%
+var _v = (typeof submitted !== 'undefined' && submitted) ? submitted : {};
+var _fields = (typeof fields !== 'undefined' && fields) ? fields : [];
+var _heading = (typeof heading !== 'undefined' && heading) ? heading : 'Submit';
+var _description = (typeof description !== 'undefined' && description) ? description : '';
+var _action = (typeof action !== 'undefined' && action) ? action : '';
+var _submitText = (typeof submit_text !== 'undefined' && submit_text) ? submit_text : 'Send';
+%>
+<section style="background-color: var(--color-background); padding-block: clamp(3rem, 7vw, 6rem);">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6">
+    <div class="text-center mb-8">
+      <h2 class="font-display text-3xl font-bold mb-3" style="color: var(--color-foreground);"><%= _heading %></h2>
+      <% if (_description) { %>
+        <p class="font-body text-base" style="color: var(--color-foreground-muted); max-width: 40rem; margin: 0 auto;"><%= _description %></p>
+      <% } %>
+    </div>
+    <% if (locals.flashSuccess) { %>
+      <div class="mb-4 bg-green-50 text-green-800 border border-green-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= flashSuccess %></div>
+    <% } %>
+    <% if (locals.flashError) { %>
+      <div class="mb-4 bg-red-50 text-red-800 border border-red-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= flashError %></div>
+    <% } %>
+    <form action="<%= _action %>" method="POST" class="rounded-xl border cas-form" style="background-color: var(--color-surface); border-color: var(--color-border); padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem;">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <!-- Honeypot; real users leave this blank. Bots fill every visible
+           input so hiding it via CSS + aria-hidden catches most spam. Server
+           rejects non-empty honeypot submissions with a success-looking
+           response so bots do not learn we filter. -->
+      <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+        <label>Website<input type="text" name="website_url_hp" value="" tabindex="-1" autocomplete="off"></label>
+      </div>
+      <% _fields.forEach(function(f) {
+        var _opts = {
+          name: f.name,
+          field_type: f.field_type || 'text',
+          label: f.label || f.name,
+          value: _v[f.name],
+          required: !!f.required,
+          help: f.help || '',
+        };
+        if (f.options) _opts.options = f.options;
+        if (f.rows) _opts.rows = f.rows;
+        if (f.placeholder) _opts.placeholder = f.placeholder;
+      %>
+        <%- include('./field.ejs', _opts) %>
+      <% }); %>
+      <button type="submit" class="w-full font-body font-medium px-6 py-3 rounded-md transition-all hover:opacity-90 min-h-[44px] inline-flex items-center justify-center" style="background-color: var(--color-primary); color: var(--color-on-primary); gap: 8px;">
+        <span><%= _submitText %></span>
+        <%- include('../utility/icon.ejs', { name: 'arrow-right', size: 16 }) %>
+      </button>
+    </form>
+  </div>
+</section>

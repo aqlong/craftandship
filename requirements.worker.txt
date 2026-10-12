@@ -1,0 +1,27 @@
+# 0.x line only: this codebase has not been run against anthropic 1.x.
+anthropic>=0.45.0,<1
+# Imported directly by cli/api_client.py (timeouts, transport errors).
+httpx>=0.27,<1
+# Floor from advisories fixed in 10.2.0 (ImageMath.eval) and 10.3.0 (ICC buffer
+# overflow). This code only draws text onto a new image, but the floor keeps an
+# old wheel out of the image.
+Pillow>=10.3.0
+# Must equal the Playwright tag of the base image in Dockerfile.worker.
+playwright==1.42.0
+# Measured with 2.9.13 and 1.2.4; bounded to the major that was tested.
+psycopg2-binary>=2.9,<3
+python-dotenv>=1.0,<2
+# Floor from advisories fixed in 2.32.0 (verify=False sticking to a session)
+# and 2.32.4 (.netrc credentials sent for a crafted URL). cli/deploy.py and
+# monitor/ping.py send requests to URLs that come from data.
+requests>=2.32.4
+# 2.x: queue/worker_pg.py relies on include_local_variables=False and
+# before_send (see _sentry_init_options); tests/test_worker_sentry_scrub.py
+# runs against this major.
+sentry-sdk>=2.0
+# cli/contracts/ parses the generated EJS and HTML with BeautifulSoup and
+# selects elements with soupsieve CSS selectors; the major versions below are
+# the ones that module and its tests (tests/test_contracts_framework.py) ran
+# against.
+beautifulsoup4>=4.12,<5
+soupsieve>=2.5,<3

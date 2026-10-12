@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %> | Craft &amp; Ship</title>
+  <% if (typeof metaDescription !== 'undefined' && metaDescription) { %>
+    <meta name="description" content="<%= metaDescription %>" />
+  <% } else { %>
+    <meta name="description" content="Own your website. For healers, therapists, and event producers. A custom website shaped in conversation with an AI companion who helps you find the words, built from a library of tested building blocks, and needs a recorded review approval before it goes live. Hosting included. Choose any amount from $39 down to $19 a month, whatever fits your practice." />
+  <% } %>
+  <% if (typeof noIndex !== 'undefined' && noIndex) { %>
+    <meta name="robots" content="noindex, nofollow" />
+  <% } %>
+  <link rel="canonical" href="https://craftandship.io<%= typeof canonicalPath !== 'undefined' ? canonicalPath : '' %>" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Craft & Ship" />
+  <meta property="og:title" content="<%- ogAttr(title) %>" />
+  <meta property="og:description" content="<%- ogAttr(typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'Custom websites and a thoughtful companion, made with healers, therapists, and event producers. Every website needs a recorded review approval before it goes live.') %>" />
+  <meta property="og:url" content="https://craftandship.io<%= typeof canonicalPath !== 'undefined' ? canonicalPath : '' %>" />
+  <meta property="og:image" content="https://craftandship.io<%= typeof pageOgImage !== 'undefined' && pageOgImage ? pageOgImage : '/og-default.png' %>" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="<%= title %>" />
+  <meta name="twitter:description" content="<%= typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'Custom websites and a thoughtful companion. Every website needs a recorded review approval before it goes live.' %>" />
+  <meta name="twitter:image" content="https://craftandship.io<%= typeof pageOgImage !== 'undefined' && pageOgImage ? pageOgImage : '/og-default.png' %>" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/brand-harbor/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#F1E4C9" />
+
+  <!-- Harbor typography: Cormorant Garamond (display), Source Sans 3 (body), Caveat (handwriting accent) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Harbor tokens (scoped to .harbor wrapper). Served static; not Tailwind-processed. -->
+  <link rel="stylesheet" href="/brand-harbor/tokens.css" />
+
+  <meta name="csrf-token" content="<%= csrfToken %>" />
+  <% if (typeof analyticsId !== 'undefined' && analyticsId) { %>
+    <script nonce="<%= cspNonce %>" defer data-domain="<%= analyticsId %>" src="https://plausible.io/js/script.js"></script>
+  <% } %>
+
+  <%# JSON-LD slot. Routes pass `pageJsonLd` (an already-rendered script tag
+      from structured-data.ts) for page-specific schema. When no route-level
+      schema is supplied, `defaultJsonLd` (a baseline Organization tag,
+      computed by middleware in web/src/app.ts from organizationJsonLd()) is
+      rendered instead so every Harbor surface ships at least the brand
+      identity. The middleware ensures the baseline cannot drift from the
+      helper's canonical output. %>
+  <% if (typeof pageJsonLd !== 'undefined' && pageJsonLd) { %>
+    <%- pageJsonLd %>
+  <% } else if (typeof defaultJsonLd !== 'undefined' && defaultJsonLd) { %>
+    <%- defaultJsonLd %>
+  <% } %>
+
+  <style>
+    /* Page-level resets, only for Harbor surfaces. Keeps the rest of the site untouched. */
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--color-paper); color: var(--color-ink); }
+    .harbor img, .harbor svg { max-width: 100%; }
+    .skip-link { position: absolute; top: -40px; left: 0; padding: 8px 12px; background: var(--color-ink); color: var(--color-vellum); z-index: 100; }
+    .skip-link:focus { top: 0; }
+
+    /* Drop the design-system uppercase on the .caps label class.
+       Per founder: keep "Craft & Ship" + body copy in sentence case, no all-caps fragments. */
+    .harbor .caps {
+      text-transform: none;
+      letter-spacing: 0.01em;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Nav typography overrides: bump above the design-system defaults for legibility. */
+    .harbor .nav-inner { height: 76px; gap: 24px; }
+    .harbor .nav-brand .logo-img { width: 40px; height: 40px; display: block; flex-shrink: 0; }
+    .harbor .nav-brand .name { font-size: 22px; font-weight: 500; letter-spacing: -0.005em; }
+    .harbor .nav-brand .name em { font-size: 24px; margin-left: 3px; }
+    .harbor .nav-link { font-size: 18px; padding: 10px 14px; }
+    .harbor .nav-link--quiet { font-size: 16px; padding: 10px 12px; }
+    .harbor .nav-link--admin {
+      color: var(--color-lantern-deep);
+      font-style: normal;
+      font-family: var(--font-body);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      font-size: 12px;
+      text-transform: uppercase;
+      border: 1px solid var(--color-lantern-deep);
+      padding: 6px 10px !important;
+      border-radius: 5px;
+    }
+    .harbor .nav-link--admin:hover { background: var(--color-lantern-deep); color: var(--color-vellum); }
+    .harbor .nav-cta { font-size: 15px !important; padding: 12px 22px !important; }
+    /* Sign out form-button: looks like a nav link, behaves like a CSRF-protected POST.
+       Top nav uses .nav-logout-btn; footer uses .footer-logout-btn. The form wrappers
+       are inline-flex so they don't break the nav row layout. */
+    .harbor .nav-logout-form { display: inline-flex; margin: 0; padding: 0; }
+    .harbor .nav-logout-btn {
+      background: none; border: 0; cursor: pointer; font: inherit; color: inherit;
+      font-family: var(--font-body); font-size: 16px; padding: 10px 12px; line-height: 1;
+    }
+    .harbor .nav-logout-btn:hover { color: var(--color-lantern-deep); }
+    /* Match the harbor-footer 'a' rule: same font, size, color, no decoration. */
+    .harbor .footer-logout-form { display: inline; margin: 0; padding: 0; }
+    .harbor footer.harbor-footer .footer-logout-btn {
+      background: none; border: 0; cursor: pointer;
+      font-family: var(--font-body); font-size: 15px; font-weight: 400;
+      color: var(--color-ink-soft);
+      padding: 0; text-align: left; text-decoration: underline;
+      text-decoration-thickness: from-font;
+      line-height: inherit;
+    }
+    .harbor footer.harbor-footer .footer-logout-btn:hover { color: var(--color-ink); }
+    /* Allow the top nav row to extend beyond .max-site (1200px) so all items
+       fit when an admin user is logged in. Body content below stays centered. */
+    .harbor header.nav .max-site {
+      max-width: none;
+      padding-left: 32px;
+      padding-right: 32px;
+    }
+    .harbor .nav-inner > .nav-cta { flex-shrink: 0; margin-left: auto; }
+    /* Hamburger toggle: hidden by default (inline nav is used). At narrower
+       widths the inline nav collapses to a dropdown panel and the toggle
+       becomes visible. */
+    .harbor .nav-toggle {
+      display: none;
+      background: transparent; border: 1px solid var(--color-rule-soft);
+      border-radius: 8px;
+      cursor: pointer;
+      padding: 10px;
+      width: 44px; height: 44px;
+      align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+    .harbor .nav-toggle:hover { background: var(--color-paper-soft); }
+    .harbor .nav-toggle-bars { display: inline-flex; flex-direction: column; gap: 4px; width: 20px; }
+    .harbor .nav-toggle-bars > span {
+      display: block; height: 2px; width: 100%;
+      background: var(--color-ink); border-radius: 2px;
+    }
+    /* Below 1280px, ALWAYS use the hamburger pattern. This guarantees no
+       content can ever bleed off the right edge regardless of font-size,
+       browser zoom, or accessibility settings. All menu items remain
+       reachable: they live inside the dropdown panel. */
+    @media (max-width: 1280px) {
+      .harbor .nav-toggle { display: inline-flex; }
+      .harbor .nav-links {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px;
+        background: var(--color-paper);
+        border: 1px solid var(--color-rule-soft);
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: 0 12px 32px rgba(40, 30, 20, 0.12);
+        z-index: 100;
+        min-width: 240px;
+        max-width: calc(100vw - 32px);
+      }
+      .harbor .nav-links.is-open { display: flex; }
+      .harbor .nav-link,
+      .harbor .nav-link--quiet,
+      .harbor .nav-logout-btn {
+        display: block !important;
+        text-align: left;
+        padding: 10px 14px !important;
+        font-size: 16px !important;
+        border-radius: 6px;
+      }
+      .harbor .nav-link:hover,
+      .harbor .nav-logout-btn:hover { background: var(--color-paper-soft); }
+      .harbor .nav-logout-form { display: block; }
+      .harbor .nav-link--admin {
+        align-self: flex-start; padding: 6px 10px !important;
+        font-size: 12px !important;
+      }
+      .harbor header.nav .max-site { padding-left: 24px; padding-right: 24px; position: relative; }
+    }
+    @media (max-width: 720px) {
+      .harbor .nav-brand .name { font-size: 20px; }
+      .harbor .nav-brand .name em { font-size: 22px; }
+      .harbor .nav-cta { padding: 10px 16px !important; font-size: 14px !important; }
+    }
+    @media (max-width: 480px) {
+      .harbor .nav-cta { padding: 8px 12px !important; font-size: 13px !important; }
+    }
+    /* Begin-a-conversation link that lives inside the dropdown menu. Hidden by
+       default; shown only at the narrow widths where the standalone bar CTA is
+       hidden, so the conversion path is always reachable. */
+    .harbor .nav-cta-mobile { display: none; }
+    @media (max-width: 560px) {
+      /* Below 560px the brand + standalone CTA + hamburger no longer fit on one
+         row (the toggle was bleeding off the right edge). Drop the bar CTA and
+         move it into the menu. */
+      .harbor .nav-cta { display: none; }
+      .harbor .nav-links .nav-cta-mobile {
+        display: block;
+        margin-top: 6px;
+        text-align: center;
+        background: var(--color-lantern-deep);
+        color: var(--color-vellum) !important;
+        font-family: var(--font-body); font-style: normal;
+        font-size: 15px !important; font-weight: 600;
+        padding: 12px 14px !important;
+        border-radius: 6px;
+      }
+      .harbor .nav-links .nav-cta-mobile:hover { background: var(--color-ink); }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="harbor paper">
+    <!-- ─── Nav ───────────────────────────────────────────────────── -->
+    <header class="nav">
+      <div class="max-site nav-inner">
+        <a class="nav-brand" href="/" aria-label="Craft and Ship home">
+          <img class="logo-img" src="/brand-harbor/logo-mark-nav.svg" alt="" width="40" height="40" />
+          <span class="name">Craft &amp; <em>Ship</em></span>
+        </a>
+        <nav id="nav-menu" class="nav-links" aria-label="Primary">
+          <a class="nav-link" href="/the-companion">The companion</a>
+          <a class="nav-link" href="/how-it-works">How it works</a>
+          <a class="nav-link" href="/pricing">Pricing</a>
+          <a class="nav-link" href="/gallery">Gallery</a>
+          <a class="nav-link" href="/about">About</a>
+          <% if (isLoggedIn) { %>
+            <a class="nav-link nav-link--quiet" href="/dashboard">My websites</a>
+            <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+              <a class="nav-link nav-link--quiet nav-link--admin" href="/admin/builds">Admin</a>
+            <% } %>
+            <form action="/logout" method="POST" class="nav-logout-form">
+              <%- include('_csrf-field') %>
+              <button type="submit" class="nav-link nav-link--quiet nav-logout-btn">Sign out</button>
+            </form>
+          <% } else { %>
+            <a class="nav-link nav-link--quiet" href="/login">Sign in</a>
+          <% } %>
+          <a class="nav-cta-mobile" href="<%= isLoggedIn ? '/intake' : '/try' %>">Begin a conversation</a>
+        </nav>
+        <a class="btn btn-primary nav-cta" href="<%= isLoggedIn ? '/intake' : '/try' %>">Begin a conversation</a>
+        <button type="button" class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+          <span class="nav-toggle-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+      </div>
+    </header>
+    <script nonce="<%= cspNonce %>">
+      // Hamburger menu: click the toggle to open/close the nav-links panel.
+      // Closes on Escape, on outside-click, and on any link inside the panel.
+      (function () {
+        var toggle = document.querySelector('.nav-toggle');
+        var menu = document.getElementById('nav-menu');
+        if (!toggle || !menu) return;
+        function close() {
+          menu.classList.remove('is-open');
+          toggle.setAttribute('aria-expanded', 'false');
+          document.body.classList.remove('nav-menu-open');
+        }
+        function open() {
+          menu.classList.add('is-open');
+          toggle.setAttribute('aria-expanded', 'true');
+          document.body.classList.add('nav-menu-open');
+        }
+        toggle.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (menu.classList.contains('is-open')) close(); else open();
+        });
+        document.addEventListener('click', function (e) {
+          if (!menu.classList.contains('is-open')) return;
+          if (menu.contains(e.target)) return;
+          if (toggle.contains(e.target)) return;
+          close();
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && menu.classList.contains('is-open')) close();
+        });
+        // Close when navigating via any link inside the menu (the form-button
+        // logout already triggers a full page nav, so close-on-submit too).
+        menu.addEventListener('click', function (e) {
+          var t = e.target;
+          while (t && t !== menu) {
+            if (t.tagName === 'A') { close(); return; }
+            t = t.parentNode;
+          }
+        });
+      })();
+    </script>
+
+    <main id="main-content">
+      <%- body %>
+    </main>
+
+    <!-- ─── Footer ───────────────────────────────────────────────── -->
+    <footer class="harbor-footer">
+      <div class="max-site">
+        <div class="row">
+          <div>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+              <img src="/brand-harbor/logo-mark-nav.svg" alt="" width="36" height="36" style="display:block;" />
+              <span class="display" style="font-size:26px;">Craft &amp; <em>Ship</em></span>
+            </div>
+            <p style="max-width:360px; color:var(--color-ink-soft); font-size:16px; line-height:1.65; margin:0;">
+              Custom websites and a thoughtful companion, made with healers, therapists, breathwork facilitators, and event producers. <em class="italic" style="color:var(--color-clay);">Yours, kept across the years.</em>
+            </p>
+          </div>
+          <div>
+            <h4>The work</h4>
+            <ul>
+              <li><a href="/the-companion">The companion</a></li>
+              <li><a href="/how-it-works">How it works</a></li>
+              <li><a href="/pricing">Pricing</a></li>
+              <li><a href="/gallery">Gallery</a></li>
+              <!-- brand-voice-allow-competitor: SEO comparison hub link in footer (visible body affirmative) -->
+              <li><a href="/vs">Compare platforms</a></li>
+              <li><a href="/about">About</a></li>
+              <li><a href="/try">Begin a conversation</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Account</h4>
+            <ul>
+              <% if (isLoggedIn) { %>
+                <li><a href="/dashboard">My websites</a></li>
+                <li>
+                  <form action="/logout" method="POST" class="footer-logout-form">
+                    <%- include('_csrf-field') %>
+                    <button type="submit" class="footer-logout-btn">Sign out</button>
+                  </form>
+                </li>
+              <% } else { %>
+                <li><a href="/login">Sign in</a></li>
+                <li><a href="/try">Begin a conversation</a></li>
+              <% } %>
+            </ul>
+          </div>
+          <div>
+            <h4>Provisions</h4>
+            <ul>
+              <li><a href="/privacy">Privacy</a></li>
+              <li><a href="/terms">Terms</a></li>
+              <li><a href="/about#contact">Reach Ocean</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="colophon">
+          <span>&copy; 2026 Craft &amp; Ship LLC &middot; Tended from Austin, Texas</span>
+          <span>Founded by Ocean Longnion &middot; Senior Web Craftsman</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <script nonce="<%= cspNonce %>">
+    // Local timezone date formatting. All timestamps rendered into Harbor
+    // pages with the data-ts attribute go through this pass so they display
+    // in the viewer's browser TZ with a short TZ abbreviation (CDT, PST,
+    // etc.). Mirrors the pass in views/layout.ejs so both shells share the
+    // same upgrader contract; keep these in sync.
+    //   data-ts-fmt="date"     -> "Apr 20, 2026"  (default)
+    //   data-ts-fmt="datetime" -> "Apr 20, 3:42 PM CDT"
+    //   data-ts-fmt="time"     -> "3:42:15 PM CDT"
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('[data-ts]').forEach(function (el) {
+        var ts = el.getAttribute('data-ts');
+        if (!ts) return;
+        try {
+          var d = new Date(ts);
+          var fmt = el.getAttribute('data-ts-fmt') || 'date';
+          if (fmt === 'datetime') {
+            el.textContent = d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
+          } else if (fmt === 'time') {
+            el.textContent = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true, timeZoneName: 'short' });
+          } else {
+            el.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          }
+        } catch (e) {}
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!-- compose:widget admin/upcoming-events. admin_path is the admin route of
+     the Event model (its table can be named by the spec). -->
+<% var _eventsPath = (typeof admin_path !== 'undefined' && admin_path) ? admin_path : '/admin/events'; %>
+<div class="p-6 rounded-xl border" style="background: white; border-color: var(--color-border);">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="font-display text-xl font-bold" style="color: var(--color-foreground);">Upcoming Events</h2>
+    <a href="<%= _eventsPath %>/new" class="font-body text-sm font-medium px-4 py-2 rounded-md transition-opacity hover:opacity-90" style="background-color: var(--color-primary); color: var(--color-on-primary); text-decoration: none;">Add New Event</a>
+  </div>
+  <% var _ev = (typeof events !== 'undefined' && events) ? events : []; %>
+  <% if (_ev.length === 0) { %>
+    <p class="font-body text-sm" style="color: var(--color-foreground-muted);">No upcoming events. Click "Add New Event" to create one.</p>
+  <% } else { %>
+    <div class="space-y-3">
+      <% _ev.forEach(function(ev) { %>
+        <div class="flex items-center justify-between py-3 border-b last:border-b-0" style="border-color: var(--color-border);">
+          <div>
+            <div class="font-body text-sm font-semibold" style="color: var(--color-foreground);"><%= ev.title %></div>
+            <div class="font-body text-xs mt-1" style="color: var(--color-foreground-muted);">
+              <% if (ev.event_date) { %>
+                <% var _evIso = (ev.event_date instanceof Date) ? ev.event_date.toISOString() : String(ev.event_date); %>
+                <time class="cas-fmt-date-weekday" datetime="<%= _evIso %>"><%= _evIso %></time>
+              <% } %>
+              <% if (ev.event_time) { %>
+                <% var _t = String(ev.event_time).split(':'); var _h = parseInt(_t[0]||0,10); var _m = _t[1]||'00'; var _ap = _h>=12?'PM':'AM'; var _hh = _h%12||12; %>
+                · <%= _hh + ':' + _m + ' ' + _ap %>
+              <% } %>
+              <% if (ev.location) { %> · <%= ev.location %><% } %>
+            </div>
+          </div>
+          <a href="<%= _eventsPath %>/<%= ev.id %>/edit" class="font-body text-sm transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">Edit</a>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</div>

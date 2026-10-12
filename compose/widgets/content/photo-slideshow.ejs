@@ -1,0 +1,116 @@
+<!-- compose:widget content/photo-slideshow -->
+<%
+// Auto-advancing photo slideshow, first built for a long-form
+// event page. Used
+// by Event detail views and any other surface that has a JSONB photo
+// array. Pure CSS opacity-crossfade + minimal vanilla JS (no deps).
+//
+// Locals expected:
+//   - photos: array of image URLs (strings). Non-strings + empty strings
+//     are filtered. Single-photo arrays render as a plain <figure>; 2+
+//     photos render the slideshow with 5s auto-advance + prev/next +
+//     dot indicators. Pauses on hover and focus-within for a11y.
+//   - heading_alt: (optional) alt-text prefix for the photos.
+//   - aspect_ratio: (optional) CSS aspect-ratio string, default "16/10".
+//   - max_height: (optional) css length, default "640px" (single-photo fallback).
+//
+// The slideshow component-scopes its CSS + JS via a generated unique
+// root id so multiple slideshows on the same page do not collide.
+// Scheme guard: only http(s) or root-relative URLs (admin upload paths)
+// are safe for <img src>. Filters javascript:, data:, vbscript:, etc.
+// The escaping output tag HTML-escapes the value but does NOT block
+// dangerous schemes. (No literal EJS tag in this comment: it would close
+// the script block; see video-embed-nocookie.ejs.)
+function _isSafeImgUrl(u) {
+  if (!u) return false;
+  var s = String(u).trim();
+  if (!s) return false;
+  return /^https?:\/\//i.test(s) || /^\/(?![\/\\])/.test(s);
+}
+var _photos = (typeof photos !== 'undefined' && Array.isArray(photos))
+  ? photos.filter(function(p){ return _isSafeImgUrl(p); })
+  : [];
+// Both values are written into a style attribute, where HTML escaping does
+// not stop a ";" from starting another declaration. Accept only the exact
+// shapes documented above and fall back to the defaults otherwise.
+var _aspect = (typeof aspect_ratio !== 'undefined' && /^\d{1,2}\s*\/\s*\d{1,2}$/.test(String(aspect_ratio))) ? String(aspect_ratio) : '16/10';
+var _maxH = (typeof max_height !== 'undefined' && /^\d{2,4}(px|rem|vh)$/.test(String(max_height))) ? String(max_height) : '640px';
+var _altPrefix = (typeof heading_alt !== 'undefined' && heading_alt) ? String(heading_alt) : 'Gallery photo';
+// Random per-render id (letters and digits only); it scopes the CSS + JS
+// below and is the only server value written into the inline script.
+var _sid = 'cas-slideshow-' + Math.random().toString(36).slice(2, 10);
+%>
+<% if (_photos.length > 1) { %>
+  <div id="<%= _sid %>" class="cas-slideshow" style="position: relative; margin: 0 0 2.5rem 0; border-radius: 1rem; overflow: hidden; background: var(--color-secondary, #eee); box-shadow: 0 6px 24px rgba(42,28,20,0.14);">
+    <div class="cas-slideshow-track" style="position: relative; aspect-ratio: <%= _aspect %>;">
+      <% _photos.forEach(function(p, i) { %>
+        <img src="<%= p %>" alt="<%= _altPrefix %> <%= i + 1 %>"
+             class="cas-slide<%= i === 0 ? ' is-active' : '' %>"
+             data-idx="<%= i %>"
+             loading="<%= i === 0 ? 'eager' : 'lazy' %>"
+             style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: <%= i === 0 ? '1' : '0' %>; transition: opacity 0.6s ease-in-out;" />
+      <% }); %>
+    </div>
+    <button type="button" class="cas-slide-prev" aria-label="Previous photo"
+            style="position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 999px; border: none; background: rgba(42,28,20,0.55); color: #fff; font-size: 1.5rem; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">‹</button>
+    <button type="button" class="cas-slide-next" aria-label="Next photo"
+            style="position: absolute; right: 0.875rem; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 999px; border: none; background: rgba(42,28,20,0.55); color: #fff; font-size: 1.5rem; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">›</button>
+    <div class="cas-slide-dots" style="position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem;">
+      <% _photos.forEach(function(_, i) { %>
+        <button type="button" class="cas-slide-dot<%= i === 0 ? ' is-active' : '' %>" data-idx="<%= i %>"
+                aria-label="Go to photo <%= i + 1 %>"
+                style="width: 10px; height: 10px; border-radius: 999px; border: none; padding: 0; cursor: pointer; background: <%= i === 0 ? '#fff' : 'rgba(255,255,255,0.55)' %>;"></button>
+      <% }); %>
+    </div>
+  </div>
+  <script<% if (typeof cspNonce !== 'undefined' && cspNonce) { %> nonce="<%= cspNonce %>"<% } %>>
+    (function() {
+      var root = document.getElementById('<%= _sid %>');
+      if (!root) return;
+      var slides = root.querySelectorAll('.cas-slide');
+      var dots = root.querySelectorAll('.cas-slide-dot');
+      var prev = root.querySelector('.cas-slide-prev');
+      var next = root.querySelector('.cas-slide-next');
+      var idx = 0;
+      var timer = null;
+      var paused = false;
+      var reduceMotion = false;
+      try { reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) {}
+      function show(i) {
+        idx = ((i % slides.length) + slides.length) % slides.length;
+        for (var k = 0; k < slides.length; k++) {
+          slides[k].style.opacity = (k === idx) ? '1' : '0';
+          slides[k].classList.toggle('is-active', k === idx);
+        }
+        for (var k = 0; k < dots.length; k++) {
+          dots[k].style.background = (k === idx) ? '#fff' : 'rgba(255,255,255,0.55)';
+          dots[k].classList.toggle('is-active', k === idx);
+        }
+      }
+      function tick() { if (!paused) show(idx + 1); }
+      function start() {
+        if (reduceMotion) return;
+        if (timer) clearInterval(timer);
+        timer = setInterval(tick, 5000);
+      }
+      if (prev) prev.addEventListener('click', function() { show(idx - 1); start(); });
+      if (next) next.addEventListener('click', function() { show(idx + 1); start(); });
+      for (var k = 0; k < dots.length; k++) {
+        (function(i) {
+          dots[i].addEventListener('click', function() { show(i); start(); });
+        })(k);
+      }
+      root.addEventListener('mouseenter', function() { paused = true; });
+      root.addEventListener('mouseleave', function() { paused = false; });
+      root.addEventListener('focusin', function() { paused = true; });
+      root.addEventListener('focusout', function() { paused = false; });
+      start();
+    })();
+  </script>
+<% } else if (_photos.length === 1) { %>
+  <figure style="margin: 0 0 2.5rem 0;">
+    <img src="<%= _photos[0] %>" alt="<%= _altPrefix %>" class="w-full rounded-xl"
+         style="height: auto; max-height: <%= _maxH %>; object-fit: cover;"
+         loading="lazy" />
+  </figure>
+<% } %>

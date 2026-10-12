@@ -1,0 +1,233 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Total</div>
+      <div class="text-xl sm:text-2xl font-bold text-gray-200"><%= stats.total %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Pending</div>
+      <div class="text-xl sm:text-2xl font-bold text-amber-400"><%= stats.pending %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Approved</div>
+      <div class="text-xl sm:text-2xl font-bold text-brand"><%= stats.approved %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Rejected</div>
+      <div class="text-xl sm:text-2xl font-bold text-red-400"><%= stats.rejected %></div>
+    </div>
+  </div>
+
+  <div class="bg-surface-3 rounded-[10px] p-3 sm:p-4 mb-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end flex-wrap">
+    <div>
+      <label class="text-muted text-xs block mb-1">Status</label>
+      <select id="filter-status" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full sm:w-auto">
+        <option value="pending" <% if (statusFilter === 'pending') { %>selected<% } %>>Pending</option>
+        <option value="approved" <% if (statusFilter === 'approved') { %>selected<% } %>>Approved</option>
+        <option value="rejected" <% if (statusFilter === 'rejected') { %>selected<% } %>>Rejected</option>
+        <option value="all" <% if (statusFilter === 'all') { %>selected<% } %>>All</option>
+      </select>
+    </div>
+    <div>
+      <button id="apply-filters" class="btn btn-primary btn-sm w-full sm:w-auto">Filter</button>
+    </div>
+  </div>
+
+  <% if (statusFilter === 'pending' && items.length > 0) { %>
+    <form method="POST" action="/admin/approvals/batch" id="batch-form" data-no-submit-guard>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <input type="hidden" name="action" id="batch-action" value="" />
+      <div class="flex gap-2 mb-4 flex-wrap">
+        <button type="button" id="select-all-btn" class="btn btn-secondary btn-sm">Select All</button>
+        <button type="button" id="batch-approve-btn" class="btn btn-sm btn-primary disabled:opacity-40 disabled:cursor-not-allowed" disabled data-confirm="Are you sure you want to approve the selected items?">Approve Selected</button>
+        <button type="button" id="batch-reject-btn" class="btn btn-sm bg-red-700 text-red-100 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed" disabled data-confirm="Are you sure you want to reject the selected items?">Reject Selected</button>
+      </div>
+  <% } %>
+
+  <!-- Desktop table -->
+  <div class="hidden lg:block bg-surface-3 rounded-[10px] overflow-x-auto">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          <% if (statusFilter === 'pending' && items.length > 0) { %>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border w-8"></th>
+          <% } %>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Type</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Description</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Status</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Created</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (items.length === 0) { %>
+          <tr><td colspan="6" class="text-center text-subtle py-8">No approval requests found.</td></tr>
+        <% } %>
+        <% items.forEach(function(item) { %>
+          <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+            <% if (statusFilter === 'pending' && item.status === 'pending') { %>
+              <td class="px-4 py-2.5"><input type="checkbox" name="ids" value="<%= item.id %>" class="batch-checkbox accent-brand w-4 h-4" /></td>
+            <% } else if (statusFilter === 'pending') { %>
+              <td class="px-4 py-2.5"></td>
+            <% } %>
+            <td class="px-4 py-2.5 text-gray-300 whitespace-nowrap"><%= item.type %></td>
+            <td class="px-4 py-2.5 text-gray-300 max-w-[350px] overflow-hidden text-ellipsis" title="<%= item.description %>">
+              <%= item.description %>
+              <% if (item.context && Object.keys(item.context).length > 0) { %>
+                <button type="button" class="context-toggle ml-2 text-xs text-subtle hover:text-gray-300 cursor-pointer bg-transparent border-none underline" data-target="ctx-<%= item.id %>">details</button>
+                <div id="ctx-<%= item.id %>" class="hidden mt-2 p-2 bg-bg rounded text-xs text-muted overflow-x-auto max-w-full max-h-[50vh] overflow-y-auto"><pre class="whitespace-pre-wrap m-0 break-words"><%= JSON.stringify(item.context, null, 2) %></pre></div>
+              <% } %>
+            </td>
+            <td class="px-4 py-2.5">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold
+                <% if (item.status === 'approved') { %>bg-[rgba(42,190,170,0.15)] text-[#2ABEAA]<% } %>
+                <% if (item.status === 'rejected') { %>bg-red-900 text-red-300<% } %>
+                <% if (item.status === 'pending') { %>bg-amber-900 text-amber-300<% } %>
+              "><%= item.status %></span>
+            </td>
+            <td class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><span data-ts="<%= new Date(item.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(item.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></td>
+            <td class="px-4 py-2.5 whitespace-nowrap">
+              <% if (item.status === 'pending') { %>
+                <div class="flex gap-2">
+                  <form method="POST" action="/admin/approvals/<%= item.id %>/approve" class="inline" data-confirm="Are you sure you want to approve this request?">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" class="btn btn-sm btn-primary">Approve</button>
+                  </form>
+                  <form method="POST" action="/admin/approvals/<%= item.id %>/reject" class="inline" data-confirm="Are you sure you want to reject this request? This cannot be undone.">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" class="btn btn-sm bg-red-700 text-red-100 hover:bg-red-600">Reject</button>
+                  </form>
+                </div>
+              <% } else { %>
+                <span class="text-subtle text-xs"><%= item.resolved_by ? 'by ' + item.resolved_by : '' %></span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile card view -->
+  <div class="lg:hidden space-y-3">
+    <% if (items.length === 0) { %>
+      <div class="text-center text-subtle py-8">No approval requests found.</div>
+    <% } %>
+    <% items.forEach(function(item) { %>
+      <div class="bg-surface rounded-lg p-4">
+        <div class="flex justify-between items-start mb-2">
+          <span class="text-gray-300 text-xs font-semibold"><%= item.type %></span>
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold shrink-0
+            <% if (item.status === 'approved') { %>bg-[rgba(42,190,170,0.15)] text-[#2ABEAA]<% } %>
+            <% if (item.status === 'rejected') { %>bg-red-900 text-red-300<% } %>
+            <% if (item.status === 'pending') { %>bg-amber-900 text-amber-300<% } %>
+          "><%= item.status %></span>
+        </div>
+        <div class="text-gray-300 text-sm mb-2 break-words" title="<%= item.description %>"><%= item.description.length > 120 ? item.description.slice(0, 120) + '...' : item.description %></div>
+        <% if (item.context && Object.keys(item.context).length > 0) { %>
+          <button type="button" class="context-toggle text-xs text-subtle hover:text-gray-300 cursor-pointer bg-transparent border-none underline mb-2" data-target="ctx-mobile-<%= item.id %>">details</button>
+          <div id="ctx-mobile-<%= item.id %>" class="hidden mb-2 p-2 bg-bg rounded text-xs text-muted overflow-x-auto max-w-full max-h-[50vh] overflow-y-auto"><pre class="whitespace-pre-wrap m-0 break-words"><%= JSON.stringify(item.context, null, 2) %></pre></div>
+        <% } %>
+        <div class="flex justify-between text-xs mb-2">
+          <span class="text-subtle">Created</span>
+          <span class="text-muted"><span data-ts="<%= new Date(item.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(item.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></span>
+        </div>
+        <% if (statusFilter === 'pending' && item.status === 'pending') { %>
+          <div class="flex items-center gap-2 mt-2">
+            <input type="checkbox" name="ids" value="<%= item.id %>" class="batch-checkbox accent-brand w-4 h-4" />
+            <form method="POST" action="/admin/approvals/<%= item.id %>/approve" class="inline" data-confirm="Are you sure you want to approve this request?">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn btn-sm btn-primary">Approve</button>
+            </form>
+            <form method="POST" action="/admin/approvals/<%= item.id %>/reject" class="inline" data-confirm="Are you sure you want to reject this request? This cannot be undone.">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn btn-sm bg-red-700 text-red-100 hover:bg-red-600">Reject</button>
+            </form>
+          </div>
+        <% } else if (item.resolved_by) { %>
+          <div class="text-subtle text-xs">by <%= item.resolved_by %></div>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+
+  <% if (statusFilter === 'pending' && items.length > 0) { %>
+    </form>
+  <% } %>
+
+  <%- include("partials/_admin-auto-refresh", { intervalSeconds: 60 }) %>
+</section>
+
+<script nonce="<%= cspNonce %>">
+(function() {
+  // Filter
+  var applyBtn = document.getElementById('apply-filters');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', function() {
+      var status = document.getElementById('filter-status').value;
+      var params = new URLSearchParams();
+      if (status && status !== 'pending') params.set('status', status);
+      window.location = '/admin/approvals' + (params.toString() ? '?' + params.toString() : '');
+    });
+  }
+
+  // Context toggle
+  document.querySelectorAll('.context-toggle').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var targetId = btn.getAttribute('data-target');
+      var el = document.getElementById(targetId);
+      if (el) el.classList.toggle('hidden');
+    });
+  });
+
+  // Batch selection
+  var checkboxes = document.querySelectorAll('.batch-checkbox');
+  var selectAllBtn = document.getElementById('select-all-btn');
+  var batchApproveBtn = document.getElementById('batch-approve-btn');
+  var batchRejectBtn = document.getElementById('batch-reject-btn');
+  var batchAction = document.getElementById('batch-action');
+  var batchForm = document.getElementById('batch-form');
+
+  function updateBatchButtons() {
+    var checked = document.querySelectorAll('.batch-checkbox:checked');
+    var count = checked.length;
+    if (batchApproveBtn) batchApproveBtn.disabled = count === 0;
+    if (batchRejectBtn) batchRejectBtn.disabled = count === 0;
+  }
+
+  if (selectAllBtn) {
+    selectAllBtn.addEventListener('click', function() {
+      var allChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
+      checkboxes.forEach(function(cb) { cb.checked = !allChecked; });
+      updateBatchButtons();
+    });
+  }
+
+  checkboxes.forEach(function(cb) {
+    cb.addEventListener('change', updateBatchButtons);
+  });
+
+  function submitBatch(action) {
+    if (batchAction) batchAction.value = action;
+    if (batchForm) batchForm.submit();
+  }
+
+  if (batchApproveBtn) {
+    batchApproveBtn.addEventListener('click', function() {
+      var msg = batchApproveBtn.getAttribute('data-confirm');
+      if (msg && !confirm(msg)) return;
+      submitBatch('approve');
+    });
+  }
+  if (batchRejectBtn) {
+    batchRejectBtn.addEventListener('click', function() {
+      var msg = batchRejectBtn.getAttribute('data-confirm');
+      if (msg && !confirm(msg)) return;
+      submitBatch('reject');
+    });
+  }
+})();
+</script>

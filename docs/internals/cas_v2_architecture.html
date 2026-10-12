@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CAS v2: static compose architecture (May 2026 snapshot)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #fafaf7;
+    color: #1f2937;
+    padding: 48px;
+    width: 1800px;
+  }
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #0f766e;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    color: #6b7280;
+    font-size: 15px;
+    margin-bottom: 20px;
+  }
+  .banner {
+    background: linear-gradient(90deg, #14b8a6 0%, #0d9488 100%);
+    color: white;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 36px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .banner-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 36px;
+    padding: 16px 20px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-box { width: 16px; height: 16px; border-radius: 4px; }
+  .stage-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: stretch;
+  }
+  .stage {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 18px;
+    flex: 1;
+    min-width: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .stage-header {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 10px;
+  }
+  .stage-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #111827;
+  }
+  .component {
+    background: #f3f4f6;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-bottom: 6px;
+    border-left: 3px solid #9ca3af;
+  }
+  .component-claude {
+    background: #fff7ed;
+    border-left-color: #f97316;
+    color: #7c2d12;
+  }
+  .component-static {
+    background: #eff6ff;
+    border-left-color: #3b82f6;
+    color: #1e40af;
+  }
+  .component-json {
+    background: #f0f9ff;
+    border-left-color: #0ea5e9;
+    color: #075985;
+  }
+  .component-widget {
+    background: #f0fdfa;
+    border-left-color: #14b8a6;
+    color: #115e59;
+  }
+  .component-human {
+    background: #f0fdf4;
+    border-left-color: #10b981;
+    color: #065f46;
+  }
+  .component small {
+    display: block;
+    font-size: 10.5px;
+    opacity: 0.85;
+    margin-top: 2px;
+    font-weight: 400;
+  }
+  .group-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f766e;
+    margin: 32px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #0f766e;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .three-layer {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .layer-panel {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+  }
+  .layer-tag {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: #0f766e;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    letter-spacing: 0.1em;
+  }
+  .layer-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f766e;
+    margin-top: 10px;
+    margin-bottom: 6px;
+  }
+  .layer-subtitle {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 12px;
+  }
+  .layer-panel ul {
+    list-style: none;
+    font-size: 12px;
+    color: #374151;
+    line-height: 1.8;
+  }
+  .layer-panel ul li { padding-left: 14px; position: relative; }
+  .layer-panel ul li::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: #14b8a6;
+    font-size: 10px;
+  }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .mini-panel {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .mini-panel-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f766e;
+    margin-bottom: 8px;
+  }
+  .mini-list {
+    list-style: none;
+    font-size: 11px;
+    color: #4b5563;
+    line-height: 1.6;
+  }
+  .mini-list li { padding-left: 12px; position: relative; }
+  .mini-list li::before { content: "•"; position: absolute; left: 0; color: #14b8a6; }
+  .gone-panel {
+    background: #fef2f2;
+    border: 1px dashed #fca5a5;
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .gone-panel .mini-panel-title {
+    color: #991b1b;
+    text-decoration: line-through;
+  }
+  .gone-panel .mini-list li { color: #991b1b; }
+  .gone-panel .mini-list li::before { content: "✕"; color: #dc2626; }
+  .footer-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 40px;
+    padding: 24px;
+    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    color: white;
+    border-radius: 12px;
+  }
+  .stat-label {
+    font-size: 11px;
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .stat-value .arrow {
+    opacity: 0.6;
+    font-size: 18px;
+    margin: 0 6px;
+  }
+  .stat-detail {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+  .audit-block {
+    background: white;
+    border: 2px dashed #14b8a6;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .audit-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f766e;
+    margin-bottom: 10px;
+  }
+  .audit-pill {
+    background: #14b8a6;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    letter-spacing: 0.1em;
+  }
+  .audit-sources {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    font-size: 12px;
+    color: #374151;
+    line-height: 1.6;
+  }
+  .audit-sources strong { color: #115e59; }
+  .phase-timeline {
+    display: flex;
+    gap: 0;
+    margin: 24px 0;
+    align-items: center;
+  }
+  .phase-item {
+    flex: 1;
+    background: white;
+    border: 1px solid #e5e7eb;
+    padding: 12px;
+    text-align: center;
+    position: relative;
+  }
+  .phase-item.done {
+    background: #f0fdfa;
+    border-color: #14b8a6;
+  }
+  .phase-item:first-child { border-radius: 10px 0 0 10px; }
+  .phase-item:last-child { border-radius: 0 10px 10px 0; }
+  .phase-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f766e;
+  }
+  .phase-item.done .phase-num::after {
+    content: " ✓";
+    color: #14b8a6;
+  }
+  .phase-name {
+    font-size: 11px;
+    color: #4b5563;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>CAS v2: static compose architecture</h1>
+<div class="subtitle">
+  Snapshot from May 2026, when <code>CAS_BUILD_ENGINE=v2</code> was the production default; the system was wound down in July 2026.
+  Counts are as of the snapshot (9 archetypes · 6 decision files · 39 widgets); <code>compose/data/</code> is the source of truth.
+</div>
+
+<div class="banner">
+  <span class="banner-badge">PILLAR</span>
+  <span><strong>No Claude calls in the build path.</strong> Build = deterministic composition of widgets + decision files. Claude stays in intake + copy only.</span>
+</div>
+
+<div style="background: linear-gradient(90deg,#065f46 0%,#0f766e 100%); color: white; padding: 18px 22px; border-radius: 10px; margin-bottom: 28px; font-size: 13px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 18px;">
+  <div>
+    <div style="font-size:10px;letter-spacing:0.1em;opacity:0.8;text-transform:uppercase;">Snapshot</div>
+    <div style="font-weight:700;font-size:14px;margin-top:2px;">May 2026</div>
+  </div>
+  <div>
+    <div style="font-size:10px;letter-spacing:0.1em;opacity:0.8;text-transform:uppercase;">Engine</div>
+    <div style="font-weight:700;font-size:14px;margin-top:2px;">v2 (default)</div>
+  </div>
+  <div>
+    <div style="font-size:10px;letter-spacing:0.1em;opacity:0.8;text-transform:uppercase;">Tests</div>
+    <div style="font-weight:700;font-size:14px;margin-top:2px;">613 at snapshot</div>
+  </div>
+  <div>
+    <div style="font-size:10px;letter-spacing:0.1em;opacity:0.8;text-transform:uppercase;">Fixtures</div>
+    <div style="font-weight:700;font-size:14px;margin-top:2px;">9 archetypes</div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-box" style="background:#fff7ed;border-left:3px solid #f97316"></div>Claude API call (intake + copy only)</div>
+  <div class="legend-item"><div class="legend-box" style="background:#f0f9ff;border-left:3px solid #0ea5e9"></div>Decision file (JSON)</div>
+  <div class="legend-item"><div class="legend-box" style="background:#f0fdfa;border-left:3px solid #14b8a6"></div>Widget / template</div>
+  <div class="legend-item"><div class="legend-box" style="background:#eff6ff;border-left:3px solid #3b82f6"></div>Static / deterministic</div>
+  <div class="legend-item"><div class="legend-box" style="background:#f0fdf4;border-left:3px solid #10b981"></div>Human in the loop</div>
+</div>
+
+<div class="group-label">Phase A: Intake with curated choice UI</div>
+
+<div class="stage-row">
+  <div class="stage">
+    <div class="stage-header">Customer</div>
+    <div class="stage-title">Describe business</div>
+    <div class="component component-human">Free-form chat on /try</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">Intake (web/)</div>
+    <div class="stage-title">AI + curated picks</div>
+    <div class="component component-claude">1. Archetype detection
+      <small>Claude suggests 1-3 from archetypes.json; customer picks 1</small>
+    </div>
+    <div class="component component-human">2. Palette picker (4-8 curated per archetype)
+      <small>Live iframe preview</small>
+    </div>
+    <div class="component component-human">3. Font pair picker (3-5 curated)</div>
+    <div class="component component-human">4. Page layout picker (hero A/B/C, about A/B/C…)</div>
+    <div class="component component-human">5. Imagery (curated stock + optional upload)</div>
+    <div class="component component-claude">6. AI drafts copy (tagline, about, posts)
+      <small>Haiku-eligible → ~$0.05</small>
+    </div>
+    <div class="component component-human">7. Customer edits copy inline</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">Spec + queue</div>
+    <div class="component component-static">Spec = structured v2 shape<br>(archetype, palette, fonts, layouts, content)</div>
+    <div class="component component-static">Stripe payment</div>
+    <div class="component component-static">INSERT build row; status=queued</div>
+    <div class="component component-static">Worker env flag routes to compose</div>
+  </div>
+</div>
+
+<div class="group-label">Phase B: Three-layer decision system</div>
+
+<div class="three-layer">
+  <div class="layer-panel">
+    <div class="layer-tag">LAYER 1: SHIPPED</div>
+    <div class="layer-title">Decision files (JSON)</div>
+    <div class="layer-subtitle">Curated option space. 6 registries. Growing a decision = JSON edit, not code.</div>
+    <ul>
+      <li><code>archetypes.json</code>: 9 business types (healer · coach · local service · therapist · fitness · salon · restaurant · tradesperson · event producer)</li>
+      <li><code>palettes.json</code>: 12 curated palettes</li>
+      <li><code>font-pairs.json</code>: 8 Google Fonts pairs</li>
+      <li><code>page-layouts.json</code>: layouts for every archetype × page combo</li>
+      <li><code>widget-registry.json</code>: widget → file + data contract (39 widgets)</li>
+      <li><code>field-types.json</code>: 21 typed form fields (html_input, sql_type, validation, sanitize)</li>
+    </ul>
+  </div>
+  <div class="layer-panel">
+    <div class="layer-tag">LAYER 2: SHIPPED</div>
+    <div class="layer-title">Widgets (EJS + CSS)</div>
+    <div class="layer-subtitle">39 registered. Unit-tested. Data contracts in <code>widget-registry.json</code>.</div>
+    <ul>
+      <li>Shell (5) · Hero (3: centered · split-image · two-col-statement) · CTA (2) · Form (4) · Testimonials (1)</li>
+      <li>Offerings (16): grid-3col · instructor-grid · staff-card-grid · menu-grouped-list · service-menu-priced · pricing-tier-table · weekly-schedule-grid · faq-accordion · reviews-grid · photo-gallery-grid · trust-badges-row · impact-stats-row · credentials-block · hours-location-block · service-area-list · resource-list-card-grid</li>
+      <li>Admin (8): dashboard · crud-list · crud-form · settings-form · quick-links · upcoming-events · tools-row · upload-zone</li>
+      <li>Error + utility (5): 404 · 500 · csrf · icon · stars (+ format-date / upload-zone / cas-reveal / cas-form-validate JS runtimes)</li>
+    </ul>
+    <div style="margin-top: 12px; padding: 10px 12px; background: #f9fafb; border-left: 3px solid #93c5fd; border-radius: 4px; font-size: 11.5px; color: #374151; line-height: 1.55;">
+      <strong>statement-portrait inputs (scaffold_spec answers / _seed_settings):</strong>
+      <code>credentials_lines</code>: array of small-caps subtitle lines (e.g. license, location).
+      <code>home_body_blocks</code>: array of paragraph blocks; each entry is either a string (one paragraph) or a nested array of strings (line cluster).
+      <code>statement_cta_text</code>: primary CTA label, default "Text me"; resolves to <code>sms:&lt;digits&gt;</code> when <code>contact_phone</code> is present.
+      Picker honors <code>_harbor_meta.layout_variant_hint='statement-portrait'</code> (bare variant_id matches across every solo-operator archetype) OR mood_keywords containing minimal/spare/quiet. Statement-portrait variants are opt-in: a no-signal scaffold never random-walks into them.
+    </div>
+    <div style="margin-top: 8px; padding: 10px 12px; background: #f9fafb; border-left: 3px solid #fbbf24; border-radius: 4px; font-size: 11.5px; color: #374151; line-height: 1.55;">
+      <strong>services-page inputs (scaffold_spec answers / _seed_settings, added 2026-05-06):</strong>
+      <code>services_intro</code>: optional intro paragraph that replaces the generic "Every engagement is designed around what will actually move the needle." fallback in the <code>/services</code> (and <code>/work-with-me</code>) hero description. Empty/omitted falls through to the default copy.
+      <code>services_image_url</code>: optional URL stamped onto the <code>/services</code> hero <code>image_url</code>; <code>image_alt</code> is auto-derived from <code>site_name</code>. When omitted, the hero block ships with no <code>image_url</code> key (text-only hero).
+      Both flow harbor_to_compose.ts → <code>v1_spec._seed_settings</code> → <code>translate_v1_spec</code> answers → <code>scaffold_spec</code> → <code>spec.pages.services.hero.{description,image_url}</code>. They are page-level data, NOT in the canonical 23 <code>site_settings</code> keys.
+    </div>
+  </div>
+  <div class="layer-panel">
+    <div class="layer-tag">LAYER 3: SHIPPED</div>
+    <div class="layer-title">Templates (page shapes)</div>
+    <div class="layer-subtitle">Emitted per spec. MW v25 subfolder convention: views/&lt;slug&gt;/{index,detail,manage,new,edit,admin-detail}.ejs.</div>
+    <ul>
+      <li><code>home.ejs</code> · <code>about.ejs</code> · <code>work-with-me.ejs</code></li>
+      <li><code>events.ejs</code> · <code>journal.ejs</code> · <code>gallery.ejs</code> · <code>contact.ejs</code></li>
+      <li><code>admin/dashboard.ejs</code>, <code>admin/settings.ejs</code></li>
+      <li><code>&lt;slug&gt;/{index,detail,manage,new,edit,admin-detail}.ejs</code></li>
+      <li><code>layout-public.ejs</code> + <code>layout-admin.ejs</code> (shared shells)</li>
+      <li><code>error/404.ejs</code>, <code>error/500.ejs</code>, <code>login.ejs</code></li>
+    </ul>
+  </div>
+</div>
+
+<div class="group-label">Phase C: Build (deterministic, no Claude)</div>
+
+<div class="stage-row">
+  <div class="stage">
+    <div class="stage-header">1. Validate</div>
+    <div class="component component-static">v1-shape specs auto-translated</div>
+    <div class="component component-static">Validate against v2 schema</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">2. Resolve bundles</div>
+    <div class="component component-json">Archetype → widget bundle</div>
+    <div class="component component-json">Palette → CSS vars</div>
+    <div class="component component-json">Font pair → Google Fonts</div>
+    <div class="component component-json">Layouts → widget order</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">3. Compose pages</div>
+    <div class="component component-widget">Render template + slot widgets</div>
+    <div class="component component-widget">Each widget = typed data contract</div>
+    <div class="component component-widget">Settings fields resolve at render time</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">4. Inject content</div>
+    <div class="component component-static">Customer copy → seed.sql</div>
+    <div class="component component-static">Stock photos → public/images</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">5. Emit + lint</div>
+    <div class="component component-static">schema.sql + routes + views</div>
+    <div class="component component-static">server.js + package.json</div>
+    <div class="component component-static">v2 lint (13 checks) → build_logs</div>
+  </div>
+</div>
+
+<div class="group-label">Routing: dual-mount</div>
+
+<div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px 22px; margin-bottom: 24px;">
+  <ul style="list-style:none; font-size:12px; color:#374151; line-height:1.9; columns: 2; column-gap: 32px;">
+    <li>▸ Public mount = <code>public_listing_path</code></li>
+    <li>▸ Admin mount = <code>/admin/&lt;slug&gt;</code> + <code>requireAdmin</code></li>
+    <li>▸ Router branches on <code>req.baseUrl</code> to pick view</li>
+    <li>▸ Admin-only actions 404 on public mount</li>
+    <li>▸ Private models (Testimonial, ContactInquiry) admin-only</li>
+  </ul>
+</div>
+
+<div class="group-label">Admin dashboard</div>
+
+<div class="grid-4" style="margin-bottom: 24px;">
+  <div class="mini-panel">
+    <div class="mini-panel-title">Stat cards</div>
+    <ul class="mini-list">
+      <li>One per data model · count + Manage</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Events + Quick Links</div>
+    <ul class="mini-list">
+      <li>Events gated on <code>events_enabled</code></li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Recent Inquiries</div>
+    <ul class="mini-list">
+      <li>5 most recent contact_inquiries</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Tools row</div>
+    <ul class="mini-list">
+      <li>Password · Settings · Danger Zone</li>
+    </ul>
+  </div>
+</div>
+
+<div class="group-label">Contracts</div>
+
+<div class="grid-4" style="margin-bottom: 24px;">
+  <div class="mini-panel" style="border-left: 4px solid #0d9488;">
+    <div class="mini-panel-title">Drag-drop uploads</div>
+    <ul class="mini-list">
+      <li>multer → public/uploads/YYYY/MM/</li>
+      <li>CSRF + requireAdmin + mimetype gate</li>
+    </ul>
+  </div>
+  <div class="mini-panel" style="border-left: 4px solid #0d9488;">
+    <div class="mini-panel-title">Date handling</div>
+    <ul class="mini-list">
+      <li>TIMESTAMPTZ → date input</li>
+      <li>YYYY-MM-DD format on emit</li>
+    </ul>
+  </div>
+  <div class="mini-panel" style="border-left: 4px solid #0d9488;">
+    <div class="mini-panel-title">Flash feedback</div>
+    <ul class="mini-list">
+      <li>Every mutation: session flash + save</li>
+      <li>GET handler reads + clears + renders</li>
+    </ul>
+  </div>
+  <div class="mini-panel" style="border-left: 4px solid #0d9488;">
+    <div class="mini-panel-title">Humanized strings</div>
+    <ul class="mini-list">
+      <li>_humanize() for CamelCase/kebab/snake</li>
+      <li>Applied to all CRUD views</li>
+    </ul>
+  </div>
+</div>
+
+<div class="group-label">Phase D: Deploy + review</div>
+
+<div class="stage-row">
+  <div class="stage">
+    <div class="stage-header">deploy.py (shared)</div>
+    <div class="component component-static">Railway API: project + service</div>
+    <div class="component component-static">git push + health check</div>
+    <div class="component component-static">preview_url → DB</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">deploy_fix: v1 only</div>
+    <div class="component component-static" style="background:#fef3c7;border-color:#f59e0b;color:#78350f;">v2 skips deploy_fix; v1 patches corrupt v2 artifacts</div>
+    <div class="component component-static">Fail fast on v2 crash; persist logs</div>
+    <div class="component component-static">Guard: <code>TestV2DeployFixSkip</code></div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">SE Review Gate</div>
+    <div class="component component-static">send_review_pending → admin</div>
+    <div class="component component-human">Founder reviews at /admin/reviews</div>
+    <div class="component component-human">Approve → live + email customer</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">Parallel systems</div>
+    <div class="component component-static">monitor: health + backups</div>
+    <div class="component component-static">Sentry</div>
+    <div class="component component-static">coordinator: fewer defects on v2</div>
+  </div>
+</div>
+
+<div class="group-label">What disappears from v1</div>
+
+<div class="grid-5">
+  <div class="gone-panel">
+    <div class="mini-panel-title">Main code gen</div>
+    <ul class="mini-list">
+      <li>cli/build.py Claude call</li>
+      <li>multi-pass flow</li>
+      <li>single-pass flow</li>
+    </ul>
+  </div>
+  <div class="gone-panel">
+    <div class="mini-panel-title">117 post-processors</div>
+    <ul class="mini-list">
+      <li>Invariants baked into widgets</li>
+      <li>No Claude output to patch</li>
+      <li>All RCA-driven guards become obsolete</li>
+    </ul>
+  </div>
+  <div class="gone-panel">
+    <div class="mini-panel-title">QA fix loop</div>
+    <ul class="mini-list">
+      <li>qa_fix.py</li>
+      <li>reapply_post_processors</li>
+      <li>FixLoopBudgetExceeded</li>
+    </ul>
+  </div>
+  <div class="gone-panel">
+    <div class="mini-panel-title">Design fix loop</div>
+    <ul class="mini-list">
+      <li>design_review.py</li>
+      <li>design_fix.py</li>
+      <li>MAX_DESIGN_FIXES</li>
+      <li>DESIGN_QG_RETRY1</li>
+    </ul>
+  </div>
+  <div class="gone-panel">
+    <div class="mini-panel-title">Advisor tool</div>
+    <ul class="mini-list">
+      <li>USE_ADVISOR_*</li>
+      <li>Pydantic-shape mocks</li>
+      <li>Strategy-planning overhead</li>
+    </ul>
+  </div>
+</div>
+
+<div class="group-label">Transition phases</div>
+
+<div class="phase-timeline">
+  <div class="phase-item done">
+    <div class="phase-num">0</div>
+    <div class="phase-name">Freeze v1</div>
+  </div>
+  <div class="phase-item done">
+    <div class="phase-num">1</div>
+    <div class="phase-name">Prior-art audit (20 sites)</div>
+  </div>
+  <div class="phase-item done">
+    <div class="phase-num">2</div>
+    <div class="phase-name">Decision files + registry</div>
+  </div>
+  <div class="phase-item done">
+    <div class="phase-num">3</div>
+    <div class="phase-name">Widget library MVP</div>
+  </div>
+  <div class="phase-item done">
+    <div class="phase-num">4</div>
+    <div class="phase-name">Compose pipeline</div>
+  </div>
+  <div class="phase-item">
+    <div class="phase-num">5</div>
+    <div class="phase-name">Intake choice UI</div>
+  </div>
+  <div class="phase-item">
+    <div class="phase-num">6</div>
+    <div class="phase-name">Shadow validate</div>
+  </div>
+  <div class="phase-item">
+    <div class="phase-num">7</div>
+    <div class="phase-name">Library growth + v1 sunset</div>
+  </div>
+</div>
+
+<div class="footer-stats">
+  <div>
+    <div class="stat-label">AI spend per build</div>
+    <div class="stat-value">$3-4 <span class="arrow">→</span> $0</div>
+    <div class="stat-detail">Intake copy drafting only (~$0.05).</div>
+  </div>
+  <div>
+    <div class="stat-label">Compose time</div>
+    <div class="stat-value">12-15 min <span class="arrow">→</span> ~5 sec</div>
+    <div class="stat-detail">v1 figure includes fix loops and deploy; v2 figure is the compose step alone.</div>
+  </div>
+  <div>
+    <div class="stat-label">Round 3 regressions</div>
+    <div class="stat-value">5 <span class="arrow">→</span> 0</div>
+    <div class="stat-detail">All fixed at pipeline level with tests.</div>
+  </div>
+  <div>
+    <div class="stat-label">Adding an option</div>
+    <div class="stat-value">Code <span class="arrow">→</span> JSON</div>
+    <div class="stat-detail">Palette, font, layout. New widgets still need code.</div>
+  </div>
+</div>
+
+</body>
+</html>

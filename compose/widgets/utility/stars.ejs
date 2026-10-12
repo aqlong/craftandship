@@ -1,0 +1,24 @@
+<!-- compose:widget utility/stars - 5-star rating row.
+     Include args: rating (0-5, fractional OK), size?, aria_hidden?
+     Renders N filled stars out of 5, supporting half-stars via gradient
+     clip. Color = currentColor so parent controls it. -->
+<% var _r = Number(typeof rating !== 'undefined' ? rating : 5); %>
+<% if (!(_r >= 0)) _r = 0; if (_r > 5) _r = 5; %>
+<% var _sz = (typeof size !== 'undefined' ? size : 16); %>
+<% var _ariaHidden = (typeof aria_hidden !== 'undefined' ? aria_hidden : false); %>
+<span<% if (!_ariaHidden) { %> role="img" aria-label="<%= _r %> out of 5 stars"<% } else { %> aria-hidden="true"<% } %> style="display:inline-flex;align-items:center;gap:2px;line-height:0;">
+  <% for (var _i = 0; _i < 5; _i++) { %>
+    <% var _fill = Math.max(0, Math.min(1, _r - _i)); %>
+    <svg xmlns="http://www.w3.org/2000/svg" width="<%= _sz %>" height="<%= _sz %>" viewBox="0 0 24 24" style="flex-shrink:0;" aria-hidden="true">
+      <defs>
+        <linearGradient id="star-<%= _sz %>-<%= _i %>-<%= Math.floor(_r*10) %>" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="<%= Math.round(_fill * 100) %>%" stop-color="currentColor"/>
+          <stop offset="<%= Math.round(_fill * 100) %>%" stop-color="transparent"/>
+        </linearGradient>
+      </defs>
+      <path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.9L5.7 21l1.7-7L2 9.5l7.1-.6z"
+        fill="url(#star-<%= _sz %>-<%= _i %>-<%= Math.floor(_r*10) %>)"
+        stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/>
+    </svg>
+  <% } %>
+</span>

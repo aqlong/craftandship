@@ -1,0 +1,69 @@
+<%
+  var verifyEmail = typeof email !== 'undefined' ? email : '';
+  var verifyError = typeof error !== 'undefined' ? error : null;
+%>
+
+<section class="harbor-auth">
+  <div class="harbor-auth__inner">
+    <div class="harbor-auth__card" style="text-align:center;">
+      <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:10px;">A verification link is on its way,</span>
+      <h1 class="display harbor-auth__title">Check your inbox.</h1>
+      <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.55; margin:18px 0 24px;">
+        We sent a link to <strong style="font-weight:600; color:var(--color-ink);"><%= verifyEmail || 'your email' %></strong>. Click it to activate your account.
+      </p>
+
+      <% if (verifyError) { %>
+        <div class="harbor-auth__error" role="alert" style="text-align:left;"><%= verifyError %></div>
+      <% } %>
+
+      <p style="font-family:var(--font-display); font-style:italic; font-size:16px; color:var(--color-ink-faded); line-height:1.6; margin:0 0 22px;">
+        Didn't see it? Check your spam folder, or send a new one.
+      </p>
+
+      <form action="/resend-verification" method="POST" style="display:inline;">
+        <%- include('_csrf-field') %>
+        <% if (verifyEmail) { %>
+          <input type="hidden" name="email" value="<%= verifyEmail %>" />
+        <% } else { %>
+          <%# The address is remembered in the session, never read from the URL.
+              A visitor who arrives without one is asked for it. %>
+          <label style="display:block; margin:0 0 16px; text-align:left;">
+            <span style="display:block; font-size:14px; color:var(--color-ink-soft); margin-bottom:6px;">Email address</span>
+            <input type="email" name="email" required autocomplete="email" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:16px; border:1px solid var(--color-rule); border-radius:5px; background:#fff;" />
+          </label>
+        <% } %>
+        <button type="submit" class="btn btn-ghost">Send a new link</button>
+      </form>
+
+      <div class="harbor-auth__footnote">
+        Already verified? <a href="/login">Sign in.</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .harbor-auth { padding:64px 0 96px; }
+  .harbor-auth__inner { max-width:560px; margin:0 auto; padding: 0 20px; box-sizing: border-box; }
+  .harbor-auth__card {
+    background:var(--color-companion-paper);
+    padding:48px 48px 44px;
+    box-shadow:var(--shadow-letter);
+    border-radius: 5px;
+  }
+  .harbor-auth__title { font-size:44px; line-height:1.04; margin:0; letter-spacing:-0.012em; }
+  @media (max-width: 600px) {
+    .harbor-auth__card { padding:32px 24px 28px; }
+    .harbor-auth__title { font-size:32px; }
+  }
+  .harbor-auth__error {
+    padding:14px 18px; margin-bottom:22px;
+    background:#FBE7DC; border:1px solid var(--color-clay); border-radius: 5px;
+    font-family:var(--font-display); font-style:italic; color:var(--color-ink); font-size:17px;
+  }
+  .harbor-auth__footnote {
+    margin-top:24px; padding-top:18px; border-top:1px dashed var(--color-rule);
+    font-family:var(--font-display); font-style:italic; font-size:15px; color:var(--color-ink-faded);
+  }
+  .harbor-auth__footnote a { color:var(--color-clay); }
+</style>

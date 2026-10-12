@@ -1,0 +1,46 @@
+<!-- compose:widget auth/centered-card; reusable single-card auth shell for
+     confirmation surfaces (magic-link-sent, request-magic-link, etc).
+     Renders a centered paper card with a sage-tinted icon header above
+     the title. Caller passes pre-rendered HTML via locals.bodyHtml; other
+     locals are heading (string), subheading (string), iconName (one of
+     mail, key, check, link), siteName, brandHref. CSS lives in style.css
+     under .cas-auth-card-* classes. -->
+<%
+var _site = (typeof siteName !== 'undefined' && siteName) ? siteName : ((locals.settings && locals.settings.site_name) || 'Site');
+var _brandHref = (typeof brandHref !== 'undefined' && brandHref) ? brandHref : '/';
+var _heading = (typeof heading !== 'undefined' && heading) ? heading : '';
+var _sub = (typeof subheading !== 'undefined' && subheading) ? subheading : '';
+var _icon = (typeof iconName !== 'undefined' && iconName) ? iconName : 'mail';
+var _body = (typeof bodyHtml !== 'undefined' && bodyHtml) ? bodyHtml : '';
+// Inline icon SVGs. Stays self-contained so the shell does not depend on
+// the utility/icon.ejs registry being present.
+var _iconSvg = '';
+if (_icon === 'mail') {
+  _iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>';
+} else if (_icon === 'key') {
+  _iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>';
+} else if (_icon === 'check') {
+  _iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+} else if (_icon === 'link') {
+  _iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+}
+%>
+<section class="cas-auth-card-shell">
+  <div class="cas-auth-card-shell__inner">
+    <a class="cas-auth-card-shell__brand" href="<%= _brandHref %>"><%= _site %></a>
+    <article class="cas-auth-card">
+      <div class="cas-auth-card__icon" aria-hidden="true">
+        <%- _iconSvg %>
+      </div>
+      <% if (_heading) { %>
+        <h1 class="cas-auth-card__heading"><%= _heading %></h1>
+      <% } %>
+      <% if (_sub) { %>
+        <p class="cas-auth-card__subheading"><%= _sub %></p>
+      <% } %>
+      <div class="cas-auth-card__body">
+        <%- _body %>
+      </div>
+    </article>
+  </div>
+</section>

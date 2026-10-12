@@ -1,0 +1,57 @@
+# --- Secrets and local environment ---
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# --- Dependencies and build output ---
+# No trailing slash on purpose: `node_modules/` matches directories only, so a
+# node_modules SYMLINK (the roadmap executor links web/node_modules into its
+# worktrees) would not be ignored and `git add -A` would stage it.
+node_modules
+dist/
+coverage/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.js.map
+
+# --- Test and CI output ---
+test-results/
+playwright-report/
+web/test-results/
+# Transient raw axe output from web/tests/ui/lighthouse-a11y.spec.ts
+# (the hand-authored docs/audits/*.md digests are kept).
+docs/audits/lighthouse-a11y-*.json
+# Transient output of the keyboard tab-order UI specs
+docs/audits/keyboard-tab-order-*.json
+# Output of scripts/qa_cas_web.py
+qa_results/
+
+# --- Generated customer apps, queue state and logs ---
+builds/
+logs/
+*.dump
+*.sql.gz
+
+# --- OS and editor files ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# --- Local tooling state ---
+# Executor worktrees (scripts/cas-roadmap-loop.sh) and Claude Code local state.
+# .claude/settings.example.json is the one versioned file under .claude/.
+.worktrees/
+.claude/worktrees/
+.claude/settings.local.json
+.claude/launch.json
+
+# scripts/cas-pick-item.py writes a status change to this file and then renames
+# it over roadmap.json. A crash between the two could leave it behind; don't
+# let it get committed.
+coordinator/roadmap.json.tmp
+

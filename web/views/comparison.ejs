@@ -1,0 +1,86 @@
+<%
+  // Shared template for the SEO comparison landing pages.
+  //
+  // The competitive surface (named competitor, "alternative to" framing) lives
+  // in the route-level <title>, <meta description>, URL, and JSON-LD only.
+  // This visible body stays affirmative throughout: no competitor naming,
+  // no defensive negation, no calendar timetables. Per docs/BRAND_VOICE.md.
+  //
+  // Locals expected from the route:
+  //   page.audience      // string
+  //   page.tagline       // string
+  //   page.lead          // string
+  //   page.sections      // [{ heading, body }]
+  //   page.features      // [{ label, description }]
+  //   page.closingPrompt // string
+%>
+<section style="padding:80px 0 32px;">
+  <div class="max-site" style="max-width:760px;">
+    <span class="eyebrow" style="font-size:19px; display:block; margin-bottom:14px;">For <%= page.audience %>,</span>
+    <h1 class="display comparison-title"><%= page.tagline %></h1>
+    <p style="font-size:21px; color:var(--color-ink-soft); line-height:1.55; max-width:680px; margin:24px 0 0;">
+      <%= page.lead %>
+    </p>
+  </div>
+</section>
+
+<section style="padding:24px 0 64px;">
+  <div class="max-site" style="max-width:760px;">
+    <% page.sections.forEach(function(section) { %>
+      <h2 class="display" style="font-size:34px; margin:32px 0 16px;"><%= section.heading %></h2>
+      <p style="font-size:19px; color:var(--color-ink-soft); line-height:1.7; margin:0 0 24px;">
+        <%= section.body %>
+      </p>
+    <% }) %>
+  </div>
+</section>
+
+<section style="padding:24px 0 96px;">
+  <div class="max-site" style="max-width:880px;">
+    <div class="included-card ruled-card">
+      <div class="included-card__price-row">
+        <div>
+          <div class="display included-card__price"><%= harborSubscriptionPrice %></div>
+          <div class="included-card__price-meta">a month, down to <%= harborSlidingScalePrice %> if that fits better</div>
+        </div>
+        <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+      </div>
+      <ul class="included-card__list">
+        <% page.features.forEach(function(feature) { %>
+          <li>
+            <span class="included-card__bullet">&check;</span>
+            <strong style="color:var(--color-ink); font-weight:600;"><%= feature.label %>.</strong>
+            <span style="color:var(--color-ink-soft);"><%= feature.description %></span>
+          </li>
+        <% }) %>
+      </ul>
+      <div class="included-card__footnote">
+        A conversation first. When it's right, you begin together.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:0 0 120px;">
+  <div class="max-site" style="max-width:760px;">
+    <div class="pricing-final-cta" style="background:var(--color-companion-paper); padding:48px 48px 44px; box-shadow:var(--shadow-letter);">
+      <span class="eyebrow" style="font-size:19px; display:block; margin-bottom:14px;">When you're ready,</span>
+      <h2 class="display" style="font-size:44px; margin:0 0 22px; line-height:1.05;">
+        Begin a conversation.
+      </h2>
+      <p style="font-size:19px; color:var(--color-ink-soft); line-height:1.6; max-width:540px; margin:0 0 28px;">
+        <%= page.closingPrompt %>
+      </p>
+      <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+        <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+        <a href="/how-it-works" class="btn btn-quiet"><span class="arrow">See how it works</span></a>
+        <a href="/pricing" class="btn btn-quiet"><span class="arrow">See pricing</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .comparison-title { font-size:64px; line-height:1.04; margin:0; letter-spacing:-0.018em; }
+  @media (max-width: 900px) { .comparison-title { font-size:42px; } }
+</style>

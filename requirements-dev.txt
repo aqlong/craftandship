@@ -1,0 +1,34 @@
+# Dev/test-only Python dependencies. Kept separate from
+# requirements.worker.txt (Railway worker image) so local pytest runs can
+# install the superset without bloating the worker image with test deps.
+#
+# CI installs both requirements.worker.txt AND this file in the python
+# job (see .github/workflows/test.yml -> "Install dependencies" step).
+# Pins here are authoritative for the dev + audit contract framework.
+
+# The v1 contract framework (cli/contracts) parses generated HTML with these
+# two packages: same pins as the worker requirements, so dev, CI and the
+# worker resolve to one BeautifulSoup and soupsieve combination.
+beautifulsoup4>=4.12,<5
+soupsieve>=2.5,<3
+# The executor's test gate needs 8.4 or newer; the published results were
+# measured with 9.1.
+pytest>=8.4,<10
+# Imported by tests that read the CI workflows as YAML. bandit pulls it in
+# too, but the tests should not depend on that.
+PyYAML>=6,<7
+
+# Pillow: used by compose.build.emit_og_default_image to render the
+# 1200x630 social-link preview card. Mirror the worker's Pillow pin so
+# local pytest exercises the OG image emit path. Compose degrades
+# silently (skips the file) when PIL is unavailable.
+Pillow>=10.3.0
+
+# Security audit tooling. Runs in CI via .github/workflows/test.yml and
+# locally via .githooks/pre-push -> scripts/run_python_security_audit.sh.
+# bandit: static-analysis on Python source (medium+ severity and confidence;
+#   any finding fails the gate, there is no baseline file).
+# pip-audit: scans requirements files against the PyPI advisory DB.
+# Both are dev-only; not bundled into the worker container.
+bandit>=1.9
+pip-audit>=2.10

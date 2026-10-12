@@ -1,0 +1,97 @@
+<%
+  var unverified = typeof unverifiedEmail !== 'undefined' ? unverifiedEmail : null;
+  var loginError = typeof error !== 'undefined' ? error : null;
+  var emailValue = typeof email !== 'undefined' ? email : '';
+  // Validated by the route (safeReturnTo): a same-site path or null.
+  var loginReturnTo = typeof returnTo !== 'undefined' && returnTo ? returnTo : '';
+%>
+
+<section class="harbor-auth">
+  <div class="harbor-auth__inner">
+    <div class="harbor-auth__card">
+      <span class="eyebrow" style="font-size:15px; display:block; margin-bottom:6px;">Welcome back,</span>
+      <h1 class="display harbor-auth__title">Sign in.</h1>
+      <p style="font-size:14px; color:var(--color-ink-soft); line-height:1.55; margin:10px 0 22px;">
+        New here? <a href="/try" style="color:var(--color-clay); text-decoration-color:var(--color-companion-rule);">Begin a conversation.</a>
+      </p>
+
+      <% if (unverified) { %>
+        <div class="harbor-auth__notice">
+          <p style="font-family:var(--font-display); font-style:italic; font-size:18px; margin:0 0 6px; color:var(--color-ink);">Please verify your email first.</p>
+          <p style="font-size:15px; color:var(--color-ink-soft); margin:0; line-height:1.5;">
+            Check your inbox for the link, or <a href="/verify-email-sent" style="color:var(--color-clay);">request a new one</a>.
+          </p>
+        </div>
+      <% } else if (loginError) { %>
+        <div class="harbor-auth__error" role="alert"><%= loginError %></div>
+      <% } %>
+
+      <form action="/login<%= loginReturnTo ? '?returnTo=' + encodeURIComponent(loginReturnTo) : '' %>" method="POST" class="harbor-auth__form">
+        <%- include('_csrf-field') %>
+
+        <label class="harbor-auth__field">
+          <span class="harbor-auth__label">Email</span>
+          <input type="email" name="email" value="<%= emailValue %>" required autocomplete="email" autofocus />
+        </label>
+
+        <label class="harbor-auth__field">
+          <span class="harbor-auth__label">Password</span>
+          <input type="password" name="password" required autocomplete="current-password" />
+        </label>
+
+        <button type="submit" class="btn btn-primary harbor-auth__submit">Sign in &rarr;</button>
+
+        <div class="harbor-auth__footnote">
+          <a href="/forgot-password">Forgot your password?</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<style>
+  .harbor-auth { padding:48px 0 80px; }
+  .harbor-auth__inner { max-width:440px; margin:0 auto; padding: 0 20px; box-sizing: border-box; }
+  .harbor-auth__card {
+    background:var(--color-companion-paper);
+    padding:32px 32px 28px;
+    box-shadow:var(--shadow-letter);
+    border-radius: 5px;
+  }
+  .harbor-auth__title { font-size:32px; line-height:1.04; margin:0; letter-spacing:-0.01em; }
+  @media (max-width: 600px) {
+    .harbor-auth__card { padding:24px 22px 22px; }
+    .harbor-auth__title { font-size:28px; }
+  }
+
+  .harbor-auth__notice {
+    padding:12px 14px; margin-bottom:18px;
+    background:var(--color-vellum); border-left:3px solid var(--color-lantern);
+    border-radius: 5px;
+  }
+  .harbor-auth__error {
+    padding:11px 14px; margin-bottom:18px;
+    background:#FBE7DC; border:1px solid var(--color-clay); border-radius: 5px;
+    font-family:var(--font-display); font-style:italic; color:var(--color-ink); font-size:15px;
+  }
+
+  .harbor-auth__form { display:flex; flex-direction:column; gap:16px; }
+  .harbor-auth__field { display:flex; flex-direction:column; gap:6px; }
+  .harbor-auth__label {
+    font-family:var(--font-display); font-style:italic; font-size:15px; color:var(--color-clay);
+  }
+  .harbor-auth__form input {
+    font-family:var(--font-body); font-size:15px; color:var(--color-ink);
+    padding:10px 13px; border:1px solid var(--color-rule);
+    background:var(--color-vellum);
+    border-radius: 5px; outline:none;
+    transition:border-color .15s ease;
+  }
+  .harbor-auth__form input:focus { border-color:var(--color-ink); }
+  .harbor-auth__submit { margin-top:4px; align-self:flex-start; }
+  .harbor-auth__footnote {
+    margin-top:10px; padding-top:14px; border-top:1px dashed var(--color-rule);
+    font-family:var(--font-display); font-style:italic; font-size:14px; color:var(--color-ink-faded); text-align:center;
+  }
+  .harbor-auth__footnote a { color:var(--color-ink-soft); }
+</style>

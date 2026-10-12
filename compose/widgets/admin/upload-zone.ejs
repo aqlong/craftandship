@@ -1,0 +1,16 @@
+<!-- compose:widget admin/upload-zone -->
+<% var _id = 'upload-' + field_name.replace(/[^a-z0-9]/gi,'-'); %>
+<div class="upload-zone" data-field="<%= field_name %>" id="<%= _id %>-wrap">
+  <input type="hidden" name="<%= field_name %>" id="<%= _id %>-hidden" value="<%= (typeof current_url !== 'undefined' && current_url) ? current_url : '' %>" />
+  <div class="upload-preview rounded-lg border overflow-hidden relative" style="border-color: var(--color-border); background: var(--color-surface); min-height: 160px; display: <%= (typeof current_url !== 'undefined' && current_url) ? 'block' : 'none' %>;" id="<%= _id %>-preview">
+    <img src="<%= (typeof current_url !== 'undefined' && current_url) ? current_url : '' %>" alt="Current <%= label %>" class="w-full h-auto" style="max-height: 240px; object-fit: cover;" id="<%= _id %>-img" />
+    <button type="button" class="absolute top-2 right-2 px-3 py-1 rounded-md font-body text-xs" style="background: rgba(0,0,0,0.6); color: white; border: 0; cursor: pointer;">Remove</button>
+  </div>
+  <div class="upload-prompt rounded-lg border-2 border-dashed px-6 py-8 text-center cursor-pointer transition-all" style="border-color: var(--color-border); background: var(--color-surface); display: <%= (typeof current_url !== 'undefined' && current_url) ? 'none' : 'block' %>;" id="<%= _id %>-prompt">
+    <svg class="mx-auto mb-2" width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-foreground-muted);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.9 5 5 0 019.9-1.2 5.5 5.5 0 014.3 8.5M12 12v9m0-9l-3 3m3-3l3 3" /></svg>
+    <div class="font-body text-sm font-medium mb-1" style="color: var(--color-foreground);">Drag and drop an image, or click to browse</div>
+    <div class="font-body text-xs" style="color: var(--color-foreground-muted);"><%= (typeof accept !== 'undefined' && accept) ? accept : 'PNG / JPG / WEBP' %> · up to 10 MB</div>
+  </div>
+  <input type="file" id="<%= _id %>-file" accept="image/*" style="display: none;" />
+  <div class="upload-progress font-body text-xs mt-2" id="<%= _id %>-progress" style="color: var(--color-foreground-muted); display: none;">Uploading…</div>
+</div>

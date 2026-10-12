@@ -1,0 +1,136 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <div class="flex items-center gap-4 mb-4">
+    <span class="admin-badge bg-surface-2 text-muted"><%= total %> total</span>
+  </div>
+
+  <div class="flex gap-2 mb-4 overflow-x-auto flex-nowrap pb-2 -mx-1 px-1 scrollbar-none" style="-webkit-overflow-scrolling: touch">
+    <a href="/admin/feedback<%= qFilter ? '?q=' + encodeURIComponent(qFilter) : '' %>" class="px-3 py-1 rounded-full text-xs font-semibold no-underline transition-colors shrink-0 whitespace-nowrap <%= !categoryFilter ? 'bg-brand text-black' : 'bg-surface-2 text-muted hover:bg-surface-2' %>">All</a>
+    <% categories.forEach(function(cat) { %>
+      <a href="/admin/feedback?category=<%= cat %><%= qFilter ? '&q=' + encodeURIComponent(qFilter) : '' %>" class="px-3 py-1 rounded-full text-xs font-semibold no-underline transition-colors capitalize shrink-0 whitespace-nowrap <%= categoryFilter === cat ? 'bg-brand text-black' : 'bg-surface-2 text-muted hover:bg-surface-2' %>"><%= cat %></a>
+    <% }); %>
+  </div>
+
+  <form method="GET" action="/admin/feedback" class="bg-surface-3 rounded-[5px] p-3 sm:p-4 mb-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end flex-wrap">
+    <% if (categoryFilter) { %>
+      <input type="hidden" name="category" value="<%= categoryFilter %>" />
+    <% } %>
+    <div class="flex-1 min-w-[200px]">
+      <label class="text-muted text-xs block mb-1">Search</label>
+      <input type="text" name="q" value="<%= typeof qFilter !== 'undefined' ? qFilter : '' %>" placeholder="message text, customer name, or email" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full" />
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      <% if (typeof qFilter !== 'undefined' && qFilter) { %>
+        <a href="/admin/feedback<%= categoryFilter ? '?category=' + categoryFilter : '' %>" class="btn btn-ghost btn-sm">Clear</a>
+      <% } %>
+    </div>
+  </form>
+
+  <% if (categoryCounts && categoryCounts.length > 0) { %>
+    <div class="mb-6 p-4 rounded-xl bg-surface border border-border">
+      <h3 class="text-sm font-semibold text-gray-200 mb-3">Feedback Insights</h3>
+      <div class="flex flex-wrap gap-4">
+        <% categoryCounts.forEach(function(cc) { %>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold capitalize
+              <% if (cc.category === 'bug') { %>bg-red-500/15 text-red-400
+              <% } else if (cc.category === 'suggestion') { %>bg-brand-sky/15 text-brand-sky
+              <% } else if (cc.category === 'question') { %>bg-amber-500/15 text-amber-400
+              <% } else { %>bg-surface-3/30 text-muted<% } %>
+            "><%= cc.category %></span>
+            <span class="text-sm text-gray-300 font-mono"><%= cc.count %></span>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (feedback.length === 0) { %>
+    <div class="text-center py-16 text-subtle">
+      <p class="text-lg">No feedback yet.</p>
+    </div>
+  <% } else { %>
+    <!-- Desktop table -->
+    <div class="hidden lg:block">
+      <table class="w-full border-collapse">
+        <thead>
+          <tr class="border-b border-border">
+            <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-subtle">Date</th>
+            <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-subtle">Customer</th>
+            <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-subtle">Category</th>
+            <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-subtle">Message</th>
+            <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-subtle">Page</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% feedback.forEach(function(fb) { %>
+            <tr class="border-b border-border hover:bg-surface/50 transition-colors">
+              <td class="px-4 py-3 text-sm text-muted whitespace-nowrap">
+                <span data-ts="<%= new Date(fb.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(fb.created_at).toISOString().slice(0, 16).replace('T', ' ') %></span>
+              </td>
+              <td class="px-4 py-3 text-sm">
+                <div class="text-gray-200"><%= fb.customer_name || 'Unknown' %></div>
+                <div class="text-xs text-subtle"><%= fb.customer_email || '' %></div>
+              </td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold
+                  <% if (fb.category === 'bug') { %>bg-red-500/15 text-red-400
+                  <% } else if (fb.category === 'suggestion') { %>bg-brand-sky/15 text-brand-sky
+                  <% } else if (fb.category === 'question') { %>bg-amber-500/15 text-amber-400
+                  <% } else { %>bg-surface-3/30 text-muted<% } %>
+                "><%= fb.category %></span>
+              </td>
+              <td class="px-4 py-3 text-sm text-gray-300 max-w-md">
+                <div class="truncate" title="<%= fb.message %>"><%= fb.message.length > 100 ? fb.message.slice(0, 100) + '...' : fb.message %></div>
+              </td>
+              <td class="px-4 py-3 text-xs text-subtle max-w-[200px] truncate"><%= fb.page_url || '' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile card view -->
+    <div class="lg:hidden space-y-3">
+      <% feedback.forEach(function(fb) { %>
+        <div class="bg-surface rounded-lg p-4">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <div class="text-gray-200 text-sm font-semibold"><%= fb.customer_name || 'Unknown' %></div>
+              <div class="text-xs text-subtle"><%= fb.customer_email || '' %></div>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold shrink-0
+              <% if (fb.category === 'bug') { %>bg-red-500/15 text-red-400
+              <% } else if (fb.category === 'suggestion') { %>bg-brand-sky/15 text-brand-sky
+              <% } else if (fb.category === 'question') { %>bg-amber-500/15 text-amber-400
+              <% } else { %>bg-surface-3/30 text-muted<% } %>
+            "><%= fb.category %></span>
+          </div>
+          <div class="text-sm text-gray-300 mb-2 break-words"><%= fb.message.length > 150 ? fb.message.slice(0, 150) + '...' : fb.message %></div>
+          <div class="flex justify-between text-xs">
+            <span class="text-subtle"><span data-ts="<%= new Date(fb.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(fb.created_at).toISOString().slice(0, 16).replace('T', ' ') %></span></span>
+            <% if (fb.page_url) { %>
+              <span class="text-subtle truncate ml-2 max-w-[150px]"><%= fb.page_url %></span>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+
+    <% if (totalPages > 1) { %>
+      <div class="flex justify-center gap-2 mt-6 flex-wrap items-center">
+        <% if (page > 1) { %>
+          <a href="/admin/feedback?page=<%= page - 1 %><%= categoryFilter ? '&category=' + categoryFilter : '' %><%= (typeof qFilter !== 'undefined' && qFilter) ? '&q=' + encodeURIComponent(qFilter) : '' %>" class="px-3 py-2 min-h-[44px] flex items-center rounded-md text-sm bg-surface-2 text-gray-300 no-underline hover:bg-surface-2">Previous</a>
+        <% } %>
+        <span class="px-3 py-2 text-sm text-muted">Page <%= page %> of <%= totalPages %></span>
+        <% if (page < totalPages) { %>
+          <a href="/admin/feedback?page=<%= page + 1 %><%= categoryFilter ? '&category=' + categoryFilter : '' %><%= (typeof qFilter !== 'undefined' && qFilter) ? '&q=' + encodeURIComponent(qFilter) : '' %>" class="px-3 py-2 min-h-[44px] flex items-center rounded-md text-sm bg-surface-2 text-gray-300 no-underline hover:bg-surface-2">Next</a>
+        <% } %>
+      </div>
+    <% } %>
+  <% } %>
+
+  <%- include("partials/_admin-auto-refresh", { intervalSeconds: 90 }) %>
+</section>

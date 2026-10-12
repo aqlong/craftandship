@@ -1,0 +1,23 @@
+<!-- compose:widget error/csrf -->
+<section class="py-20 text-center" style="background: var(--color-background);">
+  <div class="max-w-md mx-auto px-4">
+    <div class="font-display text-6xl font-bold mb-3" style="color: var(--color-primary);">403</div>
+    <h1 class="font-display text-2xl font-bold mb-3" style="color: var(--color-foreground);">Session Expired</h1>
+    <p class="font-body text-sm mb-3" style="color: var(--color-foreground-muted);">
+      Your session expired or this form was opened in another tab. Your changes were not saved.
+    </p>
+    <p class="font-body text-sm mb-6" style="color: var(--color-foreground-muted);">
+      Go back, refresh the page to pick up a fresh session, and try again.
+    </p>
+    <div class="flex gap-3 justify-center">
+      <%# "Go Back" is wired by /js/cas-form-validate.js through the data-cas-back
+          attribute (history.back()), with href="/" as the no-script fallback.
+          Two things this replaced: a javascript: URL, which the site's own
+          CSP blocks, and a link built from the Referer header, which is
+          absent for same-site posts (helmet sends Referrer-Policy:
+          no-referrer) and attacker-chosen for a cross-site one. %>
+      <a href="/" data-cas-back class="font-body font-medium px-5 py-2 rounded-md border" style="border-color: var(--color-border); color: var(--color-foreground);">Go Back</a>
+      <a href="/" class="font-body font-medium px-5 py-2 rounded-md" style="background-color: var(--color-primary); color: var(--color-on-primary);">Home</a>
+    </div>
+  </div>
+</section>

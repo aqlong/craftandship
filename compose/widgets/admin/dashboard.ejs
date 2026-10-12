@@ -1,0 +1,97 @@
+<!-- compose:widget admin/dashboard -->
+<section class="py-10" style="background-color: var(--color-surface); min-height: calc(100vh - 64px);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+
+    <div class="mb-8">
+      <div class="font-body text-xs font-bold uppercase tracking-widest mb-2" style="color: var(--color-foreground-muted);">Administration</div>
+      <h1 class="font-display text-4xl font-bold" style="color: var(--color-foreground);">Dashboard</h1>
+    </div>
+
+    <% if (locals.flashSuccess) { %>
+      <div class="mb-4 bg-green-50 text-green-800 border border-green-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= flashSuccess %></div>
+    <% } %>
+    <% if (locals.flashError) { %>
+      <div class="mb-4 bg-red-50 text-red-800 border border-red-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= flashError %></div>
+    <% } %>
+
+    <!-- Letterpress-polish stat cards: hairline border on warm paper, no
+         colored stripes, no filled badges. Each delta is an outlined chip
+         in the palette accent so it reads as a small typographic accent
+         rather than a SaaS notification dot. The 7-day delta still tracks
+         stat.new_count (last 7 days, see emit_routes_admin_dashboard_js)
+         and is rendered as "+N · 7d" with a title attribute for the long
+         form on hover. -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <% (typeof stats !== 'undefined' ? stats : []).slice(0, 4).forEach(function(stat) { %>
+        <div class="rounded-xl border" style="background-color: transparent; border-color: var(--color-border);">
+          <div class="p-5">
+            <div class="font-body text-xs font-bold uppercase tracking-widest mb-2" style="color: var(--color-foreground-muted);"><%= stat.label.charAt(0).toUpperCase() + stat.label.slice(1).toLowerCase() %></div>
+            <div class="font-display text-3xl font-bold mb-3 flex items-baseline" style="color: var(--color-foreground); gap: 10px;">
+              <span><%= stat.count %></span>
+              <% if (stat.new_count && stat.new_count > 0) { %>
+                <span class="font-body text-xs font-medium rounded-full px-2 py-0.5" style="background-color: transparent; color: var(--color-accent); border: 1px solid var(--color-border); letter-spacing: 0.04em; display: inline-flex; align-items: center;" title="New in the last 7 days">+<%= stat.new_count %> &middot; 7d</span>
+              <% } %>
+            </div>
+            <a href="<%= stat.manage_href %>" class="font-body text-xs font-medium transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">Manage →</a>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+
+    <!-- events_enabled gate (see emit_routes_admin_dashboard_js): only render
+         the upcoming-events widget when the spec declares the corresponding
+         data_model. When disabled, quick-links spans the full row. -->
+    <% var _events_on = (typeof events_enabled !== 'undefined' && events_enabled); %>
+    <div class="grid grid-cols-1 <%= _events_on ? 'md:grid-cols-2' : '' %> gap-4 mb-8">
+      <% if (_events_on) { %>
+        <%- include('./upcoming-events.ejs', { events: (typeof upcoming_events !== 'undefined' ? upcoming_events : []), admin_path: (locals.events_admin_path || '/admin/events') }) %>
+      <% } %>
+      <%- include('./quick-links.ejs', { items: (typeof quick_links !== 'undefined' ? quick_links : []) }) %>
+    </div>
+
+    <!-- Recent inquiries. The route passes the admin path of the model the
+         rows come from (inquiries_admin_path). -->
+    <% var _inquiriesPath = locals.inquiries_admin_path || '/admin/contact-inquiries'; %>
+    <% if ((typeof recent_inquiries !== 'undefined' ? recent_inquiries : []).length > 0) { %>
+      <div class="p-6 rounded-xl border mb-8" style="background: white; border-color: var(--color-border);">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-display text-xl font-bold" style="color: var(--color-foreground);">Recent Inquiries</h2>
+          <a href="<%= _inquiriesPath %>" class="font-body text-sm transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">View all →</a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left border-b" style="border-color: var(--color-border);">
+                <th class="font-body text-xs font-bold uppercase tracking-widest py-2 pr-4" style="color: var(--color-foreground-muted);">Name</th>
+                <th class="font-body text-xs font-bold uppercase tracking-widest py-2 pr-4" style="color: var(--color-foreground-muted);">Email</th>
+                <th class="font-body text-xs font-bold uppercase tracking-widest py-2 pr-4" style="color: var(--color-foreground-muted);">Service</th>
+                <th class="font-body text-xs font-bold uppercase tracking-widest py-2 pr-4" style="color: var(--color-foreground-muted);">Date</th>
+                <th class="font-body text-xs font-bold uppercase tracking-widest py-2" style="color: var(--color-foreground-muted);">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recent_inquiries.forEach(function(inq) { %>
+                <tr class="border-b last:border-b-0" style="border-color: var(--color-border);">
+                  <td class="py-3 pr-4 font-body" style="color: var(--color-foreground);"><%= inq.name %></td>
+                  <td class="py-3 pr-4 font-body" style="color: var(--color-foreground-muted);"><%= inq.email %></td>
+                  <td class="py-3 pr-4 font-body" style="color: var(--color-foreground-muted);"><%= inq.service || '-' %></td>
+                  <td class="py-3 pr-4 font-body" style="color: var(--color-foreground-muted);">
+                    <% if (inq.created_at) { %>
+                      <% var _inqIso = (inq.created_at instanceof Date) ? inq.created_at.toISOString() : String(inq.created_at); %>
+                      <time class="cas-fmt-date" datetime="<%= _inqIso %>"><%= _inqIso %></time>
+                    <% } else { %>-<% } %>
+                  </td>
+                  <td class="py-3 font-body"><a href="<%= _inquiriesPath %>/<%= inq.id %>" class="transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">View</a></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Admin tools row (Change Password, Settings shortcut, Danger Zone) -->
+    <%- include('./tools-row.ejs', { csrfToken: csrfToken }) %>
+
+  </div>
+</section>

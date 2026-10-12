@@ -1,0 +1,41 @@
+<!-- compose:widget shell/nav-admin -->
+<nav class="bg-primary border-b border-primary sticky top-0 z-50" style="background-color: var(--color-primary);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="flex items-center justify-between h-16">
+      <a href="/admin" class="brand site-name font-display text-xl font-bold tracking-tight whitespace-nowrap" style="color: var(--color-on-primary); text-decoration: none;"><%= settings.site_name %> <span style="opacity: 0.75;">Admin</span></a>
+      <div class="hidden md:flex items-center gap-6">
+        <% var _cp = (typeof currentPath !== 'undefined' ? currentPath : (typeof locals !== 'undefined' && locals.currentPath) || '/admin'); %>
+        <% (typeof admin_nav_items !== 'undefined' ? admin_nav_items : []).forEach(function(item) { %>
+          <% var isActive = (item.href === '/admin' ? _cp === '/admin' : _cp.indexOf(item.href) === 0); %>
+          <a href="<%= item.href %>" class="font-body text-sm font-medium transition-opacity hover:opacity-80" style="color: var(--color-on-primary); text-decoration: none; <% if (isActive) { %>opacity: 1; font-weight: 600; border-bottom: 2px solid var(--color-on-primary);<% } else { %>opacity: 0.85;<% } %>"><%= item.label %></a>
+        <% }); %>
+        <a href="/" target="_blank" class="font-body text-sm font-medium transition-opacity hover:opacity-80" style="color: var(--color-on-primary); opacity: 0.85; text-decoration: none;">View Site ↗</a>
+        <form action="/logout" method="POST" style="display:inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="font-body text-sm font-medium bg-transparent border-0 cursor-pointer transition-opacity hover:opacity-80" style="color: var(--color-on-primary); opacity: 0.85;">Logout</button>
+        </form>
+      </div>
+      <button id="adminMobileMenuBtn" class="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent border-0 cursor-pointer" style="color: var(--color-on-primary);" aria-label="Toggle menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <div class="md:hidden hidden pb-4" id="adminMobileMenu">
+      <div class="flex flex-col gap-3 pt-2">
+        <% (typeof admin_nav_items !== 'undefined' ? admin_nav_items : []).forEach(function(item) { %>
+          <a href="<%= item.href %>" class="font-body text-sm font-medium py-2" style="color: var(--color-on-primary);"><%= item.label %></a>
+        <% }); %>
+        <a href="/" target="_blank" class="font-body text-sm font-medium py-2" style="color: var(--color-on-primary);">View Site ↗</a>
+        <form action="/logout" method="POST" class="mt-2">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="font-body text-sm font-medium py-2 bg-transparent border-0 cursor-pointer" style="color: var(--color-on-primary);">Logout</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</nav>
+<script<% if (typeof cspNonce !== 'undefined' && cspNonce) { %> nonce="<%= cspNonce %>"<% } %>>
+  document.getElementById('adminMobileMenuBtn')?.addEventListener('click', function() {
+    var menu = document.getElementById('adminMobileMenu');
+    if (menu) menu.classList.toggle('hidden');
+  });
+</script>

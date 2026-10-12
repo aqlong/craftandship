@@ -1,0 +1,134 @@
+<%
+// Shared spec preview panel for the anonymous /try funnel. Rendered on
+// /try/:buildId next to the chat and on /signup as proof the AI understood
+// the visitor's intake prompts.
+//
+// Expects: specPreview ({ app_name, one_liner, audience, key_features, pages } | null)
+// Optional: specPreviewCompact (boolean); tighter padding for signup page
+var preview = typeof specPreview !== 'undefined' ? specPreview : null;
+var compact = typeof specPreviewCompact !== 'undefined' && specPreviewCompact;
+%>
+<div
+  id="anon-spec-preview"
+  class="<%= preview ? '' : 'hidden ' %>anon-spec<%= compact ? ' anon-spec--compact' : '' %>"
+  data-anon-spec-preview
+>
+  <div class="anon-spec__head">
+    <span class="anon-spec__pulse" aria-hidden="true"></span>
+    <span class="caps anon-spec__head-text">Your website (preview)</span>
+  </div>
+
+  <h3 class="display anon-spec__name" data-field="app_name"><%= preview ? preview.app_name : '' %></h3>
+  <p class="anon-spec__one-liner" data-field="one_liner"><%= preview ? preview.one_liner : '' %></p>
+
+  <div class="anon-spec__group">
+    <span class="caps anon-spec__group-head">For</span>
+    <p class="anon-spec__group-body" data-field="audience"><%= preview ? preview.audience : '' %></p>
+  </div>
+
+  <div class="anon-spec__group">
+    <span class="caps anon-spec__group-head">Key features</span>
+    <ul class="anon-spec__features" data-field="key_features">
+      <% if (preview) { preview.key_features.forEach(function(feat) { %>
+        <li class="anon-spec__feature">
+          <svg class="anon-spec__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span><%= feat %></span>
+        </li>
+      <% }); } %>
+    </ul>
+  </div>
+
+  <div class="anon-spec__group">
+    <span class="caps anon-spec__group-head">Pages</span>
+    <div class="anon-spec__pages" data-field="pages">
+      <% if (preview) { preview.pages.forEach(function(page) { %>
+        <span class="anon-spec__page-chip"><%= page %></span>
+      <% }); } %>
+    </div>
+  </div>
+
+  <% if (!preview) { %>
+    <p class="anon-spec__empty" data-field="empty">Your spec will appear here as we talk.</p>
+  <% } %>
+</div>
+
+<style>
+  .anon-spec {
+    background: var(--color-companion-paper);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    padding: 24px;
+    box-shadow: var(--shadow-slip);
+  }
+  .anon-spec--compact { padding: 18px; }
+  .anon-spec.hidden { display: none; }
+
+  .anon-spec__head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .anon-spec__pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--color-lantern);
+    box-shadow: 0 0 0 4px rgba(198, 138, 58, 0.18);
+    animation: anon-spec-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes anon-spec-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(0.85); opacity: 0.7; }
+  }
+  .anon-spec__head-text { color: var(--color-clay); }
+
+  .anon-spec__name {
+    font-size: 22px;
+    line-height: 1.15;
+    margin: 0 0 6px;
+    letter-spacing: -0.005em;
+  }
+  .anon-spec__one-liner {
+    font-family: var(--font-display); font-style: italic;
+    font-size: 15px; color: var(--color-ink-soft);
+    margin: 0 0 18px; line-height: 1.5;
+  }
+
+  .anon-spec__group { margin-bottom: 16px; }
+  .anon-spec__group:last-of-type { margin-bottom: 0; }
+  .anon-spec__group-head {
+    color: var(--color-clay);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .anon-spec__group-body {
+    font-size: 14px; color: var(--color-ink); margin: 0; line-height: 1.5;
+  }
+
+  .anon-spec__features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .anon-spec__feature {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 14px; color: var(--color-ink); line-height: 1.45;
+  }
+  .anon-spec__check {
+    color: var(--color-companion-deep);
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .anon-spec__pages { display: flex; flex-wrap: wrap; gap: 6px; }
+  .anon-spec__page-chip {
+    display: inline-block;
+    padding: 3px 10px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--color-clay);
+    background: rgba(165, 111, 79, 0.08);
+    border: 1px solid rgba(165, 111, 79, 0.32);
+    border-radius: 5px;
+  }
+
+  .anon-spec__empty {
+    font-family: var(--font-display); font-style: italic;
+    font-size: 14px; color: var(--color-ink-faded);
+    margin: 0; line-height: 1.5;
+  }
+</style>

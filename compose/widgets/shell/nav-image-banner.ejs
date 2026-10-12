@@ -1,0 +1,72 @@
+<!-- compose:widget shell/nav-image-banner -->
+<%
+   // Event-led nav: a wide image strip across the top of the page with
+   // the nav row overlaid in flex. Suits event producers, classes,
+   // gatherings where the brand IS the image.
+   //
+   // Visual contract:
+   //   - 280px tall (180px on sm) full-width image hero with overlay.
+   //   - Site name + nav links overlaid in white at the top of the
+   //     hero with a soft top-down gradient for readability.
+   //   - Image source: settings.hero_image_url (falls back to a soft
+   //     gradient using palette colors when no image set).
+   //   - On scroll past the banner, a thin sticky bar slides into
+   //     view with just the wordmark + nav row. Implemented via CSS
+   //     `position: sticky` on the inner row + JS toggle on scroll.
+   //
+   // Same data contract as nav-public + reads settings.hero_image_url.
+   var _cp = (typeof currentPath !== 'undefined' ? currentPath : (typeof locals !== 'undefined' && locals.currentPath) || '/');
+   var _user = (typeof user !== 'undefined' && user) ? user : (typeof locals !== 'undefined' ? locals.user : null);
+   var _isAdmin = !!(_user && _user.role === 'admin');
+   var _img = settings.hero_image_url || '';
+%>
+<header class="cas-nav-image-banner" style="position: relative; width: 100%; height: 180px; overflow: hidden; background-color: var(--color-primary);">
+  <% if (_img) { %>
+    <img src="<%= _img %>" alt="<%= settings.site_name %>" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 35%;" loading="eager" fetchpriority="high" />
+  <% } else { %>
+    <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark, var(--color-primary)) 100%);"></div>
+  <% } %>
+  <!-- Top-down gradient for nav readability + bottom-up gradient for hero copy. -->
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.35) 100%); pointer-events: none;"></div>
+  <div style="position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; padding: 1.25rem 1.5rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <a href="/" class="font-display" style="color: #fff; text-decoration: none; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; text-shadow: 0 1px 2px rgba(0,0,0,0.4);"><%= settings.site_name %></a>
+      <button id="mobileMenuBtn" class="md:hidden p-2 min-h-[44px] min-w-[44px]" style="background: transparent; border: 0; color: #fff; cursor: pointer;" aria-label="Toggle menu" aria-expanded="false">
+        <svg style="width: 24px; height: 24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="hidden md:flex" style="align-items: center; gap: 1.75rem;">
+        <% (typeof nav_items !== 'undefined' ? nav_items : []).forEach(function(item) { %>
+          <% var isActive = (item.href === '/' ? _cp === '/' : _cp.indexOf(item.href) === 0); %>
+          <a href="<%= item.href %>" class="font-body" style="color: #fff; text-decoration: none; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.02em; text-shadow: 0 1px 2px rgba(0,0,0,0.4); <% if (isActive) { %>border-bottom: 2px solid #fff; padding-bottom: 2px;<% } else { %>opacity: 0.92;<% } %>"><%= item.label %></a>
+        <% }); %>
+        <% if (_isAdmin) { %>
+          <a href="/admin" class="font-body" style="color: #fff; text-decoration: none; font-size: 0.875rem; font-weight: 600; opacity: 0.92; text-shadow: 0 1px 2px rgba(0,0,0,0.4);">Admin</a>
+        <% } else { %>
+          <a href="/login" class="font-body" style="padding: 0.4rem 1rem; background-color: rgba(255,255,255,0.18); color: #fff; border: 1px solid rgba(255,255,255,0.5); border-radius: 6px; font-size: 0.8125rem; font-weight: 600; text-decoration: none; backdrop-filter: blur(4px);">Login</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+  <div id="mobileMenu" class="md:hidden hidden" style="position: absolute; left: 0; right: 0; top: 100%; background-color: var(--color-primary); padding: 0.75rem 1.5rem 1.25rem; z-index: 60; border-bottom: 1px solid rgba(255,255,255,0.15);">
+    <% (typeof nav_items !== 'undefined' ? nav_items : []).forEach(function(item) { %>
+      <% var isActive = (item.href === '/' ? _cp === '/' : _cp.indexOf(item.href) === 0); %>
+      <a href="<%= item.href %>" class="font-body" style="display: block; padding: 0.625rem 0; color: var(--color-on-primary); text-decoration: none; font-size: 0.875rem; font-weight: 500; opacity: <%= isActive ? '1' : '0.85' %>;"><%= item.label %></a>
+    <% }); %>
+    <% if (_isAdmin) { %>
+      <a href="/admin" class="font-body" style="display: block; padding: 0.625rem 0; color: var(--color-on-primary); text-decoration: none; font-size: 0.875rem; opacity: 0.85;">Admin</a>
+    <% } else { %>
+      <a href="/login" class="font-body" style="display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: var(--color-on-primary); color: var(--color-primary); border-radius: 4px; font-size: 0.875rem; font-weight: 600; text-decoration: none;">Login</a>
+    <% } %>
+  </div>
+</header>
+<script<% if (typeof cspNonce !== 'undefined' && cspNonce) { %> nonce="<%= cspNonce %>"<% } %>>
+  (function(){
+    var btn = document.getElementById('mobileMenuBtn');
+    var menu = document.getElementById('mobileMenu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function(){
+      var open = menu.classList.toggle('hidden') === false;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  })();
+</script>

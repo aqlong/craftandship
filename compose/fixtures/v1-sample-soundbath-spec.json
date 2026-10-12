@@ -1,0 +1,59 @@
+{
+  "spec_version": "v1",
+  "app_name": "sample-soundbath-v1",
+  "description": "Private sound bath facilitator offering guided meditation sessions for working adults",
+  "admin_email": "facilitator@example.com",
+  "user_roles": [
+    {"role": "admin", "description": "Facilitator; manages sessions, bookings, inquiries"},
+    {"role": "guest", "description": "Booked guest; sees own upcoming sessions"}
+  ],
+  "data_models": [
+    {
+      "name": "Session",
+      "fields": [
+        {"name": "title", "type": "string", "required": true},
+        {"name": "session_date", "type": "date", "required": true},
+        {"name": "start_time", "type": "time", "required": true},
+        {"name": "duration_minutes", "type": "integer"},
+        {"name": "location", "type": "string"},
+        {"name": "description", "type": "text"},
+        {"name": "max_guests", "type": "integer"},
+        {"name": "published", "type": "boolean"}
+      ]
+    },
+    {
+      "name": "Booking",
+      "belongs_to": "Session",
+      "fields": [
+        {"name": "name", "type": "string", "required": true},
+        {"name": "email", "type": "email", "required": true},
+        {"name": "phone", "type": "phone"},
+        {"name": "guests", "type": "integer"},
+        {"name": "notes", "type": "text"}
+      ]
+    },
+    {
+      "name": "ContactMessage",
+      "fields": [
+        {"name": "name", "type": "string", "required": true},
+        {"name": "email", "type": "email", "required": true},
+        {"name": "phone", "type": "phone"},
+        {"name": "message", "type": "text", "required": true},
+        {"name": "approved", "type": "boolean"}
+      ]
+    }
+  ],
+  "pages": [
+    {"path": "/about", "title": "Our Story"},
+    {"path": "/sessions", "title": "Upcoming Sessions", "purpose": "Browse upcoming sound baths"},
+    {
+      "path": "/reach-out",
+      "title": "Reach Out",
+      "purpose": "Send us a message; we reply within two days.",
+      "form_target": "ContactMessage",
+      "allowed_fields": ["name", "email", "phone", "message"],
+      "submit_text": "Send Message",
+      "success_message": "Received; we will reply within two days."
+    }
+  ]
+}

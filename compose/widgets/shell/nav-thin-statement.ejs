@@ -1,0 +1,69 @@
+<!-- compose:widget shell/nav-thin-statement -->
+<%
+   // Editorial-statement nav: visually + structurally distinct from
+   // shell/nav-public.
+   //
+   // Differences from nav-public:
+   //   - Background is page-background (not primary color); border-only
+   //     separation. Reads as "thin rule" not "colored bar".
+   //   - Brand wordmark only (no circular logo monogram). Display-font.
+   //     Larger size, very tight letter-spacing.
+   //   - Single right-aligned CTA group: nav links rendered as a row of
+   //     small all-caps tracked-out captions, separated by middots.
+   //     No "Login" pill button on the public surface; admin/login
+   //     routes are reachable via the footer link only (intentionally
+   //     de-emphasized chrome).
+   //   - Mobile: hamburger pulls down a quiet centered list.
+   //   - Same data contract as nav-public (settings, nav_items, user,
+   //     csrfToken, currentPath).
+   var _cp = (typeof currentPath !== 'undefined' ? currentPath : (typeof locals !== 'undefined' && locals.currentPath) || '/');
+   var _user = (typeof user !== 'undefined' && user) ? user : (typeof locals !== 'undefined' ? locals.user : null);
+   var _isAdmin = !!(_user && _user.role === 'admin');
+%>
+<nav class="cas-nav-thin-statement" style="background-color: var(--color-background); border-bottom: 1px solid var(--color-border); position: sticky; top: 0; z-index: 50;">
+  <div class="max-w-6xl mx-auto px-6 sm:px-10">
+    <div class="flex items-center justify-between" style="height: 80px;">
+      <a href="/" class="font-display" style="color: var(--color-foreground); text-decoration: none; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.03em; line-height: 1;">
+        <%= settings.site_name %>
+      </a>
+      <div class="hidden md:flex items-center" style="gap: 1.5rem;">
+        <% (typeof nav_items !== 'undefined' ? nav_items : []).forEach(function(item, idx) { %>
+          <% var isActive = (item.href === '/' ? _cp === '/' : _cp.indexOf(item.href) === 0); %>
+          <a href="<%= item.href %>" class="font-body" style="color: var(--color-foreground); text-decoration: none; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.18em; <% if (isActive) { %>border-bottom: 1px solid var(--color-foreground); padding-bottom: 2px;<% } else { %>opacity: 0.65;<% } %>"><%= item.label %></a>
+        <% }); %>
+        <% if (_isAdmin) { %>
+          <a href="/admin" class="font-body" style="color: var(--color-foreground); text-decoration: none; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.18em; opacity: 0.65;">Admin</a>
+          <form action="/logout" method="POST" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="font-body" style="background: transparent; border: 0; cursor: pointer; color: var(--color-foreground); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.18em; opacity: 0.65;">Logout</button>
+          </form>
+        <% } %>
+      </div>
+      <button id="mobileMenuBtn" class="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent border-0 cursor-pointer" style="color: var(--color-foreground);" aria-label="Toggle menu" aria-expanded="false">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+    <div class="md:hidden hidden pb-6" id="mobileMenu">
+      <div class="flex flex-col items-center gap-4 pt-4">
+        <% (typeof nav_items !== 'undefined' ? nav_items : []).forEach(function(item) { %>
+          <% var isActive = (item.href === '/' ? _cp === '/' : _cp.indexOf(item.href) === 0); %>
+          <a href="<%= item.href %>" class="font-body" style="color: var(--color-foreground); text-decoration: none; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.18em; padding: 8px 0; min-height: 44px; display: flex; align-items: center; <% if (isActive) { %>opacity: 1;<% } else { %>opacity: 0.65;<% } %>"><%= item.label %></a>
+        <% }); %>
+        <% if (_isAdmin) { %>
+          <a href="/admin" class="font-body" style="color: var(--color-foreground); text-decoration: none; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.18em; padding: 8px 0; min-height: 44px; display: flex; align-items: center; opacity: 0.65;">Admin</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</nav>
+<script<% if (typeof cspNonce !== 'undefined' && cspNonce) { %> nonce="<%= cspNonce %>"<% } %>>
+  (function(){
+    var btn = document.getElementById('mobileMenuBtn');
+    var menu = document.getElementById('mobileMenu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function(){
+      var open = menu.classList.toggle('hidden') === false;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  })();
+</script>

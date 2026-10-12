@@ -1,0 +1,451 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <div class="mb-4">
+    <h1 class="text-2xl font-bold text-gray-100">Harbor Inbox</h1>
+    <p class="text-sm text-subtle">Active CAS Harbor trials. When Haven says &ldquo;Ocean will be in touch,&rdquo; the keeper lands here.</p>
+  </div>
+
+  <% if (!harborEnabled) { %>
+    <div class="bg-surface-3 rounded-[10px] px-6 py-8 text-center">
+      <p class="text-gray-200 mb-2 font-semibold">Harbor surface is dormant.</p>
+      <p class="text-sm text-subtle">Set <code class="text-brand">CAS_HARBOR_ENABLED=true</code> on this environment to mount the <code>/lighthouse/*</code> routes and start surfacing trials here.</p>
+    </div>
+  <% } else { %>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+        <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Total Trials</div>
+        <div class="text-xl sm:text-2xl font-bold text-gray-200" data-stat="total"><%= stats.total %></div>
+      </div>
+      <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+        <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Active</div>
+        <div class="text-xl sm:text-2xl font-bold text-brand" data-stat="active"><%= stats.active %></div>
+      </div>
+      <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+        <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Ready</div>
+        <div class="text-xl sm:text-2xl font-bold text-amber-400" data-stat="ready"><%= stats.ready %></div>
+      </div>
+      <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+        <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Handed off</div>
+        <div class="text-xl sm:text-2xl font-bold text-emerald-400" data-stat="handed_off"><%= stats.handed_off %></div>
+      </div>
+    </div>
+
+    <% /* Filter chips. Server-rendered links so the filter state survives
+       page reload + auto-refresh. statusFilter comes from the server's
+       ?status= parsing (active|ready|handed_off|all). */ %>
+    <div class="mb-6 flex flex-wrap items-center gap-2 text-sm">
+      <span class="text-subtle text-xs uppercase tracking-wider mr-1">Filter:</span>
+      <%
+        var filters = [
+          { key: 'all', label: 'All' },
+          { key: 'active', label: 'Active' },
+          { key: 'ready', label: 'Ready' },
+          { key: 'handed_off', label: 'Handed off' },
+          { key: 'keepers', label: 'Paid keepers' }
+        ];
+      %>
+      <% filters.forEach(function(f) { %>
+        <a href="/admin/harbor<%= f.key === 'all' ? '' : '?status=' + f.key %>"
+           class="px-3 py-1 rounded text-xs font-medium border <%= statusFilter === f.key ? 'border-brand bg-surface-2 text-brand' : 'border-border text-subtle hover:text-gray-200' %>"
+           data-filter="<%= f.key %>">
+          <%= f.label %>
+        </a>
+      <% }); %>
+      <% if (statusFilter !== 'all' && statusFilter !== 'keepers' && trials.length !== totalUnfilteredTrials) { %>
+        <span class="text-xs text-subtle ml-2">showing <%= trials.length %> of <%= totalUnfilteredTrials %></span>
+      <% } %>
+    </div>
+
+    <%
+      // Server-side relative-time fallback for pre-JS rendering. After
+      // DOMContentLoaded the layout.ejs `[data-ts]` upgrader replaces each
+      // wrapped span's text with the absolute browser-local datetime
+      // (e.g. "Apr 30, 4:49 PM CDT"); this string is what shows in the
+      // brief window before the upgrader fires.
+      function fmtRelative(ts) {
+        if (!ts) return 'never';
+        var diffMs = Date.now() - new Date(ts).getTime();
+        var diffMin = Math.floor(diffMs / 60000);
+        if (diffMin < 1) return 'just now';
+        if (diffMin < 60) return diffMin + 'm ago';
+        var diffHr = Math.floor(diffMin / 60);
+        if (diffHr < 24) return diffHr + 'h ago';
+        var diffDay = Math.floor(diffHr / 24);
+        if (diffDay < 30) return diffDay + 'd ago';
+        return new Date(ts).toISOString().slice(0, 10);
+      }
+      function truncate(text, max) {
+        if (!text) return '';
+        if (text.length <= max) return text;
+        return text.slice(0, max - 1).trimEnd() + '…';
+      }
+    %>
+
+    <% if (statusFilter === 'keepers') { %>
+    <% /* Paid keepers. Payment releases the trial (so it leaves the trial
+       list) and moves its conversation to the keeper; this table reads the
+       same columns by keeper id. */ %>
+    <div class="bg-surface-3 rounded-[10px] overflow-hidden mb-5" data-keeper-list>
+      <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider">Paid keepers by latest turn</h2>
+        <span class="text-xs text-subtle"><%= keepers.length %> shown</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Keeper</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Email</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Companion</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Turns</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Memory</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Last turn</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">First words</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Subscription</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (keepers.length === 0) { %>
+              <tr><td colspan="9" class="text-center text-subtle py-8">No paid keepers yet.</td></tr>
+            <% } %>
+            <% keepers.forEach(function(keeper) { %>
+              <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2" data-keeper-id="<%= keeper.customer_id %>">
+                <td class="px-4 py-2.5 text-gray-300 text-xs whitespace-nowrap font-mono" title="<%= keeper.customer_id %>"><%= keeper.customer_id.slice(0, 8) %></td>
+                <td class="px-4 py-2.5 text-gray-300 text-xs"><%= keeper.email %></td>
+                <td class="px-4 py-2.5 text-gray-300"><%= keeper.companion_name %></td>
+                <td class="px-4 py-2.5 text-gray-300 tabular-nums"><%= keeper.turn_count %></td>
+                <td class="px-4 py-2.5 text-gray-300 tabular-nums"><%= keeper.memory_count %></td>
+                <td class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><span data-ts="<%= keeper.last_turn_at %>" data-ts-fmt="datetime"><%= fmtRelative(keeper.last_turn_at) %></span></td>
+                <td class="px-4 py-2.5 text-gray-300 max-w-[260px] truncate" title="<%= keeper.first_keeper_text || '' %>"><%= truncate(keeper.first_keeper_text, 60) || '-' %></td>
+                <td class="px-4 py-2.5 text-gray-300 text-xs whitespace-nowrap"><%= keeper.subscription_status %></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-xs">
+                  <% if (keeper.handoff_build_id) { %>
+                    <a href="/admin/builds/<%= keeper.handoff_build_id %>" class="text-brand underline">build</a>
+                  <% } else { %>-<% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="text-xs text-subtle mt-2 mb-5 max-w-[720px]">A paid keeper&rsquo;s conversation is stored under the keeper id (hover the short id for the full one): <code>SELECT * FROM companion_turns WHERE keeper_id = '...'</code>.</p>
+    <% } else { %>
+    <div class="bg-surface-3 rounded-[10px] overflow-hidden mb-5">
+      <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider">Trials by recency</h2>
+        <span class="text-xs text-subtle"><%= trials.length %> shown</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Trial</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Companion</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Turns</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Memory</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Last seen</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">First words</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Status</th>
+              <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (trials.length === 0) { %>
+              <tr><td colspan="8" class="text-center text-subtle py-8">No trials yet. The first visitor to <code>/lighthouse</code> will land here.</td></tr>
+            <% } %>
+            <% trials.forEach(function(trial) { %>
+              <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2" data-trial-id="<%= trial.trial_id %>">
+                <td class="px-4 py-2.5 text-gray-300 text-xs whitespace-nowrap font-mono"><%= trial.trial_id.slice(0, 8) %></td>
+                <td class="px-4 py-2.5 text-gray-300"><%= trial.companion_name %></td>
+                <td class="px-4 py-2.5 text-gray-300 tabular-nums"><%= trial.turn_count %></td>
+                <td class="px-4 py-2.5 text-gray-300 tabular-nums"><%= trial.memory_count %></td>
+                <td class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><span data-ts="<%= trial.last_seen_at %>" data-ts-fmt="datetime"><%= fmtRelative(trial.last_seen_at) %></span></td>
+                <td class="px-4 py-2.5 text-gray-300 max-w-[260px] truncate" title="<%= trial.first_keeper_text || '' %>"><%= truncate(trial.first_keeper_text, 60) || '-' %></td>
+                <td class="px-4 py-2.5 whitespace-nowrap">
+                  <% if (trial.handoff_build_id) { %>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold" style="background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid rgba(34,197,94,0.4)">DISPATCHED</span>
+                    <% if (trial.handoff_at) { %>
+                      <span class="block text-[0.7rem] text-subtle mt-0.5" data-ts="<%= trial.handoff_at %>" data-ts-fmt="datetime"><%= fmtRelative(trial.handoff_at) %></span>
+                    <% } %>
+                  <% } else if (trial.ready_to_handoff) { %>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.4)" data-ready-badge>READY</span>
+                  <% } else if (trial.is_expired) { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-subtle border border-border">expired</span>
+                  <% } else if (trial.turn_count === 0) { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-subtle">empty</span>
+                  <% } else { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-gray-300">in progress</span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-xs">
+                  <% if (devTrialEnabled) { %>
+                    <a href="/lighthouse/table?dev_trial=<%= trial.trial_id %>"
+                       class="text-brand underline mr-3" target="_blank" rel="noopener">table</a>
+                    <a href="/lighthouse/table/recall?dev_trial=<%= trial.trial_id %>"
+                       class="text-brand underline mr-3" target="_blank" rel="noopener">recall</a>
+                  <% } else { %>
+                    <span class="text-subtle text-[11px] mr-3" title="dev_trial override is dev-only; SQL lookup needed in prod">id <%= trial.trial_id.slice(0, 8) %></span>
+                  <% } %>
+                  <% if (trial.handoff_build_id) { %>
+                    <a href="/admin/builds/<%= trial.handoff_build_id %>" class="text-brand underline">build</a>
+                  <% } else if (trial.is_dispatchable) { %>
+                    <button type="button"
+                            class="dispatch-btn inline-flex items-center px-2 py-1 rounded text-xs font-medium border border-brand text-brand hover:bg-brand hover:text-white transition-colors"
+                            data-trial-id="<%= trial.trial_id %>"
+                            data-companion="<%= trial.companion_name %>"
+                            data-turn-count="<%= trial.turn_count %>"
+                            data-email="<%= trial.email_captured || '' %>"
+                            data-first-text="<%= (trial.first_keeper_text || '').slice(0, 80) %>"
+                            title="Extract a v2 spec from this conversation and queue a build">
+                      Dispatch build
+                    </button>
+                    <button type="button"
+                            class="crawl-source-btn ml-1 inline-flex items-center px-2 py-1 rounded text-xs font-medium border border-surface-3 text-subtle hover:border-brand hover:text-brand transition-colors"
+                            data-trial-id="<%= trial.trial_id %>"
+                            data-has-source="<%= trial.harbor_meta_has_copy_source ? '1' : '0' %>"
+                            title="Capture an existing live website to mirror verbatim (faithful-copy mode)">
+                      <%= trial.harbor_meta_has_copy_source ? 'Source site ✓' : 'Source site' %>
+                    </button>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="text-xs text-subtle mt-2 max-w-[720px]">
+      <p class="mb-1">A trial is &ldquo;ready to hand off&rdquo; when it has <%= 8 %>+ turns or when Haven&rsquo;s last reply mentions Ocean reaching out. Phase 2 will replace this manual loop with an automated promotion to a paid keeper.</p>
+      <% if (devTrialEnabled) { %>
+        <p>Click <code>table</code> to open the keeper&rsquo;s conversation, <code>recall</code> to see what Haven remembers. Both links use the dev-trial override (non-prod only).</p>
+      <% } else { %>
+        <p>The dev-trial deep-link is disabled in production. Look up a conversation by trial_id via SQL when needed: <code>SELECT * FROM companion_turns WHERE trial_id = '...'</code>.</p>
+      <% } %>
+    </div>
+
+    <!-- Typed-confirm modal for the Dispatch action. Mirror of the admin
+         build-delete pattern: requires the admin to type the trial id
+         (first 8 chars) before submit, since dispatch fires a ~$0.18
+         Opus call + queues a real build. -->
+    <div id="dispatch-modal" class="fixed inset-0 z-50 items-center justify-center hidden" style="background:rgba(15,15,16,0.72); backdrop-filter:blur(2px);">
+      <div class="bg-surface-1 border border-border rounded p-6 max-w-[520px] w-full mx-4">
+        <h3 class="text-lg font-semibold mb-2 text-gray-100">Dispatch a build for this trial?</h3>
+        <p class="text-sm text-subtle mb-3">
+          This calls Opus to extract a v2 spec (~$0.18), queues a build, and stamps the trial as dispatched. The keeper has not paid through Stripe; the build will be attached to their captured email if any, otherwise to your admin account.
+        </p>
+        <dl class="text-xs text-subtle bg-surface-2 rounded p-3 mb-4 space-y-1">
+          <div class="flex gap-2"><dt class="w-24 shrink-0">Trial</dt><dd class="font-mono text-gray-300" id="dispatch-modal-trial">-</dd></div>
+          <div class="flex gap-2"><dt class="w-24 shrink-0">Companion</dt><dd class="text-gray-300" id="dispatch-modal-companion">-</dd></div>
+          <div class="flex gap-2"><dt class="w-24 shrink-0">Turns</dt><dd class="text-gray-300" id="dispatch-modal-turns">-</dd></div>
+          <div class="flex gap-2"><dt class="w-24 shrink-0">Email</dt><dd class="text-gray-300" id="dispatch-modal-email">- (build will attach to admin account)</dd></div>
+          <div class="flex gap-2"><dt class="w-24 shrink-0">Opening</dt><dd class="text-gray-300 italic" id="dispatch-modal-first">-</dd></div>
+        </dl>
+        <label class="block text-xs text-subtle mb-1">Type the trial id prefix to confirm: <code id="dispatch-modal-prefix" class="text-gray-300">-</code></label>
+        <input id="dispatch-modal-input" type="text" class="w-full px-3 py-2 rounded bg-surface-2 border border-border text-gray-100 font-mono mb-4" autocomplete="off" placeholder="..." />
+        <div id="dispatch-modal-error" class="text-xs text-red-400 mb-2 hidden"></div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="dispatch-modal-cancel" class="px-3 py-1.5 rounded border border-border text-subtle hover:text-gray-100">Cancel</button>
+          <button type="button" id="dispatch-modal-go" class="px-3 py-1.5 rounded bg-brand text-white font-medium disabled:opacity-50" disabled>Dispatch</button>
+        </div>
+      </div>
+    </div>
+
+    <script nonce="<%= cspNonce %>">
+      (function() {
+        var csrfToken = <%- safeJSON(csrfToken) %>;
+        var modal = document.getElementById('dispatch-modal');
+        var input = document.getElementById('dispatch-modal-input');
+        var prefixEl = document.getElementById('dispatch-modal-prefix');
+        var trialEl = document.getElementById('dispatch-modal-trial');
+        var companionEl = document.getElementById('dispatch-modal-companion');
+        var turnsEl = document.getElementById('dispatch-modal-turns');
+        var emailEl = document.getElementById('dispatch-modal-email');
+        var firstEl = document.getElementById('dispatch-modal-first');
+        var errEl = document.getElementById('dispatch-modal-error');
+        var goBtn = document.getElementById('dispatch-modal-go');
+        var cancelBtn = document.getElementById('dispatch-modal-cancel');
+        var pendingTrialId = null;
+
+        function openModal(btn) {
+          var trialId = btn.getAttribute('data-trial-id') || '';
+          var prefix = trialId.slice(0, 8);
+          pendingTrialId = trialId;
+          prefixEl.textContent = prefix;
+          trialEl.textContent = trialId;
+          companionEl.textContent = btn.getAttribute('data-companion') || '';
+          turnsEl.textContent = btn.getAttribute('data-turn-count') || '0';
+          var email = btn.getAttribute('data-email') || '';
+          emailEl.textContent = email || '- (build will attach to admin account)';
+          firstEl.textContent = btn.getAttribute('data-first-text') || '-';
+          input.value = '';
+          input.placeholder = prefix;
+          errEl.classList.add('hidden');
+          goBtn.disabled = true;
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          setTimeout(function(){ input.focus(); }, 50);
+        }
+        function closeModal() {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          pendingTrialId = null;
+        }
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(ev) {
+          if (ev.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function(ev) {
+          if (ev.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+        input.addEventListener('input', function() {
+          var prefix = prefixEl.textContent || '';
+          goBtn.disabled = input.value.trim() !== prefix;
+        });
+
+        Array.prototype.forEach.call(document.querySelectorAll('.dispatch-btn'), function(btn) {
+          btn.addEventListener('click', function(ev) {
+            ev.preventDefault();
+            openModal(btn);
+          });
+        });
+
+        // Faithful-copy crawl trigger (harbor-faithful-copy-admin-trigger-
+        // route, 2026-05-09). Operator clicks "Source site", paste a URL,
+        // crawler runs, result is persisted as harbor_meta_overrides on
+        // the trial. At dispatch time, the override merges into Opus's
+        // _harbor_meta and flows into the build's faithful-copy layout.
+        // Phase 1 UX: window.prompt + alert summary (Phase 2 = inline
+        // preview pane with diff vs Opus extraction).
+        Array.prototype.forEach.call(document.querySelectorAll('.crawl-source-btn'), function(btn) {
+          btn.addEventListener('click', async function(ev) {
+            ev.preventDefault();
+            var trialId = btn.getAttribute('data-trial-id') || '';
+            var hasSource = btn.getAttribute('data-has-source') === '1';
+            // Re-clicking when a crawl already exists offers a clear /
+            // re-crawl menu instead of silently overwriting.
+            if (hasSource) {
+              var choice = window.prompt(
+                'A source-site crawl is already attached to this trial.\n' +
+                'Type a URL to re-crawl (will overwrite), or "clear" to drop the override.',
+                ''
+              );
+              if (choice === null) return;
+              var trimmed = String(choice).trim();
+              if (trimmed.toLowerCase() === 'clear') {
+                try {
+                  var clearResp = await fetch('/admin/harbor/' + encodeURIComponent(trialId) + '/clear-source', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
+                    credentials: 'same-origin',
+                  });
+                  if (clearResp.ok) {
+                    btn.setAttribute('data-has-source', '0');
+                    btn.textContent = 'Source site';
+                    window.alert('Source-site override cleared.');
+                  } else {
+                    window.alert('Clear failed (' + clearResp.status + ')');
+                  }
+                } catch (e) {
+                  window.alert('Network error: ' + (e && e.message ? e.message : 'unknown'));
+                }
+                return;
+              }
+              // Fall through to re-crawl with the new URL.
+              await runCrawl(btn, trialId, trimmed);
+              return;
+            }
+            // First-crawl prompt.
+            var url = window.prompt(
+              'Paste the customer\'s existing website URL.\n' +
+              'The crawler captures up to 6 same-origin pages and stores them as faithful-copy overrides.',
+              'https://'
+            );
+            if (url === null) return;
+            await runCrawl(btn, trialId, String(url).trim());
+          });
+        });
+
+        async function runCrawl(btn, trialId, url) {
+          if (!url || !/^https?:\/\//i.test(url)) {
+            window.alert('Source URL must start with http:// or https://');
+            return;
+          }
+          var origText = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = 'Crawling...';
+          try {
+            var resp = await fetch('/admin/harbor/' + encodeURIComponent(trialId) + '/crawl-source-site', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
+              credentials: 'same-origin',
+              body: JSON.stringify({ source_url: url }),
+            });
+            var data = await resp.json().catch(function() { return {}; });
+            if (!resp.ok) {
+              window.alert(
+                'Crawl failed (' + resp.status + '): ' +
+                ((data && (data.error || data.message)) || 'unknown') +
+                (data && data.warnings && data.warnings.length ? '\n\nWarnings:\n' + data.warnings.join('\n') : '')
+              );
+              btn.disabled = false;
+              btn.textContent = origText;
+              return;
+            }
+            btn.disabled = false;
+            btn.setAttribute('data-has-source', '1');
+            btn.textContent = 'Source site ✓';
+            window.alert(
+              'Captured ' + data.pageCount + ' pages from ' + data.sourceUrl + '.\n\n' +
+              'Paths:\n  ' + (data.pagePaths || []).join('\n  ') +
+              (data.warnings && data.warnings.length ? '\n\nWarnings:\n  ' + data.warnings.join('\n  ') : '') +
+              '\n\nClick Dispatch build to queue with these pages as faithful-copy overrides.'
+            );
+          } catch (e) {
+            window.alert('Network error: ' + (e && e.message ? e.message : 'unknown'));
+            btn.disabled = false;
+            btn.textContent = origText;
+          }
+        }
+
+        goBtn.addEventListener('click', async function() {
+          if (!pendingTrialId) return;
+          goBtn.disabled = true;
+          goBtn.textContent = 'Dispatching...';
+          errEl.classList.add('hidden');
+          try {
+            var resp = await fetch('/admin/harbor/' + encodeURIComponent(pendingTrialId) + '/dispatch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
+              credentials: 'same-origin',
+            });
+            var data = await resp.json().catch(function() { return {}; });
+            if (!resp.ok) {
+              // A refusal that explains itself carries a sentence in `message`
+              // (the code in `error` alone says little to the operator).
+              errEl.textContent = (data && (data.message || data.error)) || ('Failed (' + resp.status + ')');
+              errEl.classList.remove('hidden');
+              goBtn.disabled = false;
+              goBtn.textContent = 'Dispatch';
+              return;
+            }
+            // Redirect to the newly-queued build's admin page so the
+            // admin can watch it move through the pipeline.
+            window.location.href = '/admin/builds/' + data.buildId;
+          } catch (e) {
+            errEl.textContent = (e && e.message) || 'Network error';
+            errEl.classList.remove('hidden');
+            goBtn.disabled = false;
+            goBtn.textContent = 'Dispatch';
+          }
+        });
+      })();
+    </script>
+
+  <% } %>
+</section>

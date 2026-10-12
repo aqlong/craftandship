@@ -1,0 +1,41 @@
+<!-- compose:widget auth/letterpress; reusable single-column auth shell with
+     a letterpress-style aesthetic. Hairline-rule eyebrow, --font-display H1,
+     system-sans inputs with hairline borders + focus ring, charcoal pill
+     submit button (driven by .cas-auth-letterpress__submit), sage hairline
+     accent above the foot link slot. Replaces the dark split-panel + hexagon
+     pattern shell as the default for /login, /set-password, /request-magic-
+     link, /magic-link-sent. CSS lives in style.css under
+     .cas-auth-letterpress-* classes. Caller passes pre-rendered HTML for the
+     form via locals.bodyHtml; other locals are siteName, brandHref, eyebrow,
+     formHeading, formSubheading, footerHtml (optional). -->
+<%
+var _site = (typeof siteName !== 'undefined' && siteName) ? siteName : ((locals.settings && locals.settings.site_name) || 'Site');
+var _brandHref = (typeof brandHref !== 'undefined' && brandHref) ? brandHref : '/';
+var _eyebrow = (typeof eyebrow !== 'undefined' && eyebrow) ? eyebrow : '';
+var _heading = (typeof formHeading !== 'undefined' && formHeading) ? formHeading : '';
+var _sub = (typeof formSubheading !== 'undefined' && formSubheading) ? formSubheading : '';
+var _body = (typeof bodyHtml !== 'undefined' && bodyHtml) ? bodyHtml : '';
+var _footer = (typeof footerHtml !== 'undefined' && footerHtml) ? footerHtml : '';
+%>
+<section class="cas-auth-letterpress" aria-labelledby="cas-auth-letterpress__h1">
+  <div class="cas-auth-letterpress__inner">
+    <a class="cas-auth-letterpress__brand" href="<%= _brandHref %>"><%= _site %></a>
+    <% if (_eyebrow) { %>
+      <p class="cas-auth-letterpress__eyebrow"><span><%= _eyebrow %></span></p>
+    <% } %>
+    <% if (_heading) { %>
+      <h1 id="cas-auth-letterpress__h1" class="cas-auth-letterpress__heading"><%= _heading %></h1>
+    <% } %>
+    <% if (_sub) { %>
+      <p class="cas-auth-letterpress__subheading"><%= _sub %></p>
+    <% } %>
+    <div class="cas-auth-letterpress__body">
+      <%- _body %>
+    </div>
+    <% if (_footer) { %>
+      <div class="cas-auth-letterpress__foot">
+        <%- _footer %>
+      </div>
+    <% } %>
+  </div>
+</section>

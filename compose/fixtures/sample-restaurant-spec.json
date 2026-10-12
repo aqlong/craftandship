@@ -1,0 +1,167 @@
+{
+  "app_name": "sample-restaurant",
+  "archetype": "restaurant-cafe",
+  "palette": "cream-espresso",
+  "font_pair": "playfair-source-sans",
+  "admin_email": "admin@sample-restaurant.example",
+  "settings": {
+    "site_name": "Wren & Rye",
+    "site_description": "Neighborhood cafe + wine bar. Breakfast, lunch, small plates after 4.",
+    "hero_tagline": "Neighborhood Cafe",
+    "hero_description": "Breakfast, lunch, small plates after 4. On the corner of Example St.",
+    "hero_image_url": "https://picsum.photos/seed/cafe-hero/1600/1000",
+    "nav_logo_url": "",
+    "about_title": "About Wren & Rye",
+    "about_body": "Opened by partners Asa Wren and Io Rye. Seasonal menu. Local grains. A good glass of natural wine.",
+    "about_photo_url": "https://picsum.photos/seed/cafe-about/800/1000",
+    "contact_email": "hello@wrenandrye.example",
+    "contact_phone": "(555) 555-0177",
+    "contact_address": "100 Example St, Sample City, ST",
+    "business_name": "Wren & Rye LLC",
+    "support_email": "hello@wrenandrye.example",
+    "instagram_url": "https://instagram.example/wrenandrye",
+    "facebook_url": "", "twitter_url": "", "linkedin_url": "", "youtube_url": "", "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "WREN & RYE",
+        "heading": "Neighborhood Cafe",
+        "description": "Breakfast + lunch + small plates after 4. On the corner of Example St.",
+        "image_url": "https://picsum.photos/seed/cafe-hero/1200/900",
+        "image_alt": "Cafe interior",
+        "cta_primary": {"text": "See the menu", "href": "/menu"},
+        "cta_secondary": {"text": "Visit us", "href": "/visit"}
+      },
+      "featured_dishes": {
+        "eyebrow": "FROM THE MENU",
+        "heading": "Guest Favorites",
+        "items": [
+          {"label": "BREAKFAST", "title": "Sourdough + Cultured Butter", "description": "House sourdough, salted European butter, seasonal preserves.", "price_display": "$9", "cta_text": "", "cta_href": ""},
+          {"label": "LUNCH", "title": "Farm Egg Sandwich", "description": "Fried farm egg, aged cheddar, seasonal greens on brioche.", "price_display": "$14", "cta_text": "", "cta_href": ""},
+          {"label": "SMALL PLATES", "title": "Seasonal Tartine", "description": "Rotating tartine on grilled bread. Ask what's on today.", "price_display": "$13", "cta_text": "", "cta_href": ""}
+        ]
+      },
+      "visit": {
+        "heading": "Visit Us",
+        "hours": [
+          {"day": "Monday", "hours": "Closed"},
+          {"day": "Tuesday", "hours": "7 AM – 2 PM"},
+          {"day": "Wednesday", "hours": "7 AM – 2 PM"},
+          {"day": "Thursday", "hours": "7 AM – 9 PM"},
+          {"day": "Friday", "hours": "7 AM – 10 PM"},
+          {"day": "Saturday", "hours": "8 AM – 10 PM"},
+          {"day": "Sunday", "hours": "8 AM – 2 PM"}
+        ],
+        "address": "100 Example St\nSample City, ST",
+        "phone": "(555) 555-0177",
+        "email": "hello@wrenandrye.example"
+      },
+      "newsletter": {
+        "heading": "What's on this week",
+        "description": "Weekly specials + natural wine list + pop-ups. One email Friday.",
+        "placeholder": "Your email",
+        "button_text": "Subscribe"
+      }
+    },
+    "menu": {
+      "hero": {"eyebrow": "MENU", "heading": "The Menu", "description": "Seasonal. Changes often. Call if you have dietary questions."},
+      "sections": {
+        "heading": "",
+        "sections": [
+          {
+            "name": "Breakfast · 7–11 AM",
+            "description": "Served until 11 AM sharp.",
+            "items": [
+              {"name": "Sourdough + Cultured Butter", "description": "House loaf, salted European butter, seasonal preserves.", "price_display": "$9", "dietary_tags": ["V"]},
+              {"name": "Morning Grain Bowl", "description": "Farro, soft egg, roasted squash, pomegranate, tahini.", "price_display": "$14", "dietary_tags": ["V", "GF"]},
+              {"name": "Savory Oats", "description": "Stone-cut oats, miso, soft egg, scallion oil.", "price_display": "$11", "dietary_tags": ["V"]},
+              {"name": "Brioche French Toast", "description": "Maple, crème fraîche, citrus.", "price_display": "$13", "dietary_tags": []}
+            ]
+          },
+          {
+            "name": "Lunch · 11–2 PM",
+            "description": "",
+            "items": [
+              {"name": "Farm Egg Sandwich", "description": "Fried egg, cheddar, greens, house mayo, brioche.", "price_display": "$14", "dietary_tags": []},
+              {"name": "Seasonal Salad", "description": "Rotates weekly. Ask your server.", "price_display": "$13", "dietary_tags": ["V", "GF"]},
+              {"name": "Soup of the Day", "description": "Ask your server.", "price_display": "$8", "dietary_tags": []},
+              {"name": "Mushroom Tartine", "description": "Roasted mushrooms, whipped ricotta, thyme, sourdough.", "price_display": "$14", "dietary_tags": ["V"]}
+            ]
+          },
+          {
+            "name": "Small Plates · Thu–Sat, after 4 PM",
+            "description": "Shareable plates + wine.",
+            "items": [
+              {"name": "Olives + Almonds", "description": "Castelvetrano olives, marcona almonds, chili.", "price_display": "$8", "dietary_tags": ["V", "GF"]},
+              {"name": "Seasonal Tartine", "description": "Rotating. Ask what's on today.", "price_display": "$13", "dietary_tags": ["V"]},
+              {"name": "Whipped Ricotta + Honey", "description": "Warm ricotta, lavender honey, grilled bread.", "price_display": "$12", "dietary_tags": ["V"]},
+              {"name": "Charcuterie Plate", "description": "Three meats, pickles, mustard, crackers.", "price_display": "$22", "dietary_tags": []}
+            ]
+          },
+          {
+            "name": "Drinks",
+            "description": "",
+            "items": [
+              {"name": "Coffee (local roaster)", "description": "Drip, pour-over, or espresso.", "price_display": "$3–6", "dietary_tags": []},
+              {"name": "Natural Wine", "description": "Rotating by-the-glass. Ask what's open.", "price_display": "$9–14", "dietary_tags": []},
+              {"name": "House Cocktail", "description": "Changes weekly.", "price_display": "$12", "dietary_tags": []}
+            ]
+          }
+        ]
+      }
+    },
+    "visit": {
+      "hero": {"eyebrow": "VISIT", "heading": "Hours + Location"},
+      "details": {
+        "heading": "",
+        "hours": [
+          {"day": "Monday", "hours": "Closed"},
+          {"day": "Tuesday", "hours": "7 AM – 2 PM"},
+          {"day": "Wednesday", "hours": "7 AM – 2 PM"},
+          {"day": "Thursday", "hours": "7 AM – 9 PM"},
+          {"day": "Friday", "hours": "7 AM – 10 PM"},
+          {"day": "Saturday", "hours": "8 AM – 10 PM"},
+          {"day": "Sunday", "hours": "8 AM – 2 PM"}
+        ],
+        "address": "100 Example St\nSample City, ST",
+        "phone": "(555) 555-0177",
+        "email": "hello@wrenandrye.example"
+      }
+    },
+    "about": {
+      "hero": {"eyebrow": "ABOUT", "heading": "About Wren & Rye", "description": "Opened by Asa Wren and Io Rye. Seasonal. Local. A good glass of natural wine.", "image_url": "https://picsum.photos/seed/cafe-about/800/1000", "image_alt": "Asa + Io"},
+      "cta": {"heading": "Come by", "description": "Walk-ins welcome. Small parties only please.", "cta_text": "Visit", "cta_href": "/visit"}
+    },
+    "gallery": {"hero": {"eyebrow": "FROM THE CAFE", "heading": "Gallery"}},
+    "contact": {
+      "hero": {"eyebrow": "REACH OUT", "heading": "Get in Touch", "description": "Private dining and catering inquiries welcome."},
+      "form": {
+        "heading": "Send a Message",
+        "service_options": ["Private dining", "Catering", "Event rental", "General question"]
+      }
+    }
+  },
+  "seed_content": {
+    "menu_items": [
+      {"name": "Sourdough + Cultured Butter", "description": "House loaf, salted European butter, seasonal preserves.", "price_display": "$9", "section_name": "Breakfast", "dietary_tags": "V", "available": true, "sort_order": 1},
+      {"name": "Morning Grain Bowl", "description": "Farro, soft egg, roasted squash, pomegranate, tahini.", "price_display": "$14", "section_name": "Breakfast", "dietary_tags": "V,GF", "available": true, "sort_order": 2},
+      {"name": "Savory Oats", "description": "Stone-cut oats, miso, soft egg, scallion oil.", "price_display": "$11", "section_name": "Breakfast", "dietary_tags": "V", "available": true, "sort_order": 3},
+      {"name": "Farm Egg Sandwich", "description": "Fried egg, cheddar, greens, house mayo, brioche.", "price_display": "$14", "section_name": "Lunch", "dietary_tags": "", "available": true, "sort_order": 4},
+      {"name": "Seasonal Salad", "description": "Rotates weekly. Ask your server.", "price_display": "$13", "section_name": "Lunch", "dietary_tags": "V,GF", "available": true, "sort_order": 5},
+      {"name": "Mushroom Tartine", "description": "Roasted mushrooms, whipped ricotta, thyme, sourdough.", "price_display": "$14", "section_name": "Lunch", "dietary_tags": "V", "available": true, "sort_order": 6},
+      {"name": "Seasonal Tartine", "description": "Rotating. Ask what's on today.", "price_display": "$13", "section_name": "Small Plates", "dietary_tags": "V", "available": true, "sort_order": 7},
+      {"name": "Charcuterie Plate", "description": "Three meats, pickles, mustard, crackers.", "price_display": "$22", "section_name": "Small Plates", "dietary_tags": "", "available": true, "sort_order": 8}
+    ],
+    "photos": [
+      {"title": "Morning Light", "caption": "The corner at 7 AM.", "image_url": "https://picsum.photos/seed/cafe-p1/1200/1200", "category": "interior", "featured": true},
+      {"title": "Sourdough", "caption": "Out of the oven.", "image_url": "https://picsum.photos/seed/cafe-p2/1200/1200", "category": "food", "featured": true},
+      {"title": "Tartine", "caption": "Mushroom + ricotta.", "image_url": "https://picsum.photos/seed/cafe-p3/1200/1200", "category": "food", "featured": false},
+      {"title": "Wine List", "caption": "Natural + biodynamic.", "image_url": "https://picsum.photos/seed/cafe-p4/1200/1200", "category": "drinks", "featured": false}
+    ],
+    "contact_inquiries": [
+      {"name": "Juno Park", "email": "juno@example.com", "service_interest": "Private dining", "message": "Looking for a space for a 20-person birthday in October. Wed evening availability?"}
+    ],
+    "newsletter_subscribers": [{"email": "reg@example.com"}, {"email": "reg2@example.com"}]
+  }
+}

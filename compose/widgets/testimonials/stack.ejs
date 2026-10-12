@@ -1,0 +1,102 @@
+<!-- compose:widget testimonials/stack -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<% var _itemsRaw = (typeof items !== 'undefined' && items) ? items : []; %>
+<% // Placeholder filter (content-integrity + quality): NEVER render scaffold /
+   // sample testimonials on the public site. The archetype defaults seed
+   // editable draft rows (author "X (sample)", quote "A draft ... Replace with a
+   // real ...") so the keeper has rows to edit in admin; but a real visitor must
+   // never see fake quotes attributed to "Client (sample)". Filter per-row so a
+   // mix of real + sample shows only the real ones; if none are real, the whole
+   // section renders nothing (no bare heading). Fixes a defect found by the
+   // automated build review (a loop that ran outside this repository and is
+   // not included in it), where draft testimonial guidance text was publicly
+   // visible.
+   function _isPlaceholderTestimonial(t){
+     if (!t) return true;
+     var a = String(t.author_name || '');
+     if (!a.trim() || /anonymous/i.test(a) || /\(sample\)/i.test(a)) return true;
+     var q = String(t.quote || '');
+     if (/^\s*(a|another|a\s+third)\s+draft\b/i.test(q)) return true;
+     if (/replace with a real/i.test(q)) return true;
+     return false;
+   }
+   var _items = _itemsRaw.filter(function(t){ return !_isPlaceholderTestimonial(t); });
+   // limit + order contract: testimonial WALLS dilute;
+   // pull-quotes sell. A home praise band caps the stack (limit: 3) and
+   // selects shortest-first (order: 'shortest_first'), which keeps the
+   // taste punchy and self-maintaining as new reviews arrive. Full
+   // reviews live on entity detail pages / the dedicated listing.
+   var _order = (typeof order !== 'undefined' && order) ? String(order) : '';
+   if (_order === 'shortest_first') {
+     _items = _items.slice().sort(function(a, b){
+       return String(a.quote || '').length - String(b.quote || '').length;
+     });
+   }
+   var _limit = (typeof limit !== 'undefined' && Number(limit) > 0) ? Number(limit) : 0;
+   if (_limit > 0) _items = _items.slice(0, _limit);
+%>
+<%
+   // When the home layout pulls testimonials via db:testimonials
+   // source + spec_overlay "spec.home" AND the spec does not carry
+   // a spec.home.testimonials sub-block (the case for
+   // coach-home-editorial / -trust-first sibling variants where the
+   // overlay points at the home page block but no testimonials key
+   // exists under it), emit_page_view produces a widget include
+   // with ONLY items + detail_path_prefix + expand_inline; no heading
+   // or eyebrow. Without a typeof heading guard the EJS reference at
+   // the h2 (the un-guarded heading reference originally on this
+   // file) threw ReferenceError and the home route 500-d.
+   // Defensive guards below: heading + eyebrow are BOTH optional;
+   // if both missing, skip the header block entirely (testimonials
+   // read fine without a heading).
+   var _heading = (typeof heading !== 'undefined' && heading) ? heading : '';
+   var _eyebrow = (typeof eyebrow !== 'undefined' && eyebrow) ? eyebrow : '';
+   // One title voice per band: when eyebrow and heading
+   // normalize to the same words, the caps line becomes the h2 itself.
+   function _tsNorm(t) {
+     return String(t || '').toLowerCase()
+       .replace(/[^a-z0-9\s]/g, ' ')
+       .replace(/^\s*(the|a|an)\s+/, '')
+       .replace(/\s+/g, ' ').trim();
+   }
+   var _titleCollapsed = !!(_eyebrow && _heading && _tsNorm(_eyebrow) === _tsNorm(_heading));
+   if (_titleCollapsed) _eyebrow = '';
+   var _showHeader = !!(_heading || _eyebrow);
+   // Fixed-count rows: a praise band with a KNOWN count
+   // (columns: 3) uses a grid whose tracks shrink to keep one row at
+   // every desktop width; unknown-count listings keep the wrap grid.
+   var _columns = (typeof columns !== 'undefined' && Number(columns) > 0) ? Number(columns) : 0;
+   var _gridClass = (_columns === 2 || _columns === 3) ? ('cas-grid-fixed-' + _columns) : 'cas-card-grid';
+%>
+<% if (_items.length > 0) { %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <% if (_showHeader) { %>
+    <div class="text-center mb-10">
+      <% if (_eyebrow) { %>
+        <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= _eyebrow %></div>
+      <% } %>
+      <% if (_heading && _titleCollapsed) { %>
+        <h2 class="font-body cas-title-caps"><%= _heading %></h2>
+      <% } else if (_heading) { %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(_heading) %></h2>
+      <% } %>
+    </div>
+    <% } %>
+    <div class="<%= _gridClass %>">
+      <% _items.forEach(function(item) { %>
+        <blockquote class="relative p-6 rounded-xl border" style="background-color: var(--color-surface); border-color: var(--color-border);">
+          <span aria-hidden="true" class="font-display" style="position: absolute; top: 8px; left: 14px; font-size: 48px; line-height: 1; color: var(--color-border); opacity: 0.8;">&ldquo;</span>
+          <p class="font-body text-base leading-relaxed mb-4" style="color: var(--color-foreground); position: relative;"><%= item.quote %></p>
+          <footer style="border-top: 1px solid var(--color-border); padding-top: 12px;">
+            <div class="font-body font-semibold text-sm" style="color: var(--color-foreground);"><%= item.author_name %></div>
+            <% if (item.service) { %>
+              <div class="font-body text-xs mt-1" style="color: var(--color-foreground-muted);"><%= item.service %></div>
+            <% } %>
+          </footer>
+        </blockquote>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>

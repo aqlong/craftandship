@@ -1,0 +1,639 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <div class="mb-4">
+    <a href="/admin/builds" class="text-subtle text-sm hover:text-gray-300">&larr; Back to builds</a>
+  </div>
+
+  <h1 class="text-2xl font-bold text-gray-100 mb-4"><%= build.app_name || build.id %></h1>
+
+  <!-- Live URL / Preview URL banner -->
+  <% if (build.live_url || build.preview_url) { %>
+    <% var _url = build.live_url || build.preview_url; %>
+    <% var _isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(_url); %>
+    <% var _label = build.live_url ? 'Live URL' : 'Preview URL'; %>
+    <div class="mb-6 rounded-[10px] border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3"
+         style="border-color:<%= _isLocal ? 'rgba(124,185,196,0.4)' : 'rgba(1,135,160,0.4)' %>;background:<%= _isLocal ? 'rgba(124,185,196,0.06)' : 'rgba(1,135,160,0.06)' %>;">
+      <div class="flex-1 min-w-0">
+        <div class="text-[0.72rem] uppercase tracking-wider mb-1"
+             style="color:<%= _isLocal ? '#A89B7A' : '#C68A3A' %>;">
+          <%= _label %><% if (_isLocal) { %> <span class="ml-2 px-1.5 py-0.5 rounded text-[0.62rem] font-semibold" style="background:rgba(124,185,196,0.2);color:#A89B7A;">LOCAL</span><% } %>
+        </div>
+        <a href="<%= httpUrl(_url) %>" target="_blank" rel="noopener noreferrer"
+           class="font-mono text-sm text-gray-100 hover:underline break-all"><%= _url %></a>
+      </div>
+      <a href="<%= httpUrl(_url) %>" target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold no-underline shrink-0"
+         style="background:<%= _isLocal ? '#A89B7A' : '#C68A3A' %>;color:<%= _isLocal ? '#1A1612' : '#FBF1DC' %>;">
+        <%= build.live_url ? 'Visit Live' : 'Preview Your Website' %>
+        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6H6a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2v-4m-5 0L18 2m0 0h-5m5 0v5"/></svg>
+      </a>
+    </div>
+  <% } %>
+
+  <%# Gallery curation panel: visible for live + preview builds. POSTs to
+     /admin/gallery/:id/optin + /feature (admin-only, csrf-gated). Lets Ocean
+     seed the public /gallery without psql pokes; drives Step-1
+     free-build seeding. %>
+  <% if (build.status === 'live' || build.status === 'preview') { %>
+    <% var _opted = build.gallery_opted_in === true; %>
+    <% var _featured = build.gallery_featured === true; %>
+    <div class="mb-6 rounded-[10px] border px-4 py-4"
+         style="border-color: rgba(201,168,76,0.35); background: rgba(201,168,76,0.05);"
+         data-gallery-status="<%= _opted ? 'opted-in' : 'not-opted-in' %>"
+         data-gallery-featured="<%= _featured ? 'true' : 'false' %>">
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h2 class="text-base font-semibold text-gray-100">Gallery curation</h2>
+          <% if (_opted) { %>
+            <span class="admin-badge" style="background:rgba(42,190,170,0.18); color:#2ABEAA;">OPTED IN</span>
+          <% } else { %>
+            <span class="admin-badge" style="background:rgba(255,255,255,0.08); color:#A0A0A0;">NOT IN GALLERY</span>
+          <% } %>
+          <% if (_featured) { %>
+            <span class="admin-badge" style="background:rgba(201,168,76,0.2); color:#C9A84C;">FEATURED</span>
+          <% } %>
+        </div>
+        <span class="text-xs text-subtle">Public surface: <a href="/gallery" target="_blank" rel="noopener noreferrer" class="underline hover:text-gray-300">/gallery</a></span>
+      </div>
+
+      <form method="POST" action="/admin/gallery/<%= build.id %>/optin" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label class="flex flex-col gap-1 sm:col-span-2">
+          <span class="text-[0.72rem] uppercase tracking-wider text-subtle">Display name (overrides slug → title on /gallery; empty = use app_name)</span>
+          <input type="text" name="gallery_display_name"
+                 value="<%= build.gallery_display_name || '' %>"
+                 maxlength="120"
+                 placeholder='e.g. "Sample Studio Website, with CMS"'
+                 class="bg-black/30 border border-white/10 rounded px-3 py-2 text-sm text-gray-100 font-sans">
+        </label>
+        <label class="flex flex-col gap-1 sm:col-span-2">
+          <span class="text-[0.72rem] uppercase tracking-wider text-subtle">Description (max 500 chars, shown on /gallery card)</span>
+          <textarea name="gallery_description"
+                    maxlength="500"
+                    rows="2"
+                    placeholder="One sentence that names the work and the place. E.g. A quiet healing practice in Austin."
+                    class="bg-black/30 border border-white/10 rounded px-3 py-2 text-sm text-gray-100 font-sans"><%= build.gallery_description || '' %></textarea>
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[0.72rem] uppercase tracking-wider text-subtle">Category (filter chip on /gallery)</span>
+          <input type="text" name="gallery_category"
+                 value="<%= build.gallery_category || '' %>"
+                 maxlength="100"
+                 placeholder="Healer, Coach, Studio, Restaurant, &hellip;"
+                 class="bg-black/30 border border-white/10 rounded px-3 py-2 text-sm text-gray-100 font-sans">
+        </label>
+        <div class="flex items-end">
+          <button type="submit"
+                  class="w-full px-4 py-2 rounded-lg text-sm font-semibold"
+                  style="background:<%= _opted ? '#6B6B6B' : '#2ABEAA' %>; color:#0F1311;">
+            <%= _opted ? 'Remove from gallery' : 'Opt in to gallery' %>
+          </button>
+        </div>
+      </form>
+
+      <form method="POST" action="/admin/gallery/<%= build.id %>/feature">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit"
+                class="px-3 py-1.5 rounded text-xs font-semibold"
+                style="background:<%= _featured ? 'rgba(201,168,76,0.2)' : 'rgba(255,255,255,0.06)' %>; color:#C9A84C; border:1px solid rgba(201,168,76,0.4);">
+          <%= _featured ? '★ Featured: click to unfeature' : '☆ Feature this build' %>
+        </button>
+        <span class="text-xs text-subtle ml-2">Featured builds sort first on /gallery.</span>
+      </form>
+    </div>
+  <% } %>
+
+  <!-- Status strip -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Tier</div>
+      <span class="admin-badge admin-badge-<%= build.tier %>"><%= build.tier %></span>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3" data-cell="engine">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider" title="Build engine: v1 = Claude-per-build legacy, v2 = static-compose">Engine</div>
+      <span class="admin-badge admin-badge-engine-<%= build.build_engine || 'v1' %>" title="<%= (build.build_engine === 'v2') ? 'Static-compose engine (deterministic, no Claude in build path)' : 'Claude-per-build legacy pipeline' %>"><%= build.build_engine || 'v1' %></span>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Status</div>
+      <span id="admin-build-status-badge" class="admin-badge admin-badge-<%= build.status %>"><%= build.status %></span>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Retries</div>
+      <div id="admin-build-retries" class="text-sm text-gray-200"><%= build.retry_count || 0 %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">API Cost</div>
+      <div id="admin-build-api-cost" class="text-sm text-gray-200"><%= build.total_api_cost_usd ? fmtUsd(build.total_api_cost_usd, 4) : '-' %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Stage Timings</div>
+      <div class="text-xs text-gray-300 space-y-0.5">
+        <% function fmtDur(s) {
+          var sec = Math.round(s);
+          var h = Math.floor(sec / 3600);
+          var m = Math.floor((sec % 3600) / 60);
+          var r = sec % 60;
+          if (h > 0) return h + 'h ' + m + 'm ' + r + 's';
+          if (m > 0) return m + 'm ' + r + 's';
+          return r + 's';
+        } %>
+        <% if (build.stage_timings && Object.keys(build.stage_timings).length > 0) { %>
+          <% Object.entries(build.stage_timings).forEach(function(entry) { %>
+            <div><%= entry[0] %>: <%= entry[1] && entry[1].duration_s != null ? fmtDur(entry[1].duration_s) : '-' %></div>
+          <% }); %>
+        <% } else { %>
+          <span class="text-subtle">-</span>
+        <% } %>
+      </div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Error</div>
+      <% if (build.error_message) { %>
+        <div class="text-xs text-red-300 break-words"><%= build.error_message %></div>
+      <% } else { %>
+        <span class="text-subtle text-xs">-</span>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Diagnostic tabs -->
+  <div class="mb-6">
+    <div class="flex gap-2 mb-4 flex-wrap">
+      <button class="tab-btn px-3 py-1.5 text-xs font-semibold rounded bg-surface-2 text-gray-100" data-tab="tab-logs">Build Logs</button>
+      <button class="tab-btn px-3 py-1.5 text-xs font-semibold rounded text-muted hover:bg-surface-2" data-tab="tab-qa">
+        QA Failures<% if (qaFailures && qaFailures.length > 0) { %> <span class="ml-1 px-1.5 py-0.5 bg-red-900 text-red-300 rounded text-[0.65rem]"><%= qaFailures.length %></span><% } %>
+      </button>
+      <button class="tab-btn px-3 py-1.5 text-xs font-semibold rounded text-muted hover:bg-surface-2" data-tab="tab-design">
+        Design Issues<% if (designIssues && designIssues.length > 0) { %> <span class="ml-1 px-1.5 py-0.5 bg-yellow-900 text-yellow-300 rounded text-[0.65rem]"><%= designIssues.length %></span><% } %>
+      </button>
+      <button class="tab-btn px-3 py-1.5 text-xs font-semibold rounded text-muted hover:bg-surface-2" data-tab="tab-spec">Spec JSON</button>
+    </div>
+
+    <!-- Build Logs panel (visible by default) -->
+    <div id="tab-logs" class="tab-panel">
+      <div id="admin-build-logs-scroll" class="bg-black rounded-[10px] p-4 overflow-auto max-h-[400px]">
+        <p id="admin-build-logs-empty" class="text-subtle text-sm" <% if (logs && logs.length > 0) { %>style="display:none"<% } %>>No logs recorded.</p>
+        <ul id="admin-build-logs-list" class="space-y-0.5 text-xs font-mono text-gray-300" <% if (!logs || logs.length === 0) { %>style="display:none"<% } %>>
+          <% (logs || []).forEach(function(log) { %>
+            <li data-log-id="<%= log.id %>"><span class="text-gray-600 mr-1 select-none" data-ts="<%= new Date(log.created_at).toISOString() %>" data-ts-fmt="time"><%= new Date(log.created_at).toISOString().slice(11, 19) %> UTC</span><span class="text-subtle">[<%= log.stage %>]</span> <%= log.message %></li>
+          <% }); %>
+        </ul>
+      </div>
+    </div>
+
+    <!-- QA Failures panel -->
+    <div id="tab-qa" class="tab-panel" style="display:none">
+      <% if (!qaFailures || qaFailures.length === 0) { %>
+        <p class="text-subtle text-sm">No QA failures.</p>
+      <% } else { %>
+        <ul class="space-y-3">
+          <% qaFailures.forEach(function(f) { %>
+            <li class="bg-red-950/40 border border-red-800/50 rounded-[8px] px-4 py-3">
+              <div class="text-sm font-semibold text-red-300 mb-1"><%= f.name %></div>
+              <% if (f.error) { %>
+                <pre class="text-xs text-red-200 whitespace-pre-wrap overflow-auto max-h-[120px]"><%= f.error %></pre>
+              <% } %>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+
+    <!-- Design Issues panel -->
+    <div id="tab-design" class="tab-panel" style="display:none">
+      <% if (!designIssues || designIssues.length === 0) { %>
+        <p class="text-subtle text-sm">No design issues.</p>
+      <% } else { %>
+        <ul class="space-y-2">
+          <% designIssues.forEach(function(issue) { %>
+            <li class="bg-surface-3 rounded-[8px] px-4 py-3">
+              <div class="flex items-start gap-3">
+                <span class="text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap shrink-0 mt-0.5 <%= issue.severity === 'critical' ? 'bg-red-900 text-red-300' : 'bg-yellow-900 text-yellow-300' %>">
+                  <%= issue.severity %>
+                </span>
+                <span class="text-sm text-gray-200"><%= issue.issue || issue.message || '' %></span>
+              </div>
+              <% if (issue.file || issue.category) { %>
+                <div class="text-xs mt-1.5 font-mono">
+                  <% if (issue.file) { %><span class="text-brand-sky/70"><%= issue.file %></span><% } %>
+                  <% if (issue.category) { %><span class="text-gray-600 ml-2">(<%= issue.category %>)</span><% } %>
+                </div>
+              <% } %>
+              <% if (issue.suggestion) { %>
+                <div class="text-xs text-brand-teal/70 mt-1.5 italic"><%= issue.suggestion %></div>
+              <% } %>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+
+    <!-- Spec JSON panel -->
+    <div id="tab-spec" class="tab-panel" style="display:none">
+      <div class="relative">
+        <button data-click="copySpec" class="absolute top-2 right-2 text-xs px-2 py-1 bg-surface-2 text-gray-300 rounded hover:bg-surface-3">Copy</button>
+        <pre id="spec-json" class="bg-black rounded-[10px] p-4 overflow-auto max-h-[500px] text-xs text-gray-300 font-mono"><code><%= JSON.stringify(build.spec || {}, null, 2) %></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Analysis card -->
+  <div class="bg-surface-3 rounded-[10px] p-4 mb-6" id="ai-analysis-card">
+    <h2 class="text-sm font-semibold text-gray-200 mb-3 uppercase tracking-wider">AI Analysis</h2>
+
+    <% if (build.ai_analysis) { %>
+      <div class="mb-3">
+        <div class="text-xs text-subtle uppercase tracking-wider mb-1">Root Cause</div>
+        <p class="text-sm text-gray-200"><%= build.ai_analysis.root_cause %></p>
+      </div>
+      <div class="mb-3">
+        <span class="text-xs font-bold px-2 py-0.5 rounded <%= build.ai_analysis.confidence === 'high' ? 'bg-[rgba(42,190,170,0.15)] text-[#2ABEAA]' : build.ai_analysis.confidence === 'medium' ? 'bg-yellow-900 text-yellow-300' : 'bg-red-900 text-red-300' %>">
+          <%= build.ai_analysis.confidence %> confidence
+        </span>
+      </div>
+      <div class="mb-3">
+        <div class="text-xs text-subtle uppercase tracking-wider mb-1">Implicated Files</div>
+        <ul class="text-xs text-gray-300 font-mono space-y-0.5">
+          <% (build.ai_analysis.implicated_files || []).forEach(function(file) { %>
+            <li><%= file %></li>
+          <% }); %>
+        </ul>
+      </div>
+      <div class="mb-3">
+        <div class="text-xs text-subtle uppercase tracking-wider mb-1">Fix Summary</div>
+        <div class="bg-black rounded-[8px] px-3 py-2 text-sm text-gray-200"><%= build.ai_analysis.fix_summary %></div>
+      </div>
+      <div class="mb-3">
+        <span class="text-xs font-bold px-2 py-0.5 rounded bg-surface-2 text-gray-300">
+          Recommended: <%= build.ai_analysis.recommended_action %>
+        </span>
+      </div>
+      <div class="mt-3 flex items-center gap-3">
+        <span class="text-xs text-subtle">
+          Analyzed <% if (build.ai_analysis.analyzed_at) { %><%= new Date(build.ai_analysis.analyzed_at).toISOString().slice(0,16).replace('T',' ') %> UTC<% } %>
+        </span>
+        <button id="reanalyze-btn" data-click="runAnalysis" data-arg="true"
+                class="text-xs px-3 py-1 bg-surface-2 text-gray-300 rounded hover:bg-surface-3">
+          Re-analyze
+        </button>
+      </div>
+    <% } else { %>
+      <div id="analyze-placeholder">
+        <p class="text-sm text-subtle mb-3">No analysis yet. Run AI analysis to get root cause diagnosis.</p>
+        <button id="analyze-btn" data-click="runAnalysis" data-arg="false"
+                class="btn btn-secondary btn-sm">
+          Analyze with Claude
+        </button>
+      </div>
+      <div id="analyze-spinner" style="display:none" class="flex items-center gap-2 text-sm text-subtle">
+        <svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        Analyzing...
+      </div>
+      <div id="analyze-result" style="display:none"></div>
+      <div id="analyze-error" style="display:none" class="text-sm text-red-300 mt-2"></div>
+    <% } %>
+  </div>
+
+  <!-- Queue Fix panel -->
+  <div id="queue-fix-panel" class="bg-surface-3 rounded-[10px] p-4 mb-6"
+       <%- !build.ai_analysis ? 'style="display:none"' : '' %>>
+    <h2 class="text-sm font-semibold text-gray-200 mb-3 uppercase tracking-wider">Queue Fix</h2>
+
+    <form method="POST" action="/admin/builds/<%= build.id %>/ai-fix">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" id="fix-csrf" />
+      <input type="hidden" name="force_new" value="" id="fix-force-new" />
+
+      <label class="block text-xs text-subtle mb-1" for="rebuild_request">Fix description (sent to build pipeline)</label>
+      <textarea id="rebuild_request" name="rebuild_request" rows="4"
+                class="w-full bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm mb-3"
+                placeholder="Describe what the pipeline should fix..."
+                data-no-submit-guard
+                required minlength="1"><% if (build.ai_analysis && build.ai_analysis.fix_summary) { %><%= build.ai_analysis.fix_summary %><% } %></textarea>
+
+      <div class="text-xs text-subtle mb-3" id="action-description">
+        <% if (defaultAction === 'reset') { %>
+          This will reset and re-queue this build (status &rarr; queued).
+        <% } else { %>
+          This will create a new build based on this one, preserving the existing app.
+        <% } %>
+      </div>
+
+      <div class="flex items-center gap-2 mb-4">
+        <input type="checkbox" id="force-new-checkbox"
+               class="rounded border-border"
+               data-change="toggleForceNew" />
+        <label for="force-new-checkbox" class="text-xs text-subtle">
+          <% if (defaultAction === 'reset') { %>
+            Force new build instead (keeps existing app running)
+          <% } else { %>
+            Reset this build instead (overwrites existing deploy)
+          <% } %>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-sm">Queue Fix</button>
+    </form>
+  </div>
+
+  <!-- Danger Zone: delete CAS build row (and Railway project when writes enabled) -->
+  <div class="bg-surface-3 rounded-[10px] p-4 mb-6 border border-red-900/40">
+    <h2 class="text-sm font-semibold text-red-300 mb-2 uppercase tracking-wider">Danger Zone</h2>
+    <div class="text-xs text-subtle mb-3">
+      Permanently deletes this build's CAS row (cascades intake, logs, feature requests, dead-letter entries)<% if (build.railway_project_id && railwayWritesEnabled) { %>
+        and its Railway project <code class="text-gray-300"><%= build.app_name || '(unnamed)' %></code> <span class="text-gray-500">(<code class="text-gray-500"><%= build.railway_project_id %></code>)</span>.<% } else { %>.<% } %>
+      You will be asked to type <code class="text-gray-300"><%= build.app_name || build.id %></code> to confirm.
+    </div>
+    <form method="POST" action="/admin/builds/<%= build.id %>/delete" class="inline"
+          data-confirm-typed="<%= build.app_name || build.id %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <button type="submit" class="btn btn-ghost btn-sm text-red-400">
+        Delete build<% if (build.railway_project_id && railwayWritesEnabled) { %> + Railway project<% } %>
+      </button>
+    </form>
+  </div>
+
+  <%
+    // Only auto-refresh while the build is in a non-terminal state.
+    // Live + failed + abandoned + preview don't need polling.
+    var inFlightStatuses = ['intake', 'queued', 'building', 'testing', 'deploying'];
+    if (inFlightStatuses.indexOf(build.status) !== -1) {
+  %>
+    <%- include('partials/_admin-auto-refresh', { intervalSeconds: 30 }) %>
+  <% } %>
+
+</section>
+
+<script nonce="<%= cspNonce %>">
+  // Tab switching
+  (function initTabs() {
+    var buttons = document.querySelectorAll('.tab-btn');
+    var panels = document.querySelectorAll('.tab-panel');
+    buttons.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var targetId = btn.getAttribute('data-tab');
+        buttons.forEach(function(b) {
+          b.classList.remove('bg-surface-2', 'text-gray-100');
+          b.classList.add('text-muted');
+        });
+        btn.classList.add('bg-surface-2', 'text-gray-100');
+        btn.classList.remove('text-muted');
+        panels.forEach(function(p) {
+          p.style.display = p.id === targetId ? '' : 'none';
+        });
+      });
+    });
+  })();
+
+  // Spec copy
+  function copySpec() {
+    var text = document.getElementById('spec-json').textContent;
+    navigator.clipboard.writeText(text).catch(function() {});
+  }
+
+  // Force-new checkbox toggle
+  function toggleForceNew(checkbox) {
+    document.getElementById('fix-force-new').value = checkbox.checked ? '1' : '';
+  }
+
+  // AI Analysis fetch
+  var BUILD_ID = '<%= build.id %>';
+  var CSRF_TOKEN = <%- safeJSON(csrfToken) %>;
+
+  function runAnalysis(force) {
+    var placeholder = document.getElementById('analyze-placeholder');
+    var reanalyzeBtn = document.getElementById('reanalyze-btn');
+    var spinner = document.getElementById('analyze-spinner');
+    var resultEl = document.getElementById('analyze-result');
+    var errorEl = document.getElementById('analyze-error');
+
+    if (placeholder) placeholder.style.display = 'none';
+    if (reanalyzeBtn) reanalyzeBtn.style.display = 'none';
+    if (spinner) spinner.style.display = 'flex';
+    if (errorEl) errorEl.style.display = 'none';
+
+    var url = '/admin/builds/' + BUILD_ID + '/analyze' + (force ? '?force=1' : '');
+    fetch(url, {
+      method: 'POST',
+      headers: { 'x-csrf-token': CSRF_TOKEN, 'Content-Type': 'application/json' }
+    })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (spinner) spinner.style.display = 'none';
+        if (data.error) {
+          if (errorEl) { errorEl.textContent = data.error; errorEl.style.display = ''; }
+          if (reanalyzeBtn) reanalyzeBtn.style.display = '';
+          return;
+        }
+        renderAnalysis(data.analysis);
+        showQueueFixPanel(data.analysis);
+      })
+      .catch(function(err) {
+        if (spinner) spinner.style.display = 'none';
+        if (errorEl) { errorEl.textContent = 'Network error: ' + err.message; errorEl.style.display = ''; }
+        if (reanalyzeBtn) reanalyzeBtn.style.display = '';
+      });
+  }
+
+  function renderAnalysis(analysis) {
+    var resultEl = document.getElementById('analyze-result');
+    if (!resultEl) return;
+
+    var confidenceClass = analysis.confidence === 'high'
+      ? 'bg-[rgba(42,190,170,0.15)] text-[#2ABEAA]'
+      : analysis.confidence === 'medium'
+      ? 'bg-yellow-900 text-yellow-300'
+      : 'bg-red-900 text-red-300';
+
+    // The analysis is model output about a failed build: treat every field as
+    // untrusted text.
+    function esc(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    var filesHtml = (analysis.implicated_files || []).map(function(f) {
+      return '<li>' + esc(f) + '</li>';
+    }).join('');
+
+    resultEl.innerHTML =
+      '<div class="mb-3">' +
+        '<div class="text-xs text-subtle uppercase tracking-wider mb-1">Root Cause</div>' +
+        '<p class="text-sm text-gray-200">' + esc(analysis.root_cause) + '</p>' +
+      '</div>' +
+      '<div class="mb-3">' +
+        '<span class="text-xs font-bold px-2 py-0.5 rounded ' + confidenceClass + '">' +
+          esc(analysis.confidence) + ' confidence' +
+        '</span>' +
+      '</div>' +
+      '<div class="mb-3">' +
+        '<div class="text-xs text-subtle uppercase tracking-wider mb-1">Implicated Files</div>' +
+        '<ul class="text-xs text-gray-300 font-mono space-y-0.5">' + filesHtml + '</ul>' +
+      '</div>' +
+      '<div class="mb-3">' +
+        '<div class="text-xs text-subtle uppercase tracking-wider mb-1">Fix Summary</div>' +
+        '<div class="bg-black rounded-[8px] px-3 py-2 text-sm text-gray-200">' + esc(analysis.fix_summary) + '</div>' +
+      '</div>' +
+      '<div>' +
+        '<span class="text-xs font-bold px-2 py-0.5 rounded bg-surface-2 text-gray-300">' +
+          'Recommended: ' + esc(analysis.recommended_action) +
+        '</span>' +
+      '</div>' +
+      '<div class="mt-3 flex items-center gap-3">' +
+        '<button data-click="runAnalysis" data-arg="true" class="text-xs px-3 py-1 bg-surface-2 text-gray-300 rounded hover:bg-surface-3">Re-analyze</button>' +
+      '</div>';
+
+    resultEl.style.display = '';
+  }
+
+  function showQueueFixPanel(analysis) {
+    var panel = document.getElementById('queue-fix-panel');
+    if (panel) panel.style.display = '';
+    var textarea = document.getElementById('rebuild_request');
+    if (textarea && !textarea.value.trim() && analysis && analysis.fix_summary) {
+      textarea.value = analysis.fix_summary;
+    }
+  }
+
+  // Live build log + status polling.
+  // Mirrors web/public/status.js (customer status page) so admins watching a
+  // build in flight don't have to manually refresh the page to see new log
+  // lines or status transitions. Stops on terminal status (preview, live,
+  // failed, abandoned). Preserves scroll-on-bottom behavior.
+  (function initLivePolling() {
+    var TERMINAL_STATES = ['preview', 'live', 'failed', 'abandoned'];
+    var INITIAL_STATUS = '<%= build.status %>';
+    if (TERMINAL_STATES.indexOf(INITIAL_STATUS) !== -1) return;
+
+    var POLL_INTERVAL_MS = 2500;
+    var listEl = document.getElementById('admin-build-logs-list');
+    var emptyEl = document.getElementById('admin-build-logs-empty');
+    var scrollEl = document.getElementById('admin-build-logs-scroll');
+    var statusEl = document.getElementById('admin-build-status-badge');
+    var retriesEl = document.getElementById('admin-build-retries');
+    var costEl = document.getElementById('admin-build-api-cost');
+
+    function readLastLogId() {
+      if (!listEl) return 0;
+      var nodes = listEl.querySelectorAll('li[data-log-id]');
+      var max = 0;
+      for (var i = 0; i < nodes.length; i++) {
+        var n = parseInt(nodes[i].getAttribute('data-log-id'), 10);
+        if (!isNaN(n) && n > max) max = n;
+      }
+      return max;
+    }
+
+    var lastLogId = readLastLogId();
+    var stopped = false;
+
+    // Used in element content and inside a quoted attribute (data-ts), so
+    // quotes are escaped too.
+    function escapeHtml(text) {
+      return String(text == null ? '' : text)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function appendLogs(logs) {
+      if (!logs || logs.length === 0 || !listEl) return;
+      var wasAtBottom = scrollEl
+        ? (scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight) < 24
+        : false;
+
+      if (emptyEl) emptyEl.style.display = 'none';
+      if (listEl.style.display === 'none') listEl.style.display = '';
+
+      logs.forEach(function (log) {
+        var li = document.createElement('li');
+        li.setAttribute('data-log-id', log.id);
+        var iso;
+        try { iso = new Date(log.created_at).toISOString(); } catch (_e) { iso = ''; }
+        var t = iso ? iso.slice(11, 19) : '--:--:--';
+        li.innerHTML =
+          '<span class="text-gray-600 mr-1 select-none" data-ts="' + escapeHtml(iso) + '" data-ts-fmt="time">' +
+          escapeHtml(t) + ' UTC</span>' +
+          '<span class="text-subtle">[' + escapeHtml(log.stage) + ']</span> ' +
+          escapeHtml(log.message);
+        listEl.appendChild(li);
+        if (typeof log.id === 'number' && log.id > lastLogId) lastLogId = log.id;
+      });
+
+      if (wasAtBottom && scrollEl) {
+        scrollEl.scrollTop = scrollEl.scrollHeight;
+      }
+    }
+
+    function updateStatusBadge(newStatus) {
+      if (!statusEl || !newStatus) return;
+      if (statusEl.textContent === newStatus) return;
+      statusEl.textContent = newStatus;
+      statusEl.className = 'admin-badge admin-badge-' + newStatus;
+    }
+
+    function updateRetries(retryCount) {
+      if (!retriesEl || retryCount == null) return;
+      var s = String(retryCount);
+      if (retriesEl.textContent !== s) retriesEl.textContent = s;
+    }
+
+    function updateApiCost(cost) {
+      if (!costEl) return;
+      var formatted;
+      if (cost == null || cost === '' || Number(cost) === 0) {
+        formatted = (cost == null || cost === '') ? '-' : '$0.0000';
+      } else {
+        var n = Number(cost);
+        formatted = isNaN(n) ? '-' : ('$' + n.toFixed(4));
+      }
+      if (costEl.textContent !== formatted) costEl.textContent = formatted;
+    }
+
+    function fetchLogs() {
+      var ctl = new AbortController();
+      var t = setTimeout(function () { ctl.abort(); }, 10000);
+      return fetch('/api/builds/' + BUILD_ID + '/logs?after=' + lastLogId, {
+        signal: ctl.signal,
+        cache: 'no-store',
+      })
+        .then(function (r) { clearTimeout(t); return r.ok ? r.json() : null; })
+        .then(function (body) {
+          if (body && body.logs) appendLogs(body.logs);
+        })
+        .catch(function () { /* silent */ });
+    }
+
+    function fetchStatus() {
+      var ctl = new AbortController();
+      var t = setTimeout(function () { ctl.abort(); }, 10000);
+      return fetch('/api/builds/' + BUILD_ID, {
+        signal: ctl.signal,
+        cache: 'no-store',
+      })
+        .then(function (r) { clearTimeout(t); return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data) return;
+          updateStatusBadge(data.status);
+          updateRetries(data.retry_count);
+          updateApiCost(data.total_api_cost_usd);
+          if (data.status && TERMINAL_STATES.indexOf(data.status) !== -1) {
+            stopped = true;
+          }
+        })
+        .catch(function () { /* silent */ });
+    }
+
+    function tick() {
+      if (stopped) return;
+      Promise.all([fetchLogs(), fetchStatus()]).then(function () {
+        if (!stopped) setTimeout(tick, POLL_INTERVAL_MS);
+      });
+    }
+
+    setTimeout(tick, POLL_INTERVAL_MS);
+  })();
+</script>

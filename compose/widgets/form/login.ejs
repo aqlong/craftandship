@@ -1,0 +1,40 @@
+<!-- compose:widget form/login; admin login surface using the letterpress
+     auth shell. Single-column, hairline eyebrow + display-font H1 + Public
+     Sans inputs + charcoal pill submit + sage-hairline foot link. CSS lives
+     in style.css under .cas-auth-letterpress-* classes. -->
+<%
+var _site = (typeof settings !== 'undefined' && settings) ? settings : {};
+var _err = locals.error;
+var _magicAvailable = (typeof magic_link_available !== 'undefined' && magic_link_available) ? true : false;
+var _err_html = _err
+  ? ('<div class="cas-auth-letterpress__notice cas-auth-letterpress__notice--error" role="alert">' +
+       String(_err).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+     '</div>')
+  : '';
+var _bodyHtml =
+  _err_html +
+  '<form action="/login" method="POST" class="cas-auth-letterpress__form cas-form" novalidate>' +
+    '<input type="hidden" name="_csrf" value="' + String(csrfToken).replace(/[^A-Za-z0-9_-]/g, '') + '">' +
+    '<label class="cas-auth-letterpress__field">' +
+      '<span class="cas-auth-letterpress__label">Email</span>' +
+      '<input class="cas-auth-letterpress__input" type="email" name="email" required autocomplete="email" autofocus />' +
+    '</label>' +
+    '<label class="cas-auth-letterpress__field">' +
+      '<span class="cas-auth-letterpress__label">Password</span>' +
+      '<input class="cas-auth-letterpress__input" type="password" name="password" required autocomplete="current-password" />' +
+    '</label>' +
+    '<button type="submit" class="cas-auth-letterpress__submit">Sign in</button>' +
+  '</form>';
+var _footerHtml = _magicAvailable
+  ? '<p class="cas-auth-letterpress__foot-line">First time? <a href="/request-magic-link">Request a login link</a></p>'
+  : '<p class="cas-auth-letterpress__foot-line"><a href="/request-magic-link">Forgot your password?</a></p>';
+%>
+<%- include('widgets/auth/letterpress', {
+  siteName: _site.site_name || 'Site',
+  brandHref: '/',
+  eyebrow: 'Sign in',
+  formHeading: 'Welcome back',
+  formSubheading: 'Sign in to manage your site.',
+  bodyHtml: _bodyHtml,
+  footerHtml: _footerHtml,
+}) %>

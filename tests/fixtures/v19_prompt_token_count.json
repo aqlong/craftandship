@@ -1,0 +1,10 @@
+{
+  "_provenance": {
+    "captured_at": "2026-04-17T00:00:00Z",
+    "source": "Reconstructed pre-section-06 prompt baseline for the v19 spec (approach (b) per section-06 implementation plan).",
+    "reconstruction_note": "The B+C plan's §7.1 specified removing three admin-markup instruction blocks (views/admin/settings.ejs, views/admin/<slug>/new.ejs + edit.ejs, and the dashboard settings section). Today's repo does not carry them as distinct blocks; this baseline splices back simulated representative versions of those blocks so the 10% reduction claim is anchored to the intended pre-pruning state. See the section-06 implementation plan, 'Implementation constraints' bullet on the token-count fixture for the approach-(b) protocol.",
+    "counted_via": "len(prompt_string) - simple character count proxy; 10% drop threshold is proportional."
+  },
+  "token_count": 44790,
+  "prompt_sha256": "73bfc56f6b1961f794e64b1a1ec41b0eac5816f69e5dd6c4b94c75c8e5909387"
+}

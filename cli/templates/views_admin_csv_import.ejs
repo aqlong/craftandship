@@ -1,0 +1,134 @@
+<div class="min-h-screen bg-gray-900 py-10 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-4xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <a href="/dashboard" class="text-sm text-gray-400 hover:text-white transition-colors">&larr; Back to Dashboard</a>
+      <h1 class="text-3xl font-bold text-white mt-3">CSV Import</h1>
+      <p class="text-gray-400 mt-2">Bulk import data into your app from CSV files.</p>
+    </div>
+
+    <!-- Flash message -->
+    <% if (typeof flash !== 'undefined' && flash) { %>
+      <div class="mb-6 p-4 rounded-lg bg-blue-900/50 border border-blue-700 text-blue-200">
+        <%= flash %>
+      </div>
+    <% } %>
+
+    <!-- Step-by-step instructions -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-8">
+      <h2 class="text-xl font-semibold text-white mb-4">How It Works</h2>
+      <div class="space-y-4">
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">1</div>
+          <div>
+            <p class="text-white font-medium">Download a template</p>
+            <p class="text-gray-400 text-sm">Pick a table below and download its CSV template. The template includes the correct column headers and 3 example rows.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">2</div>
+          <div>
+            <p class="text-white font-medium">Fill in your data</p>
+            <p class="text-gray-400 text-sm">Open the CSV in a spreadsheet app (Excel, Google Sheets, etc.). Replace the example rows with your real data.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">3</div>
+          <div>
+            <p class="text-white font-medium">Upload and import</p>
+            <p class="text-gray-400 text-sm">Select the target table, choose your CSV file, and click Import. Records are inserted one at a time.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-8">
+      <h2 class="text-xl font-semibold text-white mb-4">Tips</h2>
+      <ul class="space-y-2 text-gray-300 text-sm">
+        <li class="flex gap-2">
+          <span class="text-primary font-bold">&#10003;</span>
+          <span><strong class="text-white">Headers must exactly match column names</strong>: the first row of your CSV must contain the database column names, spelled and cased exactly.</span>
+        </li>
+        <li class="flex gap-2">
+          <span class="text-primary font-bold">&#10003;</span>
+          <span><strong class="text-white">Leave the id column out</strong>: it is auto-generated. Same for created_at, updated_at, and created_by.</span>
+        </li>
+        <li class="flex gap-2">
+          <span class="text-primary font-bold">&#10003;</span>
+          <span><strong class="text-white">Date format: YYYY-MM-DD</strong>: for example, 2026-01-15. Timestamps can use YYYY-MM-DD HH:MM:SS.</span>
+        </li>
+        <li class="flex gap-2">
+          <span class="text-primary font-bold">&#10003;</span>
+          <span><strong class="text-white">Boolean values</strong>: use "true" or "false" (lowercase).</span>
+        </li>
+        <li class="flex gap-2">
+          <span class="text-primary font-bold">&#10003;</span>
+          <span><strong class="text-white">Max file size: 5 MB</strong>: for larger imports, split into multiple files.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Example CSV format -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-8">
+      <h2 class="text-xl font-semibold text-white mb-4">Example CSV Format</h2>
+      <p class="text-gray-400 text-sm mb-3">Here is what a typical CSV file looks like for a "products" table:</p>
+      <pre class="bg-gray-950 rounded-lg p-4 text-sm text-green-400 font-mono overflow-x-auto border border-gray-600">name,description,price,status,category
+Wireless Headphones,Noise-cancelling over-ear headphones,79.99,active,Electronics
+Leather Notebook,Handcrafted A5 journal with lined pages,24.50,active,Stationery
+Running Shoes,Lightweight trail running shoes,129.00,draft,Footwear</pre>
+    </div>
+
+    <!-- Available Tables + Download Templates -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-8">
+      <h2 class="text-xl font-semibold text-white mb-4">Available Tables</h2>
+      <% if (typeof tables !== 'undefined' && tables.length > 0) { %>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <% tables.forEach(function(t) { %>
+            <div class="flex items-center justify-between bg-gray-900 rounded-lg px-4 py-3 border border-gray-700">
+              <span class="text-white font-medium"><%= t %></span>
+              <a href="/admin/csv-template/<%= t %>"
+                 class="text-sm text-primary hover:text-primary/80 transition-colors font-medium">
+                Download Template &darr;
+              </a>
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <p class="text-gray-500">No importable tables found.</p>
+      <% } %>
+    </div>
+
+    <!-- Upload form -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
+      <h2 class="text-xl font-semibold text-white mb-4">Import CSV</h2>
+      <form action="/admin/csv-import" method="POST" enctype="multipart/form-data" class="space-y-5">
+        <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+
+        <div>
+          <label for="table" class="block text-sm font-medium text-gray-300 mb-1">Target Table</label>
+          <select id="table" name="table" required
+                  class="w-full bg-gray-900 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary">
+            <option value="">Select a table...</option>
+            <% if (typeof tables !== 'undefined') { tables.forEach(function(t) { %>
+              <option value="<%= t %>"><%= t %></option>
+            <% }); } %>
+          </select>
+        </div>
+
+        <div>
+          <label for="file" class="block text-sm font-medium text-gray-300 mb-1">CSV File</label>
+          <input type="file" id="file" name="file" accept=".csv" required
+                 class="w-full bg-gray-900 border border-gray-600 text-white rounded-lg px-4 py-2.5 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary/90 focus:ring-2 focus:ring-primary">
+        </div>
+
+        <button type="submit"
+                class="w-full sm:w-auto px-6 py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-800">
+          Import CSV
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,138 @@
+<!-- compose:widget hero/centered -->
+<% var _compact = (typeof compact !== 'undefined' && compact) ? true : false; %>
+<% // Guard: if eyebrow repeats the site_name or is empty, skip it; a
+   // shouting brand-name eyebrow above the hero H1 is the anti-pattern
+   // called out in the impeccable review.
+   var _siteNameUpper = (settings && settings.site_name || '').toUpperCase();
+   var _eyebrowRaw = (typeof eyebrow !== 'undefined' && eyebrow) ? String(eyebrow).trim() : '';
+   var _showEyebrow = _eyebrowRaw && _eyebrowRaw.toUpperCase() !== _siteNameUpper;
+   // One title voice per band: normalize eyebrow vs
+   // heading (lowercase, strip punctuation + leading articles); when
+   // they say the same thing, render ONE element - the caps line
+   // becomes the h1 itself (class cas-title-caps pins eyebrow sizing
+   // against family scale rules; semantics + SEO preserved).
+   function _titleNorm(t) {
+     return String(t || '').toLowerCase()
+       .replace(/[^a-z0-9\s]/g, ' ')
+       .replace(/^\s*(the|a|an)\s+/, '')
+       .replace(/\s+/g, ' ').trim();
+   }
+   var _headingForCompare = (typeof heading !== 'undefined' && heading) ? String(heading) : '';
+   var _titleCollapsed = !!(_eyebrowRaw && _headingForCompare &&
+     _titleNorm(_eyebrowRaw) === _titleNorm(_headingForCompare));
+   if (_titleCollapsed) _showEyebrow = false;
+   // Page headers drop eyebrows that merely repeat the active nav
+   // label (the nav item is underlined directly above; saying it again
+   // reads as the site stuttering).
+   if (_showEyebrow && typeof currentPath !== 'undefined' && typeof nav_items !== 'undefined' && Array.isArray(nav_items)) {
+     var _activeNav = nav_items.filter(function(n){ return n && n.href === currentPath; })[0];
+     if (_activeNav && _titleNorm(_activeNav.label) === _titleNorm(_eyebrowRaw)) _showEyebrow = false;
+   }
+   // Italic-accent support: if heading contains {word} wrap it in
+   // italic primary-color serif. Faithful-copy mode disables this so
+   // a verbatim source heading like "What I Offer {today}" does not
+   // mutate, and the heading is HTML-escaped end-to-end.
+   var _raw = (typeof heading !== 'undefined' && heading !== null) ? String(heading) : '';
+   var _faithful = (typeof body_html !== 'undefined' && body_html) || (typeof credential_lines !== 'undefined' && credential_lines);
+   // _faithful path: escape the entire heading; never emit raw HTML.
+   // {word} accent path: escape user-controlled chunks individually,
+   // then splice in the wrapper tags. Without per-chunk escaping a
+   // crafted heading like 'X{img src=x onerror=alert(1)}Y' would leak
+   // into the page (the prior version emitted _rendered through the
+   // raw EJS output tag unconditionally, which assumed _raw was
+   // trusted).
+   function _esc(s) {
+     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+   }
+   var _renderedSafe;
+   if (_faithful) {
+     _renderedSafe = _esc(_raw);
+   } else if (/\{[^}]+\}/.test(_raw)) {
+     _renderedSafe = _esc(_raw).replace(/\{([^}]+)\}/g, function(_m, inner){
+       return '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">' + inner + '</em>';
+     });
+     // The replace ran on already-escaped text, so {word} -> {word}
+     // (the curly braces survive the escape unchanged), and inner is
+     // already-escaped content. The tags are static + safe.
+   } else {
+     _renderedSafe = _esc(_raw);
+   }
+   var _dropCap = (typeof drop_cap !== 'undefined' && drop_cap) ? ' cas-drop-cap' : '';
+   // credential_lines: small stack rendered just below the H1. Used
+   // by faithful-copy hero (LMT, RYT-500 line on healer sites) and any
+   // future caller that wants a credentials shelf.
+   var _credLines = (typeof credential_lines !== 'undefined' && Array.isArray(credential_lines)) ? credential_lines.filter(function(s){return typeof s === 'string' && s.trim();}) : [];
+%>
+<section class="<%= _compact ? 'cas-page-header py-7 md:py-9' : 'pt-6 md:pt-10 pb-12 md:pb-20' %>" style="background-color: var(--color-secondary); border-bottom: 1px solid var(--color-border);">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+    <% if (_showEyebrow) { %>
+      <div class="font-body text-xs font-bold uppercase mb-4" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;"><%= _eyebrowRaw %></div>
+    <% } %>
+    <% if (_titleCollapsed && _compact) { %>
+    <h1 class="font-body cas-title-caps mb-3"><%= _headingForCompare %></h1>
+    <% } else if (_compact) { %>
+    <h1 class="font-display font-bold tracking-tight leading-tight mb-4" style="color: var(--color-foreground); letter-spacing: -0.02em; font-size: clamp(1.75rem, 3.2vw, 2.5rem);"><%- _renderedSafe %></h1>
+    <% } else { %>
+    <h1 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight mb-5" style="color: var(--color-foreground); letter-spacing: -0.02em;"><%- _renderedSafe %></h1>
+    <% } %>
+    <% if (_credLines.length > 0) { %>
+      <ul class="cas-hero-credentials" style="list-style:none; padding:0; margin:0 0 1.25rem; display:flex; flex-wrap:wrap; gap:0.5rem 1.25rem; justify-content:center; font-size:0.9rem; letter-spacing:0.04em; color: var(--color-foreground-muted);">
+        <% _credLines.forEach(function(line){ %>
+          <li><%= line %></li>
+        <% }); %>
+      </ul>
+    <% } %>
+    <% if (typeof body_html !== 'undefined' && body_html) { %>
+      <div class="font-body text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-6 cas-hero-body" style="color: var(--color-foreground);"><%- body_html %></div>
+    <% } else if (typeof description !== 'undefined' && description) { %>
+      <p class="font-body text-base md:text-lg max-w-2xl mx-auto leading-relaxed <%= _compact ? 'mb-0' : 'mb-6' %><%= _dropCap %>" style="color: var(--color-foreground-muted);"><%= description %></p>
+    <% } %>
+    <% if ((typeof cta_primary !== 'undefined' && cta_primary) || (typeof cta_secondary !== 'undefined' && cta_secondary)) { %>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <% if (typeof cta_primary !== 'undefined' && cta_primary) { %>
+          <a href="<%= cta_primary.href %>" class="inline-flex items-center justify-center font-body font-medium px-6 py-3 rounded-md transition-all hover:opacity-90 min-h-[44px]" style="background-color: var(--color-primary); color: var(--color-on-primary); gap: 8px; text-decoration: none;">
+            <span><%= cta_primary.text %></span>
+            <%- include('../utility/icon.ejs', { name: 'arrow-right', size: 16 }) %>
+          </a>
+        <% } %>
+        <% if (typeof cta_secondary !== 'undefined' && cta_secondary) { %>
+          <a href="<%= cta_secondary.href %>" class="inline-flex items-center justify-center font-body font-medium px-6 py-3 rounded-md border transition-colors min-h-[44px]" style="border-color: var(--color-primary); color: var(--color-primary); background-color: transparent; text-decoration: none;"><%= cta_secondary.text %></a>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+  <%
+    // Optional hero image under the headline. Rendered when image_url is
+    // supplied (from pages.<page>.hero.image_url or settings.hero_image_url).
+    // Uses full-bleed at a capped max-width with soft rounded corners +
+    // tinted shadow so it feels editorial, not stock-photo-grid.
+    var _imgUrl = (typeof image_url !== 'undefined' && image_url) ? image_url : '';
+  %>
+  <% if (_imgUrl) { %>
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 <%= _compact ? 'mt-8' : 'mt-16 md:mt-24' %>">
+      <div class="cas-hero-image-frame" style="position: relative; border-radius: 1rem; overflow: hidden; box-shadow: var(--cas-shadow-diffuse);">
+        <img loading="eager"
+             fetchpriority="high"
+             src="<%= _imgUrl %>"
+             alt="<%= (typeof image_alt !== 'undefined' && image_alt) ? image_alt : (settings && settings.site_name) || '' %>"
+             class="w-full h-auto block cas-img-editorial"
+             style="aspect-ratio: 16 / 9; object-fit: cover; object-position: center 20%; filter: saturate(0.85) contrast(1.02) brightness(1.02);" />
+        <!-- Dreamy-haze overlay: top-and-bottom gradient in the hero's
+             secondary color softens the image into the hero bg, plus a
+             center vignette that pulls focus to the middle. Pointer
+             events are none so it does not block anything. -->
+        <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none;
+             background:
+               linear-gradient(to bottom,
+                 color-mix(in oklab, var(--color-secondary) 50%, transparent) 0%,
+                 color-mix(in oklab, var(--color-secondary) 8%, transparent) 18%,
+                 transparent 45%,
+                 transparent 65%,
+                 color-mix(in oklab, var(--color-secondary) 20%, transparent) 100%),
+               radial-gradient(ellipse at center,
+                 transparent 35%,
+                 color-mix(in oklab, var(--color-primary) 4%, transparent) 100%);"></div>
+      </div>
+    </div>
+  <% } %>
+</section>

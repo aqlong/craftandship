@@ -1,0 +1,88 @@
+<!-- compose:widget offerings/books-grid -->
+<%
+function _booksGridAccent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); }
+// Accept books as either `items` (db:books or spec-wrapped) or `books`
+// (spec.pages.<page>.books literal). Falls back to an empty list so the
+// widget renders nothing instead of crashing on a missing local.
+var _books = [];
+if (typeof items !== 'undefined' && Array.isArray(items)) {
+  _books = items;
+} else if (typeof books !== 'undefined' && Array.isArray(books)) {
+  _books = books;
+}
+// Drop unpublished rows when the column is present. Authors keep WIPs in
+// the books table with published=FALSE; only the public listing should
+// hide them. Rows that don't carry `published` at all (spec-authored)
+// pass through.
+_books = _books.filter(function(b){
+  if (b == null) return false;
+  if (Object.prototype.hasOwnProperty.call(b, 'published')) {
+    return b.published === true || b.published === 't' || b.published === 1;
+  }
+  return true;
+});
+// Sort by sort_order ASC then id ASC.
+_books.sort(function(a, b){
+  var ao = (a && typeof a.sort_order === 'number') ? a.sort_order : 9999;
+  var bo = (b && typeof b.sort_order === 'number') ? b.sort_order : 9999;
+  if (ao !== bo) return ao - bo;
+  var ai = (a && a.id) || 0;
+  var bi = (b && b.id) || 0;
+  return ai - bi;
+});
+// Series grouping: series and standalones must be visually
+// and verbally separated. Group by series_label in first-seen order;
+// when more than one group exists, each group renders as its own
+// sub-section with the label as eyebrow (and the per-card series badge
+// suppressed). A single-member group gets the full-width
+// spotlight treatment, never a lone orphan card in a 3-up grid. With one
+// group (or no labels at all) the flat grid renders as before.
+var _groups = [];
+var _gIdx = Object.create(null); // keyed by admin-typed text: no inherited keys
+_books.forEach(function(b){
+  var k = String(b.series_label || '').trim();
+  if (!(k in _gIdx)) { _gIdx[k] = _groups.length; _groups.push({ label: k, books: [] }); }
+  _groups[_gIdx[k]].books.push(b);
+});
+var _grouped = _groups.length > 1;
+%>
+<% if (_books.length > 0) { %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <% if ((typeof heading !== 'undefined' && heading) || (typeof eyebrow !== 'undefined' && eyebrow)) { %>
+    <div class="text-center mb-10">
+      <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+        <div class="font-body text-xs font-bold uppercase mb-3" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;"><%= eyebrow %></div>
+      <% } %>
+      <% if (typeof heading !== 'undefined' && heading) { %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground); letter-spacing: -0.02em;"><%- _booksGridAccent(heading) %></h2>
+      <% } %>
+    </div>
+    <% } %>
+    <% if (!_grouped) { %>
+      <div class="cas-card-grid-3">
+        <% _books.forEach(function(book) { %>
+          <%- include('./book-card.ejs', { book: book, show_series_badge: true, spotlight: false }) %>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <% _groups.forEach(function(group, gi) { %>
+        <div class="<%= gi > 0 ? 'mt-14' : '' %>">
+          <% if (group.label) { %>
+            <div class="font-body text-xs font-bold uppercase mb-6" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;"><%= group.label %></div>
+          <% } %>
+          <% if (group.books.length === 1) { %>
+            <%- include('./book-card.ejs', { book: group.books[0], show_series_badge: false, spotlight: true }) %>
+          <% } else { %>
+            <div class="cas-card-grid-3">
+              <% group.books.forEach(function(book) { %>
+                <%- include('./book-card.ejs', { book: book, show_series_badge: false, spotlight: false }) %>
+              <% }); %>
+            </div>
+          <% } %>
+        </div>
+      <% }); %>
+    <% } %>
+  </div>
+</section>
+<% } %>

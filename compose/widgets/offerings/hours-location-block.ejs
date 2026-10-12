@@ -1,0 +1,63 @@
+<!-- compose:widget offerings/hours-location-block -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-10">
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+      </div>
+    <% } %>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="p-6 rounded-xl border" style="background-color: var(--color-surface); border-color: var(--color-border);">
+        <div class="font-body text-xs font-bold uppercase mb-3 flex items-center gap-2" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;">
+          <%- include('../utility/icon.ejs', { name: 'clock', size: 14 }) %>
+          <span>Hours</span>
+        </div>
+        <% var _hrs = (typeof hours !== 'undefined' && hours) ? hours : []; %>
+        <% if (typeof _hrs === 'string') { try { _hrs = JSON.parse(_hrs); } catch(e) { _hrs = []; } } %>
+        <% if (_hrs.length === 0) { %>
+          <p class="font-body text-sm" style="color: var(--color-foreground-muted);">Hours coming soon.</p>
+        <% } else { %>
+          <dl class="space-y-2">
+            <% _hrs.forEach(function(row) { %>
+              <div class="flex justify-between font-body text-sm" style="color: var(--color-foreground);">
+                <dt style="font-weight: 600;"><%= row.day %></dt>
+                <dd style="color: var(--color-foreground-muted);"><%= row.hours || 'Closed' %></dd>
+              </div>
+            <% }); %>
+          </dl>
+        <% } %>
+      </div>
+      <div class="p-6 rounded-xl border" style="background-color: var(--color-surface); border-color: var(--color-border);">
+        <div class="font-body text-xs font-bold uppercase mb-3 flex items-center gap-2" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;">
+          <%- include('../utility/icon.ejs', { name: 'map-pin', size: 14 }) %>
+          <span>Visit</span>
+        </div>
+        <% if (typeof address !== 'undefined' && address) { %>
+          <div class="font-body text-sm mb-3" style="color: var(--color-foreground); white-space: pre-wrap; line-height: 1.55;"><%= address %></div>
+        <% } %>
+        <% if (typeof phone !== 'undefined' && phone) { %>
+          <a href="tel:<%= phone.replace(/[^0-9+]/g, '') %>" class="font-body text-sm flex items-center gap-2 mb-1 transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">
+            <%- include('../utility/icon.ejs', { name: 'phone', size: 14 }) %>
+            <span><%= phone %></span>
+          </a>
+        <% } %>
+        <% if (typeof email !== 'undefined' && email) { %>
+          <a href="mailto:<%= email %>" class="font-body text-sm flex items-center gap-2 transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">
+            <%- include('../utility/icon.ejs', { name: 'mail', size: 14 }) %>
+            <span><%= email %></span>
+          </a>
+        <% } %>
+        <%# Only a Google Maps embed URL is framed. The site's CSP (server.js)
+            allows exactly this origin in frame-src; any other value would be
+            an arbitrary third-party page inside the site, so it is not
+            rendered at all. %>
+        <% if (typeof map_embed_url !== 'undefined' && /^https:\/\/www\.google\.com\/maps\/embed[?\/]/.test(String(map_embed_url))) { %>
+          <div class="mt-4 rounded-md overflow-hidden" style="aspect-ratio: 16/10; background-color: var(--color-background);">
+            <iframe src="<%= map_embed_url %>" title="Map" style="width: 100%; height: 100%; border: 0;" loading="lazy" referrerpolicy="no-referrer"></iframe>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

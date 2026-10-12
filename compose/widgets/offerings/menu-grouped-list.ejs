@@ -1,0 +1,77 @@
+<!-- compose:widget offerings/menu-grouped-list -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-10">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= eyebrow %></div>
+        <% } %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+      </div>
+    <% } %>
+    <%
+      // Source priority:
+      //   1. `sections`: pre-grouped {name, description, items: []}[] (legacy spec source).
+      //   2. `items`: flat row list from db:menu_items; group by section_name preserving
+      //      first-seen order so admin sort_order edits propagate without rebuild.
+      //   3. `rows`: fallback alias used by some db-driven widgets.
+      // The restaurant menu layout reads db:menu_items, so admin CRUD edits MUST
+      // reach this view (a static /menu would lose them).
+      var _sections = [];
+      if (typeof sections !== 'undefined' && sections && sections.length) {
+        _sections = sections;
+      } else {
+        var _flat = (typeof items !== 'undefined' && items) ? items
+                  : (typeof rows !== 'undefined' && rows) ? rows : [];
+        var _byName = Object.create(null); // keyed by admin-typed text: no inherited keys
+        var _order = [];
+        _flat.forEach(function(row) {
+          if (row && row.available === false) return; // honor admin "available" toggle
+          var key = row.section_name || row.section || 'Menu';
+          if (!_byName[key]) { _byName[key] = { name: key, description: '', items: [] }; _order.push(key); }
+          _byName[key].items.push(row);
+        });
+        _sections = _order.map(function(k) { return _byName[k]; });
+      }
+    %>
+    <% if (_sections.length === 0) { %>
+      <p class="font-body text-center" style="color: var(--color-foreground-muted);">Menu coming soon.</p>
+    <% } else { %>
+      <div class="space-y-10">
+        <% _sections.forEach(function(section) { %>
+          <div>
+            <h3 class="font-display text-2xl font-bold mb-2" style="color: var(--color-foreground);"><%= section.name || section.section_name || section.title %></h3>
+            <% if (section.description) { %>
+              <p class="font-body text-sm mb-5" style="color: var(--color-foreground-muted);"><%= section.description %></p>
+            <% } %>
+            <% var _items = section.items || []; %>
+            <div class="space-y-5">
+              <% _items.forEach(function(item) { %>
+                <div class="pb-5 border-b" style="border-color: var(--color-border);">
+                  <div class="flex items-baseline justify-between gap-4 mb-1">
+                    <h4 class="font-body font-semibold text-base flex-1" style="color: var(--color-foreground);">
+                      <%= item.name %>
+                      <% var _tags = item.dietary_tags || item.tags || []; if (typeof _tags === 'string') { try { _tags = JSON.parse(_tags); } catch(e) { _tags = _tags.split(',').map(function(s){return s.trim();}); } } %>
+                      <% if (_tags && _tags.length > 0) { %>
+                        <% _tags.forEach(function(t) { %>
+                          <span class="inline-block ml-1 px-2 py-1 rounded-full font-body text-xs font-medium" style="background-color: var(--color-secondary); color: var(--color-primary); letter-spacing: 0.05em; text-transform: uppercase;"><%= t %></span>
+                        <% }); %>
+                      <% } %>
+                    </h4>
+                    <% if (item.price_display || item.price) { %>
+                      <span class="font-body font-semibold text-base whitespace-nowrap price" style="color: var(--color-primary);"><%= item.price_display || ('$' + item.price) %></span>
+                    <% } %>
+                  </div>
+                  <% if (item.description) { %>
+                    <p class="font-body text-sm" style="color: var(--color-foreground-muted);"><%= item.description %></p>
+                  <% } %>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>

@@ -1,0 +1,415 @@
+<section class="max-w-[1600px] mx-auto px-3 py-4 sm:p-6 sm:pt-8">
+  <%- include("_admin-nav") %>
+  <div class="flex gap-2 mb-4 flex-wrap">
+    <form action="/admin/builds/cleanup" method="POST" data-confirm="Delete old duplicate builds? Keeps newest 2 per app name.">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <button type="submit" class="btn btn-secondary btn-sm">Clean Up Duplicates</button>
+    </form>
+    <form action="/admin/builds/cleanup-abandoned" method="POST" data-confirm="Delete abandoned intakes older than 24h?">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <button type="submit" class="btn btn-secondary btn-sm">Clean Abandoned</button>
+    </form>
+    <form action="/admin/support-kb/clear" method="POST" data-confirm="Clear all support KB cache entries?">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <button type="submit" class="btn btn-secondary btn-sm">Clear Support KB</button>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-6">
+    <a href="/admin/builds" class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4 no-underline hover:bg-surface-2 transition-colors">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Total</div>
+      <div class="text-xl sm:text-2xl font-bold text-gray-200" data-stat="total"><%= stats.total %></div>
+    </a>
+    <a href="/admin/builds?status=queued" class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4 no-underline hover:bg-surface-2 transition-colors">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Queued</div>
+      <div class="text-xl sm:text-2xl font-bold text-amber-400" data-stat="queued"><%= stats.queued %></div>
+    </a>
+    <a href="/admin/builds?status=building" class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4 no-underline hover:bg-surface-2 transition-colors">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Building</div>
+      <div class="text-xl sm:text-2xl font-bold" style="color:#A89B7A;" data-stat="building"><%= parseInt(stats.building) + parseInt(stats.testing) + parseInt(stats.deploying) %></div>
+    </a>
+    <a href="/admin/reviews" class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4 no-underline hover:bg-surface-2 transition-colors">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Pending Reviews</div>
+      <div class="text-xl sm:text-2xl font-bold text-amber-400" data-stat="pending_review_count"><%= typeof pendingReviewCount !== 'undefined' ? pendingReviewCount : 0 %></div>
+    </a>
+    <a href="/admin/builds?status=live" class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4 no-underline hover:bg-surface-2 transition-colors">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Live</div>
+      <div class="text-xl sm:text-2xl font-bold text-brand" data-stat="live"><%= stats.live %></div>
+    </a>
+    <a href="/admin/builds?status=failed" class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4 no-underline hover:bg-surface-2 transition-colors">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Failed</div>
+      <div class="text-xl sm:text-2xl font-bold text-red-400" data-stat="failed"><%= stats.failed %></div>
+    </a>
+    <a href="/admin/builds?status=abandoned" class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4 no-underline hover:bg-surface-2 transition-colors">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Abandoned</div>
+      <div class="text-xl sm:text-2xl font-bold text-amber-400" data-stat="abandoned"><%= stats.abandoned %></div>
+    </a>
+  </div>
+
+  <div class="bg-surface-3 rounded-[10px] p-3 sm:p-4 mb-6 flex gap-3 items-end flex-wrap">
+    <div>
+      <label class="text-muted text-xs block mb-1">Status</label>
+      <select data-nav-select="/admin/builds?status=" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full sm:w-auto">
+        <option value="">All</option>
+        <% ['intake','payment_pending','queued','building','testing','deploying','live','failed','abandoned'].forEach(function(s) { %>
+          <option value="<%= s %>" <% if (statusFilter === s) { %>selected<% } %>><%= s %></option>
+        <% }); %>
+      </select>
+    </div>
+  </div>
+
+  <!-- Desktop table. Wide screens (2xl, 1536+) get every column. xl screens
+       (1280-1535) hide Tier + Retries to keep the table fitting without
+       horizontal scroll. lg screens (1024-1279) additionally hide Engine. -->
+  <div class="hidden lg:block bg-surface-3 rounded-[5px] overflow-x-auto">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Project</th>
+          <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Customer</th>
+          <th class="hidden 2xl:table-cell px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Tier</th>
+          <th class="hidden xl:table-cell px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap" title="Build engine: v1 = Claude-per-build legacy, v2 = static-compose">Engine</th>
+          <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Status</th>
+          <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Error</th>
+          <th class="hidden 2xl:table-cell px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Retries</th>
+          <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Created</th>
+          <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Duration</th>
+          <th class="px-2.5 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (builds.length === 0) { %>
+          <tr><td colspan="10" class="text-center text-subtle py-8">No builds found.</td></tr>
+        <% } %>
+        <% builds.forEach(function(b) { %>
+          <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2" data-build-id="<%= b.id %>" data-status="<%= b.status %>" data-engine="<%= b.build_engine || 'v1' %>">
+            <td class="px-2.5 py-2.5"><a href="/admin/builds/<%= b.id %>" class="text-gray-200 hover:text-brand no-underline"><div class="max-w-[180px] overflow-hidden text-ellipsis whitespace-nowrap" title="<%= b.app_name || '(unnamed)' %>"><%= b.app_name || '(unnamed)' %></div></a></td>
+            <td class="px-2.5 py-2.5 text-gray-300"><div class="max-w-[200px]"><div class="overflow-hidden text-ellipsis whitespace-nowrap" title="<%= b.customer_email %>"><%= b.customer_email %></div><div class="text-subtle text-xs overflow-hidden text-ellipsis whitespace-nowrap" title="<%= b.customer_name || '' %>"><%= b.customer_name || '' %></div></div></td>
+            <td class="hidden 2xl:table-cell px-2.5 py-2.5"><span class="admin-badge admin-badge-<%= b.tier %>"><%= b.tier === 'build' ? 'Starter' : b.tier === 'grow' ? 'Growth' : 'Scale' %></span></td>
+            <td class="hidden xl:table-cell px-2.5 py-2.5" data-cell="engine"><span class="admin-badge admin-badge-engine-<%= b.build_engine || 'v1' %>" title="<%= (b.build_engine === 'v2') ? 'Static-compose engine (deterministic)' : 'Claude-per-build legacy' %>"><%= b.build_engine || 'v1' %></span></td>
+            <td class="px-2.5 py-2.5" data-cell="status"><span class="admin-badge admin-badge-<%= b.status %>"><%= b.status %></span></td>
+            <td class="px-2.5 py-2.5 text-red-300 text-xs" data-cell="error"><div class="max-w-[180px] overflow-hidden text-ellipsis whitespace-nowrap" title="<%= b.error_message || '' %>"><%= b.error_message || '' %></div></td>
+            <td class="hidden 2xl:table-cell px-2.5 py-2.5 text-gray-300"><%= b.retry_count || 0 %></td>
+            <td class="px-2.5 py-2.5 text-subtle text-xs whitespace-nowrap"><span data-ts="<%= new Date(b.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(b.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></td>
+            <td class="px-2.5 py-2.5 text-subtle text-xs whitespace-nowrap" data-cell="duration"><% if (b.started_at && b.completed_at) { %><%= Math.round((new Date(b.completed_at) - new Date(b.started_at)) / 60000) %> min<% } else if (b.started_at && ['building', 'testing', 'deploying'].includes(b.status)) { %><span class="text-yellow-400"><%= Math.round((Date.now() - new Date(b.started_at)) / 60000) %> min</span><% } else { %>&nbsp;&middot;&nbsp;<% } %></td>
+            <td class="px-4 py-2.5" data-cell="actions">
+              <div class="flex gap-1.5">
+                <% if (b.status === 'failed') { %>
+                  <form action="/admin/builds/<%= b.id %>/reset" method="POST" class="inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" class="btn btn-primary btn-sm">Reset</button>
+                  </form>
+                <% } %>
+                <% if (['queued', 'building', 'testing', 'deploying'].includes(b.status)) { %>
+                  <form action="/admin/builds/<%= b.id %>/kill" method="POST" class="inline" data-confirm="Force-kill this build? The build process will be immediately stopped and marked as failed.">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" class="btn btn-danger btn-sm">Kill</button>
+                  </form>
+                <% } %>
+                <form action="/admin/builds/<%= b.id %>/delete" method="POST" class="inline" data-confirm-typed="<%= b.app_name || b.id %>">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button type="submit" class="btn btn-ghost btn-sm text-red-400" title="<%= (b.railway_project_id && railwayWritesEnabled) ? 'Delete CAS row + Railway project' : 'Delete CAS row' %>">Del</button>
+                </form>
+                <% if (b.live_url) { %>
+                  <a href="<%= httpUrl(b.live_url) %>" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 bg-surface-2 text-gray-200 border-none rounded text-xs font-semibold no-underline hover:bg-surface-2">Visit</a>
+                <% } else if (b.preview_url) { %>
+                  <% var _isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(b.preview_url); %>
+                  <a href="<%= httpUrl(b.preview_url) %>" target="_blank" rel="noopener noreferrer"
+                     class="px-2.5 py-1 rounded text-xs font-semibold no-underline inline-flex items-center gap-1"
+                     style="background:<%= _isLocal ? '#5a80c0' : '#4b6bbf' %>;color:white;"
+                     title="<%= b.preview_url %>">
+                    Preview<% if (_isLocal) { %> <span class="px-1 py-0 text-[0.55rem] rounded bg-black/20">LOCAL</span><% } %>
+                  </a>
+                <% } %>
+                <a href="/builds/<%= b.id %>" class="px-2.5 py-1 bg-surface-2 text-gray-200 border-none rounded text-xs font-semibold no-underline hover:bg-surface-2" title="Open customer-facing build status">View</a>
+              </div>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile/tablet card view -->
+  <div class="lg:hidden space-y-3">
+    <% if (builds.length === 0) { %>
+      <div class="text-center text-subtle py-8">No builds found.</div>
+    <% } %>
+    <% builds.forEach(function(b) { %>
+      <div class="bg-surface rounded-lg p-4" data-build-id="<%= b.id %>" data-status="<%= b.status %>">
+        <div class="flex justify-between items-start mb-2">
+          <span class="text-gray-200 font-semibold text-sm"><%= b.app_name || '(unnamed)' %></span>
+          <span data-cell="status"><span class="admin-badge admin-badge-<%= b.status %>"><%= b.status %></span></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Customer</span>
+          <span class="text-gray-300 text-right"><%= b.customer_email %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Tier</span>
+          <span><span class="admin-badge admin-badge-<%= b.tier %>"><%= b.tier === 'build' ? 'Starter' : b.tier === 'grow' ? 'Growth' : 'Scale' %></span></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Created</span>
+          <span class="text-muted"><span data-ts="<%= new Date(b.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(b.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Duration</span>
+          <span class="text-muted" data-cell="duration"><% if (b.started_at && b.completed_at) { %><%= Math.round((new Date(b.completed_at) - new Date(b.started_at)) / 60000) %> min<% } else if (b.started_at && ['building', 'testing', 'deploying'].includes(b.status)) { %><span class="text-yellow-400"><%= Math.round((Date.now() - new Date(b.started_at)) / 60000) %> min</span><% } else { %>-<% } %></span>
+        </div>
+        <% if (b.retry_count > 0) { %>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Retries</span>
+          <span class="text-gray-300"><%= b.retry_count %></span>
+        </div>
+        <% } %>
+        <% if (b.error_message) { %>
+        <div class="text-xs mt-2 text-red-300 break-words" data-cell="error" title="<%= b.error_message %>"><%= b.error_message.length > 120 ? b.error_message.slice(0, 120) + '...' : b.error_message %></div>
+        <% } %>
+        <div class="flex gap-1.5 mt-3 flex-wrap" data-cell="actions">
+          <% if (b.status === 'failed') { %>
+            <form action="/admin/builds/<%= b.id %>/reset" method="POST" class="inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn btn-primary btn-sm">Reset</button>
+            </form>
+          <% } %>
+          <% if (['queued', 'building', 'testing', 'deploying'].includes(b.status)) { %>
+            <form action="/admin/builds/<%= b.id %>/kill" method="POST" class="inline" data-confirm="Force-kill this build? The build process will be immediately stopped and marked as failed.">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn btn-danger btn-sm">Kill</button>
+            </form>
+          <% } %>
+          <form action="/admin/builds/<%= b.id %>/delete" method="POST" class="inline" data-confirm-typed="<%= b.app_name || b.id %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button type="submit" class="btn btn-ghost btn-sm text-red-400" title="<%= (b.railway_project_id && railwayWritesEnabled) ? 'Delete CAS row + Railway project' : 'Delete CAS row' %>">Del</button>
+          </form>
+          <% if (b.live_url) { %>
+            <a href="<%= httpUrl(b.live_url) %>" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 min-h-[36px] flex items-center bg-surface-2 text-gray-200 border-none rounded text-xs font-semibold no-underline hover:bg-surface-2">Visit</a>
+          <% } else if (b.preview_url) { %>
+            <% var _isLocalM = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(b.preview_url); %>
+            <a href="<%= httpUrl(b.preview_url) %>" target="_blank" rel="noopener noreferrer"
+               class="px-2.5 py-1.5 min-h-[36px] flex items-center gap-1 rounded text-xs font-semibold no-underline"
+               style="background:<%= _isLocalM ? '#5a80c0' : '#4b6bbf' %>;color:white;"
+               title="<%= b.preview_url %>">
+              Preview<% if (_isLocalM) { %> <span class="px-1 py-0 text-[0.55rem] rounded bg-black/20">LOCAL</span><% } %>
+            </a>
+          <% } %>
+          <a href="/builds/<%= b.id %>" class="px-2.5 py-1.5 min-h-[36px] flex items-center bg-surface-2 text-gray-200 border-none rounded text-xs font-semibold no-underline hover:bg-surface-2">View</a>
+          <a href="/admin/builds/<%= b.id %>" class="px-2.5 py-1.5 min-h-[36px] flex items-center bg-surface-2 text-gray-200 border-none rounded text-xs font-semibold no-underline hover:bg-surface-2">Detail</a>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</section>
+
+<script nonce="<%= cspNonce %>">
+(function() {
+  var ACTIVE = ['queued', 'building', 'testing', 'deploying'];
+  var statusFilter = <%- safeJSON(statusFilter || '') %>;
+  var csrfVal = <%- safeJSON(csrfToken) %>;
+  var POLL_INTERVAL = 20000;
+  var POLL_ACTIVE = 5000;
+
+  // Rows are built as HTML strings from /admin/api/builds. Customer names,
+  // emails, app names and error messages are text other people wrote, so every
+  // value goes through esc() before it is concatenated, and URLs through
+  // safeUrl(), which also refuses anything that is not http(s).
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function safeUrl(value) {
+    var url = String(value == null ? '' : value);
+    return /^https?:\/\//i.test(url) ? esc(url) : '#';
+  }
+
+  function fmtTier(tier) {
+    if (tier === 'build') return 'Starter';
+    if (tier === 'grow') return 'Growth';
+    return 'Scale';
+  }
+
+  function fmtDuration(b) {
+    if (b.started_at && b.completed_at) {
+      return Math.round((new Date(b.completed_at) - new Date(b.started_at)) / 60000) + ' min';
+    }
+    if (b.started_at && ACTIVE.indexOf(b.status) !== -1) {
+      return '<span class="text-yellow-400">' + Math.round((Date.now() - new Date(b.started_at)) / 60000) + ' min</span>';
+    }
+    return '-';
+  }
+
+  function fmtCreated(b) {
+    try { return new Date(b.created_at).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; } catch(e) { return ''; }
+  }
+
+  function actionButtons(b) {
+    var html = '<div class="flex gap-1.5">';
+    if (b.status === 'failed') {
+      html += '<form action="/admin/builds/' + esc(b.id) + '/reset" method="POST" class="inline">' +
+        '<input type="hidden" name="_csrf" value="' + esc(csrfVal) + '" />' +
+        '<button type="submit" class="btn btn-primary btn-sm">Reset</button>' +
+        '</form>';
+    }
+    if (ACTIVE.indexOf(b.status) !== -1) {
+      html += '<form action="/admin/builds/' + esc(b.id) + '/kill" method="POST" class="inline" data-confirm="Force-kill this build? The build process will be immediately stopped and marked as failed.">' +
+        '<input type="hidden" name="_csrf" value="' + esc(csrfVal) + '" />' +
+        '<button type="submit" class="btn btn-danger btn-sm">Kill</button>' +
+        '</form>';
+    }
+    var delTyped = esc(b.app_name || b.id || '');
+    html += '<form action="/admin/builds/' + esc(b.id) + '/delete" method="POST" class="inline" data-confirm-typed="' + delTyped + '">' +
+      '<input type="hidden" name="_csrf" value="' + esc(csrfVal) + '" />' +
+      '<button type="submit" class="btn btn-ghost btn-sm text-red-400" title="Delete CAS build">Del</button>' +
+      '</form>';
+    if (b.live_url) {
+      html += '<a href="' + safeUrl(b.live_url) + '" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 bg-surface-2 text-gray-200 border-none rounded text-xs font-semibold no-underline hover:bg-surface-2">Visit</a>';
+    } else if (b.preview_url) {
+      var isLocalP = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(b.preview_url);
+      html += '<a href="' + safeUrl(b.preview_url) + '" target="_blank" rel="noopener noreferrer" ' +
+        'class="px-2.5 py-1 rounded text-xs font-semibold no-underline inline-flex items-center gap-1" ' +
+        'style="background:' + (isLocalP ? '#5a80c0' : '#4b6bbf') + ';color:white;" ' +
+        'title="' + esc(b.preview_url) + '">Preview' +
+        (isLocalP ? ' <span class="px-1 py-0 text-[0.55rem] rounded bg-black/20">LOCAL</span>' : '') +
+        '</a>';
+    }
+    html += '<a href="/builds/' + esc(b.id) + '" class="px-2.5 py-1 bg-surface-2 text-gray-200 border-none rounded text-xs font-semibold no-underline hover:bg-surface-2">View</a>';
+    html += '<a href="/admin/builds/' + esc(b.id) + '" class="px-2.5 py-1 bg-surface-2 text-gray-200 border-none rounded text-xs font-semibold no-underline hover:bg-surface-2">Detail</a>';
+    html += '</div>';
+    return html;
+  }
+
+  function buildRow(b) {
+    // Server-rendered row (admin-builds.ejs:85-89) wraps the app_name
+    // in <a href="/admin/builds/{id}"> and includes a hidden xl:table-cell
+    // <td data-cell="engine"> with an engine badge. The JS appender
+    // here MUST mirror that structure or hot-swapped rows lose the
+    // detail link and the Engine column shifts/disappears at xl+ width.
+    var tr = document.createElement('tr');
+    tr.className = 'border-b border-surface-3 last:border-b-0 hover:bg-surface-2';
+    tr.setAttribute('data-build-id', b.id);
+    tr.setAttribute('data-status', b.status);
+    tr.setAttribute('data-engine', b.build_engine || 'v2');
+    var appName = (b.app_name || '(unnamed)');
+    var safeAppName = esc(appName);
+    var engine = esc(b.build_engine || 'v2');
+    var engineTitle = engine === 'v2' ? 'Static-compose engine (deterministic)' : 'Claude-per-build legacy';
+    tr.innerHTML =
+      '<td class="px-4 py-2.5"><a href="/admin/builds/' + esc(b.id) + '" class="text-gray-200 hover:text-brand no-underline"><div class="max-w-[180px] overflow-hidden text-ellipsis whitespace-nowrap" title="' + safeAppName + '">' + safeAppName + '</div></a></td>' +
+      '<td class="px-4 py-2.5 text-gray-300">' + esc(b.customer_email) + '<br><span class="text-subtle text-xs">' + esc(b.customer_name) + '</span></td>' +
+      '<td class="hidden 2xl:table-cell px-4 py-2.5"><span class="admin-badge admin-badge-' + esc(b.tier) + '">' + fmtTier(b.tier) + '</span></td>' +
+      '<td class="hidden xl:table-cell px-4 py-2.5" data-cell="engine"><span class="admin-badge admin-badge-engine-' + engine + '" title="' + engineTitle + '">' + engine + '</span></td>' +
+      '<td class="px-4 py-2.5" data-cell="status"><span class="admin-badge admin-badge-' + esc(b.status) + '">' + esc(b.status) + '</span></td>' +
+      '<td class="px-4 py-2.5 text-red-300 text-xs max-w-[250px] overflow-hidden text-ellipsis whitespace-nowrap" title="' + esc(b.error_message) + '" data-cell="error">' + esc(b.error_message) + '</td>' +
+      '<td class="hidden 2xl:table-cell px-4 py-2.5 text-gray-300">' + (Number(b.retry_count) || 0) + '</td>' +
+      '<td class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap">' + esc(fmtCreated(b)) + '</td>' +
+      '<td class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap" data-cell="duration">' + fmtDuration(b) + '</td>' +
+      '<td class="px-4 py-2.5" data-cell="actions">' + actionButtons(b) + '</td>';
+    return tr;
+  }
+
+  function updateStats(stats) {
+    var active = parseInt(stats.building || 0) + parseInt(stats.testing || 0) + parseInt(stats.deploying || 0);
+    document.querySelectorAll('[data-stat]').forEach(function(el) {
+      var key = el.getAttribute('data-stat');
+      // pending_review_count is owned by pollPendingReviews(); /admin/api/builds
+      // does not return it, so skip here to avoid clobbering with 0.
+      if (key === 'pending_review_count') return;
+      var val = key === 'building' ? active : (stats[key] || 0);
+      if (el.textContent !== String(val)) el.textContent = val;
+    });
+  }
+
+  function pollPendingReviews() {
+    fetch('/admin/api/reviews', { credentials: 'same-origin' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data) return;
+        var el = document.querySelector('[data-stat="pending_review_count"]');
+        if (el) {
+          var val = String(data.pending_count || 0);
+          if (el.textContent !== val) el.textContent = val;
+        }
+      })
+      .catch(function() {});
+  }
+
+  function updateRows(builds) {
+    var tbody = document.querySelector('tbody');
+    if (!tbody) return;
+
+    // Remove "No builds found" placeholder if builds arrived
+    var placeholder = tbody.querySelector('tr:not([data-build-id])');
+    if (placeholder && builds.length > 0) placeholder.remove();
+
+    var existing = {};
+    tbody.querySelectorAll('tr[data-build-id]').forEach(function(tr) {
+      existing[tr.getAttribute('data-build-id')] = tr;
+    });
+
+    // Track which IDs are in the response to detect removed builds
+    var responseIds = {};
+    builds.forEach(function(b) { responseIds[b.id] = true; });
+
+    // Update existing rows or insert new ones
+    builds.forEach(function(b, idx) {
+      var tr = existing[b.id];
+      if (!tr) {
+        // New build: insert at the correct position (builds are sorted by created_at DESC)
+        var newTr = buildRow(b);
+        var refRow = tbody.children[idx];
+        if (refRow) {
+          tbody.insertBefore(newTr, refRow);
+        } else {
+          tbody.appendChild(newTr);
+        }
+        return;
+      }
+
+      // Always update active builds (duration ticks), update others only on change
+      var oldStatus = tr.getAttribute('data-status');
+      var isActive = ACTIVE.indexOf(b.status) !== -1;
+      var statusChanged = oldStatus !== b.status;
+      if (!statusChanged && !isActive) return;
+
+      tr.setAttribute('data-status', b.status);
+      var statusTd = tr.querySelector('[data-cell="status"]');
+      if (statusTd) statusTd.innerHTML = '<span class="admin-badge admin-badge-' + esc(b.status) + '">' + esc(b.status) + '</span>';
+      var errTd = tr.querySelector('[data-cell="error"]');
+      if (errTd) {
+        errTd.textContent = b.error_message || '';
+        errTd.title = b.error_message || '';
+      }
+      var durTd = tr.querySelector('[data-cell="duration"]');
+      if (durTd) durTd.innerHTML = fmtDuration(b);
+      var actTd = tr.querySelector('[data-cell="actions"]');
+      if (statusChanged && actTd) actTd.innerHTML = actionButtons(b);
+    });
+  }
+
+  function poll() {
+    var url = '/admin/api/builds' + (statusFilter ? '?status=' + encodeURIComponent(statusFilter) : '');
+    fetch(url, { credentials: 'same-origin' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data) return schedule();
+        updateStats(data.stats);
+        updateRows(data.builds);
+        pollPendingReviews();
+        schedule();
+      })
+      .catch(function() { schedule(); });
+  }
+
+  function schedule() {
+    var hasActiveBuilds = Array.from(document.querySelectorAll('tr[data-status]')).some(function(tr) {
+      return ACTIVE.indexOf(tr.getAttribute('data-status')) !== -1;
+    });
+    setTimeout(poll, hasActiveBuilds ? POLL_ACTIVE : POLL_INTERVAL);
+  }
+
+  // Always start polling
+  schedule();
+})();
+</script>

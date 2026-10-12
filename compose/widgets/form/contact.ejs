@@ -1,0 +1,186 @@
+<!-- compose:widget form/contact - uses form/field.ejs partial so all
+     inputs inherit validation (pattern/inputmode/autocomplete/maxlength)
+     from compose/data/field-types.json. Customize by editing the registry,
+     NOT by hand-coding attrs here.
+
+     The inputs are the contact model's fields: the build passes them as
+     `form_fields` ({name, field_type, label, required, ...}), the same
+     list POST /contact validates and inserts. Without that parameter the
+     widget renders the default contact shape. -->
+<% var _v = (typeof submitted !== 'undefined' && submitted) ? submitted : {}; %>
+<% var _heading = (typeof heading !== 'undefined' && heading) ? heading : 'Send a Message'; %>
+<% var _fields = (typeof form_fields !== 'undefined' && Array.isArray(form_fields) && form_fields.length > 0) ? form_fields : [
+     { name: 'name', field_type: 'text', label: 'Name', required: true },
+     { name: 'email', field_type: 'email', label: 'Email', required: true },
+     { name: 'phone', field_type: 'phone_us', label: 'Phone' },
+     { name: 'service_interest', field_type: 'text', label: 'Service Interest' },
+     { name: 'message', field_type: 'long_text', label: 'Message', required: true, rows: 5 }
+   ];
+   var _serviceOptions = (typeof service_options !== 'undefined' && service_options) ? service_options : [];
+%>
+<section style="background-color: var(--color-background); padding-block: clamp(3rem, 7vw, 6rem);">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-8">
+    <div class="md:col-span-3">
+      <form action="/contact" method="POST" class="rounded-xl border cas-form" style="background-color: var(--color-surface); border-color: var(--color-border); padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem;">
+        <h2 class="font-display text-2xl font-bold" style="color: var(--color-foreground); margin: 0;"><%= _heading %></h2>
+        <% if (locals.flashSuccess) { %>
+          <div class="bg-green-50 text-green-800 border border-green-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= flashSuccess %></div>
+        <% } %>
+        <% if (locals.flashError) { %>
+          <div class="bg-red-50 text-red-800 border border-red-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= flashError %></div>
+        <% } %>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <% _fields.forEach(function(f) {
+          var _opts = { name: f.name, field_type: f.field_type || 'text', label: f.label || f.name, value: _v[f.name], required: !!f.required };
+          if (f.name === 'service_interest') {
+            // The service picker is a select fed by service_options, and
+            // is left out when there is nothing to pick from.
+            if (_serviceOptions.length === 0) return;
+            _opts.field_type = 'select';
+            _opts.value = _v.service_interest || (typeof preselected_service !== 'undefined' && preselected_service) || '';
+            _opts.options = _serviceOptions;
+            _opts.placeholder = 'Select an option...';
+          } else {
+            if (f.options) _opts.options = f.options;
+            if (f.help) _opts.help = f.help;
+            else if (f.name === 'phone' && !f.required) _opts.help = 'Optional.';
+            if (f.placeholder) _opts.placeholder = f.placeholder;
+            else if (f.name === 'message') _opts.placeholder = 'How can I support you?';
+            if (f.rows) _opts.rows = f.rows;
+          }
+        %>
+          <%- include('./field.ejs', _opts) %>
+        <% }); %>
+        <button type="submit" class="w-full font-body font-medium px-6 py-3 rounded-md transition-all hover:opacity-90 min-h-[44px] inline-flex items-center justify-center" style="background-color: var(--color-primary); color: var(--color-on-primary); gap: 8px;">
+          <span>Send Message</span>
+          <%- include('../utility/icon.ejs', { name: 'arrow-right', size: 16 }) %>
+        </button>
+      </form>
+    </div>
+    <div class="md:col-span-2" style="display: flex; flex-direction: column; gap: 1.25rem;">
+      <!-- Direct Contact: letterpress card. Hairline-rule eyebrow with the
+           label, then one row per channel sharing a common baseline grid
+           and a hairline divider; tighter rhythm than the previous card. -->
+      <div class="cas-contact-card">
+        <div class="cas-contact-eyebrow"><span>Direct Contact</span></div>
+        <ul class="cas-contact-list">
+          <% if (settings.contact_email) { %>
+            <li class="cas-contact-row">
+              <span class="cas-contact-icon" aria-hidden="true"><%- include('../utility/icon.ejs', { name: 'mail', size: 14 }) %></span>
+              <a href="mailto:<%= settings.contact_email %>" class="cas-contact-link cas-wrap-anywhere"><%= settings.contact_email %></a>
+            </li>
+          <% } %>
+          <% if (settings.contact_phone) { %>
+            <li class="cas-contact-row">
+              <span class="cas-contact-icon" aria-hidden="true"><%- include('../utility/icon.ejs', { name: 'phone', size: 14 }) %></span>
+              <a href="tel:<%= settings.contact_phone.replace(/[^0-9+]/g, '') %>" class="cas-contact-link"><%= settings.contact_phone %></a>
+            </li>
+          <% } %>
+          <% if (settings.contact_address) { %>
+            <li class="cas-contact-row cas-contact-row--multiline">
+              <span class="cas-contact-icon" aria-hidden="true"><%- include('../utility/icon.ejs', { name: 'map-pin', size: 14 }) %></span>
+              <span class="cas-contact-text"><%= settings.contact_address %></span>
+            </li>
+          <% } %>
+        </ul>
+      </div>
+      <% if (settings.instagram_url || settings.facebook_url || settings.twitter_url || settings.linkedin_url || settings.tiktok_url || settings.youtube_url || settings.contact_email || settings.contact_phone || settings.venmo_handle) { %>
+        <div class="cas-contact-card">
+          <!-- Two label spans; CSS hides one based on body's cas-template-*
+               class so minimal/letterpress families read "Elsewhere" while
+               every other family keeps "Social". -->
+          <div class="cas-contact-eyebrow">
+            <span class="cas-contact-eyebrow-label-default">Social</span>
+            <span class="cas-contact-eyebrow-label-letterpress">Elsewhere</span>
+          </div>
+          <div class="cas-contact-social">
+            <% if (settings.instagram_url) { %><a href="<%= settings.instagram_url %>" target="_blank" rel="noopener" aria-label="Instagram"><%- include('../utility/icon.ejs', { name: 'instagram', size: 18 }) %></a><% } %>
+            <% if (settings.tiktok_url) { %><a href="<%= settings.tiktok_url %>" target="_blank" rel="noopener" aria-label="TikTok"><%- include('../utility/icon.ejs', { name: 'tiktok', size: 18 }) %></a><% } %>
+            <% if (settings.youtube_url) { %><a href="<%= settings.youtube_url %>" target="_blank" rel="noopener" aria-label="YouTube"><%- include('../utility/icon.ejs', { name: 'youtube', size: 18 }) %></a><% } %>
+            <% if (settings.facebook_url) { %><a href="<%= settings.facebook_url %>" target="_blank" rel="noopener" aria-label="Facebook"><%- include('../utility/icon.ejs', { name: 'facebook', size: 18 }) %></a><% } %>
+            <% if (settings.twitter_url) { %><a href="<%= settings.twitter_url %>" target="_blank" rel="noopener" aria-label="Twitter"><%- include('../utility/icon.ejs', { name: 'twitter', size: 18 }) %></a><% } %>
+            <% if (settings.linkedin_url) { %><a href="<%= settings.linkedin_url %>" target="_blank" rel="noopener" aria-label="LinkedIn"><%- include('../utility/icon.ejs', { name: 'linkedin', size: 18 }) %></a><% } %>
+            <% if (settings.contact_email) { %><a href="mailto:<%= settings.contact_email %>" aria-label="Email"><%- include('../utility/icon.ejs', { name: 'mail', size: 18 }) %></a><% } %>
+            <% if (settings.contact_phone) { %><a href="tel:<%= settings.contact_phone.replace(/[^0-9+]/g, '') %>" aria-label="Phone"><%- include('../utility/icon.ejs', { name: 'phone', size: 18 }) %></a><% } %>
+            <% if (settings.venmo_handle) { %><a href="https://venmo.com/u/<%= settings.venmo_handle.replace(/^@/, '').trim() %>" target="_blank" rel="noopener" aria-label="Venmo"><%- include('../utility/icon.ejs', { name: 'venmo', size: 18 }) %></a><% } %>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cas-contact-card {
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 1.5rem 1.5rem 1.25rem;
+  }
+  .cas-contact-eyebrow {
+    display: flex; align-items: center; gap: 0.75rem;
+    font-family: var(--font-body, 'Public Sans', system-ui, sans-serif);
+    font-size: 0.65rem; font-weight: 500;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--color-foreground-muted);
+    margin: 0 0 0.875rem;
+  }
+  .cas-contact-eyebrow::after {
+    content: ""; flex: 1; height: 1px; background-color: var(--color-border);
+  }
+  .cas-contact-eyebrow-label-letterpress { display: none; }
+  body.cas-template-editorial-statement .cas-contact-eyebrow-label-default,
+  body.cas-template-editorial-sanctuary .cas-contact-eyebrow-label-default,
+  body.cas-template-simple-statement .cas-contact-eyebrow-label-default { display: none; }
+  body.cas-template-editorial-statement .cas-contact-eyebrow-label-letterpress,
+  body.cas-template-editorial-sanctuary .cas-contact-eyebrow-label-letterpress,
+  body.cas-template-simple-statement .cas-contact-eyebrow-label-letterpress { display: inline; }
+  .cas-contact-list { list-style: none; margin: 0; padding: 0; }
+  .cas-contact-row {
+    display: flex; align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.625rem 0;
+    border-top: 1px solid var(--color-border);
+    font-family: var(--font-body, 'Public Sans', system-ui, sans-serif);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .cas-contact-row:first-child { border-top: 0; padding-top: 0.25rem; }
+  .cas-contact-row:last-child { padding-bottom: 0.25rem; }
+  .cas-contact-row--multiline { align-items: flex-start; }
+  .cas-contact-row--multiline .cas-contact-icon { transform: translateY(0.2em); }
+  .cas-contact-icon {
+    flex: 0 0 16px;
+    width: 16px; height: 16px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--color-foreground-muted);
+  }
+  .cas-contact-icon svg { width: 14px; height: 14px; }
+  .cas-contact-link {
+    color: var(--color-foreground);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 200ms ease;
+    word-break: break-word;
+  }
+  .cas-contact-link:hover, .cas-contact-link:focus-visible {
+    border-bottom-color: var(--color-foreground);
+  }
+  .cas-contact-text {
+    color: var(--color-foreground);
+    word-break: break-word;
+  }
+  .cas-contact-social {
+    display: flex; align-items: center; gap: 1.25rem;
+    padding: 0.25rem 0;
+  }
+  .cas-contact-social a {
+    color: var(--color-foreground-muted);
+    transition: color 200ms ease, transform 200ms ease;
+    display: inline-flex; padding: 2px;
+  }
+  .cas-contact-social a:hover, .cas-contact-social a:focus-visible {
+    color: var(--color-foreground);
+    transform: translateY(-1px);
+  }
+</style>

@@ -1,0 +1,30 @@
+<%
+  var unsubSuccess = typeof success !== 'undefined' && success;
+  var unsubError = typeof error !== 'undefined' ? error : null;
+%>
+
+<section style="padding:64px 0 96px;">
+  <div class="max-site" style="max-width:560px;">
+    <div style="background:var(--color-companion-paper); padding:48px; box-shadow:var(--shadow-letter); border-radius: 5px;">
+      <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:10px;">Email,</span>
+      <h1 class="display" style="font-size:36px; line-height:1.05; margin:0 0 18px; letter-spacing:-0.012em;">Unsubscribed.</h1>
+
+      <% if (unsubSuccess) { %>
+        <p style="font-size:17px; color:var(--color-ink-soft); line-height:1.65; margin:0 0 14px;">
+          You're off the list. We won't email you again.
+        </p>
+        <p style="font-family:var(--font-display); font-style:italic; font-size:17px; color:var(--color-ink-faded); line-height:1.5; margin:0;">
+          Changed your mind? You can opt back in from your account.
+        </p>
+      <% } else { %>
+        <p style="padding:14px 18px; background:#FBE7DC; border:1px solid var(--color-clay); border-radius: 5px; font-family:var(--font-display); font-style:italic; color:var(--color-ink); font-size:17px; margin:0;" role="alert">
+          <%= unsubError || 'We couldn\'t process that. The link may have expired.' %>
+        </p>
+      <% } %>
+
+      <div style="margin-top:28px; padding-top:18px; border-top:1px dashed var(--color-rule); font-family:var(--font-display); font-style:italic; font-size:15px; color:var(--color-ink-faded);">
+        <a href="/" style="color:var(--color-ink-soft);">Back home</a>
+      </div>
+    </div>
+  </div>
+</section>

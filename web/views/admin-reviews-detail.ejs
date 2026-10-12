@@ -1,0 +1,255 @@
+<section class="max-w-[1100px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <div class="mb-4">
+    <a href="/admin/reviews" class="text-subtle text-sm hover:text-gray-300">&larr; Back to review queue</a>
+  </div>
+
+  <h1 class="text-2xl font-bold text-gray-100 mb-2"><%= build.app_name || build.id %></h1>
+  <div class="text-sm text-subtle mb-6">
+    <% if (customer && customer.email) { %>
+      Customer: <%= customer.email %><% if (customer.name) { %> (<%= customer.name %>)<% } %>
+    <% } else { %>
+      Customer: -
+    <% } %>
+  </div>
+
+  <!-- Panel 1: Build metadata -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Build Status</div>
+      <div class="text-sm font-bold text-gray-200"><%= build.status %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Review Status</div>
+      <div class="text-sm font-bold text-gray-200"><%= build.review_status || 'none' %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Tier</div>
+      <div class="text-sm font-bold text-gray-200"><%= build.tier || '-' %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Created</div>
+      <div class="text-sm font-bold text-gray-200">
+        <% if (build.created_at) { %>
+          <%= new Date(build.created_at).toISOString().slice(0, 16).replace('T', ' ') %>
+        <% } else { %>-<% } %>
+      </div>
+    </div>
+  </div>
+
+  <% if (build.reviewed_at || build.reviewed_by) { %>
+    <div class="bg-surface-3 rounded-[10px] px-4 py-3 mb-6 text-xs text-subtle">
+      Last reviewed
+      <% if (build.reviewed_at) { %> at <span class="text-gray-300"><%= new Date(build.reviewed_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span><% } %>
+      <% if (build.reviewed_by) { %> by <span class="text-gray-300"><%= build.reviewed_by %></span><% } %>
+    </div>
+  <% } %>
+
+  <%# The build's warnings, from the worker's lint entries in build_logs
+      (routes/admin.ts, readBuildWarningLog). Three boxes, never mixed:
+      what the build's own checks failed on, what the build engine wrote
+      about its own decisions, and text the spec carried. The last is
+      whatever the spec's author wrote, so it has its own box, its own
+      label and no reason/detail styling: it cannot pass for an engine
+      warning. Every value is printed with the escaping tag. %>
+  <% var bw = locals.buildWarnings || { engine: [], fromSpec: [], lintFailures: [], truncated: false }; %>
+  <% if (bw.truncated) { %>
+    <div id="build-warnings-truncated" class="rounded-[10px] p-4 mb-6 border text-xs" style="background:rgba(248,113,113,0.08); border-color:rgba(248,113,113,0.45); color:#fca5a5;">
+      This build has <%= locals.buildWarningEntryLimit %> or more warning entries in its log, which is as many as this page reads. The lists below may be incomplete: translation-warnings.txt in the build's artifact has every warning.
+    </div>
+  <% } %>
+  <% if (bw.lintFailures.length > 0) { %>
+    <div id="build-lint-failures" class="rounded-[10px] p-4 mb-6 border" style="background:rgba(248,113,113,0.08); border-color:rgba(248,113,113,0.45);">
+      <div class="text-sm font-semibold mb-1" style="color:#fca5a5;">The build's own checks failed on <%= bw.lintFailures.length %> point<%= bw.lintFailures.length === 1 ? '' : 's' %></div>
+      <div class="text-xs text-gray-300 mb-3">Written by the worker's lint of the built files. A line here that says warnings are missing from the log means the lists below are incomplete.</div>
+      <ul class="space-y-1.5 text-xs text-gray-300 font-mono">
+        <% bw.lintFailures.forEach(function(line) { %>
+          <li class="leading-relaxed" style="overflow-wrap:anywhere;"><%= line %></li>
+        <% }); %>
+      </ul>
+    </div>
+  <% } %>
+  <% if (bw.engine.length > 0) { %>
+    <div id="build-engine-warnings" class="rounded-[10px] p-4 mb-6 border" style="background:rgba(251,191,36,0.08); border-color:rgba(251,191,36,0.35);">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 flex-shrink-0 mt-0.5" style="color:#fbbf24;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <div class="flex-1">
+          <div class="text-sm font-semibold mb-1" style="color:#fbbf24;">The build engine wrote <%= bw.engine.length %> warning<%= bw.engine.length === 1 ? '' : 's' %> about this build</div>
+          <div class="text-xs text-gray-300 mb-3">Its own findings, in the order it wrote them, what the site shows to visitors first: rows that are public, protected pages it did not emit, and what it could not build as the spec asked. Read each before approving.</div>
+          <ul class="space-y-1.5 text-xs text-gray-300 font-mono">
+            <% bw.engine.forEach(function(w) { %>
+              <li class="leading-relaxed" style="overflow-wrap:anywhere;">
+                <span style="color:#fbbf24;">&bull;</span>
+                <% if (w.reason) { %><span class="text-subtle"><%= w.reason %>:</span><% } %>
+                <span><%= w.detail %></span>
+              </li>
+            <% }); %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  <% } %>
+  <% if (bw.fromSpec.length > 0) { %>
+    <div id="build-spec-notes" class="rounded-[10px] p-4 mb-6" style="background:rgba(148,163,184,0.06); border:1px dashed rgba(148,163,184,0.5);">
+      <div class="text-sm font-semibold mb-1 text-gray-300">Text carried in the spec: <%= bw.fromSpec.length %> note<%= bw.fromSpec.length === 1 ? '' : 's' %>, not written by the build engine</div>
+      <div class="text-xs text-subtle mb-3">Copied through from the conversation's spec, word for word. Nothing here is a finding of the engine, whatever it claims to be: whoever shaped the spec could have written it.</div>
+      <ul class="space-y-1.5 text-xs text-subtle">
+        <% bw.fromSpec.forEach(function(text) { %>
+          <li class="leading-relaxed" style="overflow-wrap:anywhere; font-style:italic;"><span aria-hidden="true">&ldquo;</span><%= text %><span aria-hidden="true">&rdquo;</span></li>
+        <% }); %>
+      </ul>
+    </div>
+  <% } %>
+
+  <!-- Panel 2: Preview URL -->
+  <div class="bg-surface-3 rounded-[10px] p-4 mb-6">
+    <h2 class="text-sm font-semibold text-gray-200 mb-2 uppercase tracking-wider">Preview URL</h2>
+    <% if (build.preview_url) { %>
+      <a href="<%= httpUrl(build.preview_url) %>" target="_blank" rel="noopener noreferrer"
+         class="btn btn-sm btn-primary w-full sm:w-auto mb-2">Open preview in new tab</a>
+      <a href="<%= httpUrl(build.preview_url) %>" target="_blank" rel="noopener noreferrer"
+         class="block text-brand underline break-all text-xs sm:text-sm"><%= build.preview_url %></a>
+      <p class="text-xs text-subtle mt-2">Opens in a new tab so this review page stays put.</p>
+    <% } else { %>
+      <div class="text-subtle text-sm">No preview URL on file for this build.</div>
+    <% } %>
+  </div>
+
+  <!-- Panel 3: Credentials -->
+  <%
+    var adminEmail = '';
+    try { adminEmail = (build.spec && build.spec.admin_email) ? build.spec.admin_email : ''; } catch (e) { adminEmail = ''; }
+    if (!adminEmail && customer && customer.email) { adminEmail = customer.email; }
+  %>
+  <div class="bg-surface-3 rounded-[10px] p-4 mb-6">
+    <h2 class="text-sm font-semibold text-gray-200 mb-2 uppercase tracking-wider">Login Credentials</h2>
+    <div class="text-xs text-subtle mb-2">Use these to sign in to the preview app as the seeded admin user.</div>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+      <div>
+        <dt class="text-subtle text-xs uppercase tracking-wider">Email</dt>
+        <dd class="text-gray-200 font-mono break-all"><%= adminEmail || '-' %></dd>
+      </div>
+      <div>
+        <dt class="text-subtle text-xs uppercase tracking-wider">Password</dt>
+        <dd class="text-gray-200 font-mono">password123</dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Panel 4: Screenshots -->
+  <div class="bg-surface-3 rounded-[10px] p-4 mb-6">
+    <h2 class="text-sm font-semibold text-gray-200 mb-3 uppercase tracking-wider">Screenshots</h2>
+    <%
+      var shots = [];
+      try {
+        if (Array.isArray(build.screenshots)) { shots = build.screenshots; }
+        else if (typeof build.screenshots === 'string' && build.screenshots) { shots = JSON.parse(build.screenshots); }
+      } catch (e) { shots = []; }
+    %>
+    <% if (!shots || shots.length === 0) { %>
+      <div class="text-subtle text-sm">No screenshots captured.</div>
+    <% } else { %>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <% shots.forEach(function(shot, idx) { %>
+          <a href="/api/builds/<%= build.id %>/screenshots/<%= idx %>" target="_blank" rel="noopener"
+             class="block bg-surface-2 rounded overflow-hidden border border-border hover:border-brand">
+            <img src="/api/builds/<%= build.id %>/screenshots/<%= idx %>"
+                 alt="Screenshot <%= idx + 1 %>"
+                 class="w-full h-auto" loading="lazy">
+          </a>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Panel 5: Build logs tail -->
+  <div class="bg-surface-3 rounded-[10px] p-4 mb-6">
+    <h2 class="text-sm font-semibold text-gray-200 mb-3 uppercase tracking-wider">Recent Build Logs</h2>
+    <% if (!logs || logs.length === 0) { %>
+      <div class="text-subtle text-sm">No build logs recorded.</div>
+    <% } else { %>
+      <ul class="space-y-1 text-xs text-muted font-mono">
+        <% logs.forEach(function(log) { %>
+          <li>[<%= log.stage %>] <%= log.message %></li>
+        <% }); %>
+      </ul>
+    <% } %>
+  </div>
+
+  <!-- Panel 6: Spec summary -->
+  <%
+    var spec = build.spec || {};
+    var specDesc = spec.description || spec.app_description || '';
+    var pagesCount = Array.isArray(spec.pages) ? spec.pages.length : 0;
+    var modelsCount = Array.isArray(spec.data_models) ? spec.data_models.length : (Array.isArray(spec.models) ? spec.models.length : 0);
+    var specAdminEmail = spec.admin_email || '';
+  %>
+  <div class="bg-surface-3 rounded-[10px] p-4 mb-6">
+    <h2 class="text-sm font-semibold text-gray-200 mb-3 uppercase tracking-wider">Spec Summary</h2>
+    <% if (specDesc) { %>
+      <p class="text-sm text-gray-300 mb-3"><%= specDesc %></p>
+    <% } else { %>
+      <p class="text-xs text-subtle mb-3">No description in spec.</p>
+    <% } %>
+    <dl class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+      <div>
+        <dt class="text-subtle uppercase tracking-wider">Pages</dt>
+        <dd class="text-gray-200 font-semibold"><%= pagesCount %></dd>
+      </div>
+      <div>
+        <dt class="text-subtle uppercase tracking-wider">Data Models</dt>
+        <dd class="text-gray-200 font-semibold"><%= modelsCount %></dd>
+      </div>
+      <div>
+        <dt class="text-subtle uppercase tracking-wider">Spec Admin</dt>
+        <dd class="text-gray-200 font-mono break-all"><%= specAdminEmail || '-' %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <% if (error) { %>
+    <div class="bg-red-950 border border-red-800 text-red-300 rounded-[10px] px-4 py-3 mb-6 text-sm"><%= error %></div>
+  <% } %>
+
+  <!-- Panel 7: Review form -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form method="POST" action="/admin/reviews/<%= build.id %>/approve" class="bg-surface-3 rounded-[10px] p-4"
+          id="approve-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <h3 class="text-sm font-semibold text-gray-200 mb-2 uppercase tracking-wider">Approve</h3>
+      <p class="text-xs text-subtle mb-3">Marks this build as approved by the Senior Web Craftsman. The customer will be emailed and can then promote the preview to live.</p>
+      <button type="submit" class="btn btn-primary w-full"
+              data-confirm="Approve this build? The customer's Approve button will unlock.">
+        Approve for Customer Review
+      </button>
+    </form>
+
+    <form method="POST" action="/admin/reviews/<%= build.id %>/request-changes" class="bg-surface-3 rounded-[10px] p-4"
+          id="request-changes-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <h3 class="text-sm font-semibold text-gray-200 mb-2 uppercase tracking-wider">Request Changes</h3>
+      <label class="block text-xs text-subtle mb-1" for="review_notes">Notes to customer (required)</label>
+      <textarea id="review_notes" name="review_notes" rows="6"
+                class="w-full bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-base sm:text-sm mb-3"
+                placeholder="Describe what needs to change before this ships..."
+                data-no-submit-guard
+                required minlength="1"><%= build.review_notes || '' %></textarea>
+      <button type="submit" class="btn bg-red-700 text-red-100 hover:bg-red-600 w-full">Request Changes</button>
+    </form>
+  </div>
+</section>
+
+<script nonce="<%= cspNonce %>">
+  (function () {
+    var form = document.getElementById('request-changes-form');
+    if (!form) return;
+    form.addEventListener('submit', function (event) {
+      var ta = form.querySelector('textarea[name="review_notes"]');
+      if (ta && ta.value.trim() === '') {
+        event.preventDefault();
+        ta.focus();
+      }
+    });
+  })();
+</script>

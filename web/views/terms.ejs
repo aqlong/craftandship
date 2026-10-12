@@ -1,0 +1,333 @@
+<%
+  // Prices come from res.locals (web/src/app.ts), never from literals in a view.
+  var termsSubscription = typeof harborSubscriptionPrice !== 'undefined' ? harborSubscriptionPrice : '$39';
+  var termsSliding      = typeof harborSlidingScalePrice !== 'undefined' ? harborSlidingScalePrice : '$19';
+%>
+<section style="padding:80px 0 32px;">
+  <div class="max-site" style="max-width:760px;">
+    <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:14px;">Provisions,</span>
+    <h1 class="display" style="font-size:60px; line-height:1.04; margin:0; letter-spacing:-0.018em;">Terms of <em style="color:var(--color-clay);">Service.</em></h1>
+    <p style="font-family:var(--font-display); font-style:italic; font-size:17px; color:var(--color-ink-faded); margin:18px 0 0;">Effective date: April 23, 2026</p>
+  </div>
+</section>
+
+<section style="padding:32px 0 96px;">
+  <div class="max-site harbor-legal" style="max-width:760px;">
+      <p>
+        These Terms of Service ("Terms") govern your use of the Craft &amp; Ship service
+        ("Service") operated by Craft &amp; Ship LLC ("Craft &amp; Ship," "we," "us," or "our"). By creating
+        an account or using the Service, you agree to be bound by these Terms. If you do not agree,
+        do not use the Service.
+      </p>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">1. Service Description</h2>
+        <p class="mb-4">
+          Craft &amp; Ship builds custom websites for small businesses. You describe the website you
+          want in a conversation with Haven, our AI companion. When you ask for your website, that
+          conversation is turned into a written specification (the "Spec") and your website is built
+          from it, from a curated library of pre-built, tested software building blocks. You are not
+          asked to approve the Spec first: you see the result as a preview, and you can ask for changes.
+        </p>
+        <p class="mb-4">
+          A preview is a real website at a public address. Anyone who has the address can open it,
+          and it is not hidden from search engines. Every website needs a recorded review approval before it goes live.
+          "Live" is what we record when that review is done and, where a subscription applies, it
+          has started; the website and its address stay the same. Your website is hosted on cloud infrastructure we rent from Railway.
+        </p>
+        <p>
+          We use artificial intelligence (powered by Anthropic's Claude) in specific parts of the
+          Service: your conversation with Haven, turning that conversation into a structured Spec,
+          answering questions in the support chat, and assisting with ongoing monitoring and
+          diagnostics. Except where clearly disclosed, the website build itself is assembled
+          deterministically from our library of building blocks and does not rely on AI to generate
+          your website's code.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">2. Eligibility</h2>
+        <p>
+          You must be at least 18 years old to use the Service. By using the Service, you represent
+          and warrant that you are at least 18 years of age and have the legal capacity to enter into
+          these Terms.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">3. Your Account</h2>
+        <p>
+          You are responsible for maintaining the confidentiality of your account credentials and for
+          all activity that occurs under your account. You agree to notify us immediately at
+          <a href="mailto:support@craftandship.io" class="text-brand hover:underline hover:text-brand-sky">support@craftandship.io</a> if you become aware of
+          any unauthorized use of your account.
+        </p>
+      </div>
+
+      <div id="refunds">
+        <h2 class="text-xl font-bold text-gray-100 mb-3">4. Payment Terms</h2>
+        <p class="mb-4">
+          Craft &amp; Ship offers a paid monthly subscription for website creation and hosting. All prices
+          are listed in US Dollars. Payment is processed through Stripe. By submitting payment, you
+          authorize us to charge the applicable fees.
+        </p>
+        <ul class="space-y-3 pl-5 list-disc marker:text-subtle">
+          <li>
+            <strong class="text-gray-100">Free preview.</strong> Your first build is free while you walk around
+            it in a preview. You are charged only when you choose to start the subscription, which
+            the site calls making your website public. The preview can already be opened by anyone
+            who has its address (see Section 1); starting the subscription is what marks your
+            website live.
+          </li>
+          <li>
+            <strong class="text-gray-100">Monthly subscription.</strong> When you start the subscription, you
+            choose a monthly amount from <%= termsSubscription %> down to <%= termsSliding %>. The subscription is billed
+            monthly through Stripe and covers hosting, a recorded review approval for every website before it goes live, and
+            unlimited revisions and rebuilds. The only limits on builds are there to stop a runaway
+            loop: at most <%= buildLimits.active %> in progress at a time, <%= buildLimits.startsPerDay %> started in any 24 hours, and
+            <%= buildLimits.retriesPerBuild %> retries of one failed build.
+          </li>
+          <li>
+            <strong class="text-gray-100">Failed builds.</strong> Because the first build is free, a build we are
+            unable to complete costs you nothing.
+          </li>
+          <li>
+            <strong class="text-gray-100">Cancelling and pausing.</strong> You may cancel the subscription
+            at any time from your website's page on this site, or by contacting
+            <a href="mailto:support@craftandship.io" class="text-brand hover:underline hover:text-brand-sky">support@craftandship.io</a>.
+            Billing stops at the end of the current billing period, and cancelling does not take your
+            website down. There is no button for pausing; write to us and we will arrange it. When hosting ends,
+            your website remains yours under Section 5 (Ownership of Generated Code).
+          </li>
+          <li>
+            <strong class="text-gray-100">Disputes.</strong> If you believe a charge is incorrect, contact us at
+            <a href="mailto:support@craftandship.io" class="text-brand hover:underline hover:text-brand-sky">support@craftandship.io</a> within 30 days of
+            the charge. We will review the dispute. If we cannot
+            resolve the dispute, you may escalate through your payment provider.
+          </li>
+          <li>
+            <strong class="text-gray-100">Promotional pricing.</strong> From time to time, we may offer promotional
+            pricing at reduced rates. Promotional prices are valid for the duration stated at
+            the time of purchase. Standard pricing resumes when the promotion ends.
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">5. Ownership of Generated Code</h2>
+        <p>
+          <!-- brand-voice-allow-tech-ownership: binding legal IP-assignment language. -->
+          You own the source code we deliver for your website. Upon successful delivery, all
+          <!-- brand-voice-allow-tech-ownership: binding legal IP-assignment language (continued). -->
+          intellectual property rights in the website source code we provide to you are assigned
+          to you. This does not include any underlying platform code, the library of pre-built
+          building blocks, tools, third-party libraries, or infrastructure used to build or host
+          the website. Open-source components remain under their respective licenses.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">6. Our Right to Use Anonymized Data</h2>
+        <p>
+          We retain the right to use anonymized, aggregated data derived from your use of the Service
+          (such as general patterns in website specifications, build metrics, and usage statistics) to
+          improve and develop the Service. This data will not identify you or your specific website.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">7. Acceptable Use</h2>
+        <p class="mb-4">You agree not to use the Service to:</p>
+        <ul class="space-y-2 pl-5 list-disc marker:text-subtle">
+          <li>Create websites that contain or distribute illegal content</li>
+          <li>Build websites that infringe on the intellectual property rights of any third party</li>
+          <li>Create websites designed for fraud, phishing, or deception</li>
+          <li>Build websites that distribute malware or engage in unauthorized data collection</li>
+          <li>Violate any applicable law or regulation</li>
+          <li>Attempt to reverse-engineer, interfere with, or disrupt the Service</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">8. Your Responsibilities</h2>
+        <p>
+          You are solely responsible for the content, functionality, and legal compliance of the
+          websites you create through the Service. This includes ensuring your website complies with
+          all applicable laws, does not infringe third-party rights, and includes any required
+          disclosures (such as privacy policies for your own users). Craft &amp; Ship does not review
+          your website for legal compliance.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">9. Termination</h2>
+        <p class="mb-4">
+          We may suspend or terminate your account at any time if we reasonably believe you have
+          violated these Terms, including the Acceptable Use provisions. We may also terminate
+          accounts that have been inactive for an extended period with prior notice via email.
+          You may close your account at any time, yourself at
+          <a href="/account/delete" class="text-brand hover:underline hover:text-brand-sky">/account/delete</a> while logged in, or by contacting
+          <a href="mailto:support@craftandship.io" class="text-brand hover:underline hover:text-brand-sky">support@craftandship.io</a>.
+          Closing your account does not by itself take your website down; our
+          <a href="/privacy" class="text-brand hover:underline hover:text-brand-sky">Privacy Policy</a> says what it removes and what it leaves.
+        </p>
+        <p>
+          Upon termination, your right to use the Service ceases immediately. If your website
+          is hosted on our infrastructure, we will provide 30 days notice before taking down the
+          hosted website, except in cases of serious abuse or legal requirement.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">10. Disclaimer of Warranties</h2>
+        <p class="mb-4 uppercase text-sm tracking-wide">
+          THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, WHETHER
+          EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY,
+          FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+        </p>
+        <p class="mb-4">
+          We do not guarantee that the Service will be uninterrupted, error-free, or secure. We do
+          not guarantee that websites delivered through the Service will be free of bugs or suitable
+          for any particular purpose. While every website needs a recorded review approval before it goes live, software may still contain errors, and you are responsible for reviewing and
+          testing your website before relying on it in production.
+        </p>
+        <p>
+          Parts of the Service (including intake, support chat, and monitoring) use artificial
+          intelligence. AI output may contain errors, omissions, or hallucinated information. Do not
+          rely on AI-generated content for legal, medical, financial, or other professional advice.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">11. Limitation of Liability</h2>
+        <p class="mb-4 uppercase text-sm tracking-wide">
+          TO THE MAXIMUM EXTENT PERMITTED BY LAW, CRAFT &amp; SHIP'S TOTAL LIABILITY TO YOU FOR ANY
+          CLAIMS ARISING OUT OF OR RELATED TO THESE TERMS OR THE SERVICE SHALL NOT EXCEED THE
+          TOTAL AMOUNT YOU PAID TO CRAFT &amp; SHIP IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM.
+        </p>
+        <p class="uppercase text-sm tracking-wide">
+          IN NO EVENT SHALL CRAFT &amp; SHIP BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+          CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS,
+          DATA, OR BUSINESS OPPORTUNITIES, REGARDLESS OF WHETHER WE WERE ADVISED OF THE
+          POSSIBILITY OF SUCH DAMAGES.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">12. Indemnification</h2>
+        <p>
+          You agree to indemnify and hold harmless Craft &amp; Ship, its owner, and affiliates from any
+          claims, damages, losses, and expenses (including reasonable attorneys' fees) arising out of
+          your use of the Service, your violation of these Terms, or any website you create
+          through the Service.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">13. Dispute Resolution</h2>
+        <p class="mb-4">
+          Any dispute arising out of or relating to these Terms or the Service shall be resolved
+          through binding arbitration administered by the American Arbitration Association under its
+          Commercial Arbitration Rules. Arbitration shall take place in Texas. The arbitrator's
+          decision shall be final and binding.
+        </p>
+        <p class="mb-4">
+          <strong class="text-gray-100">Class action waiver.</strong> You agree that any arbitration or legal proceeding
+          shall be conducted on an individual basis only, not as a class action or representative
+          action. You waive any right to participate in a class action lawsuit or class-wide
+          arbitration.
+        </p>
+        <p>
+          <strong class="text-gray-100">Small claims exception.</strong> Either party may bring an individual action in
+          small claims court if the claim qualifies.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">14. Governing Law</h2>
+        <p>
+          These Terms shall be governed by and construed in accordance with the laws of the State
+          of Texas, without regard to its conflict of law provisions.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">15. Changes to These Terms</h2>
+        <p>
+          We may update these Terms from time to time. For material changes, we will provide at
+          least 30 days advance notice via email to the address associated with your account.
+          Your continued use of the Service after the effective date of any changes constitutes
+          acceptance of the updated Terms. If you do not agree with the changes, you may close
+          your account before they take effect.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">16. Severability</h2>
+        <p>
+          If any provision of these Terms is found to be unenforceable or invalid, that provision
+          shall be limited or eliminated to the minimum extent necessary, and the remaining
+          provisions shall remain in full force and effect.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">17. Entire Agreement</h2>
+        <p>
+          These Terms, together with our <a href="/privacy" class="text-brand hover:underline hover:text-brand-sky">Privacy Policy</a>, constitute the
+          entire agreement between you and Craft &amp; Ship regarding the Service and supersede all
+          prior agreements and understandings.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold text-gray-100 mb-3">18. Contact</h2>
+        <p>
+          If you have questions about these Terms, contact us at
+          <a href="mailto:support@craftandship.io" class="text-brand hover:underline hover:text-brand-sky">support@craftandship.io</a>.
+        </p>
+      </div>
+  </div>
+</section>
+
+<style>
+  /* Harbor v2: re-skin legacy legal copy that ships with Tailwind classes
+     the new layout-harbor doesn't load. We retarget the inline-styled and
+     class-styled prose to the Harbor palette without rewriting every line. */
+  .harbor-legal { font-size:17px; line-height:1.7; color:var(--color-ink-soft); }
+  .harbor-legal > * + * { margin-top:32px; }
+  .harbor-legal p { color:var(--color-ink-soft); margin:0 0 14px; }
+  .harbor-legal p:last-child { margin-bottom:0; }
+  .harbor-legal h2,
+  .harbor-legal .text-xl {
+    font-family: var(--font-display);
+    font-weight:500;
+    font-size:24px;
+    color:var(--color-ink);
+    margin:0 0 14px;
+    letter-spacing:-0.005em;
+  }
+  .harbor-legal h2 em { font-style:italic; color:var(--color-clay); }
+  .harbor-legal strong,
+  .harbor-legal .text-gray-100 { color:var(--color-ink); font-weight:600; }
+  .harbor-legal a,
+  .harbor-legal .text-brand { color:var(--color-clay); text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--color-rule); }
+  .harbor-legal a:hover { text-decoration-color:var(--color-clay); }
+  .harbor-legal ul {
+    list-style:none; padding:0; margin:14px 0 0;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .harbor-legal ul li {
+    padding-left:22px; position:relative;
+  }
+  .harbor-legal ul li::before {
+    content:'·';
+    position:absolute; left:4px; top:-4px;
+    color:var(--color-clay); font-family:var(--font-display); font-size:28px;
+  }
+  .harbor-legal .uppercase {
+    text-transform:none;
+    font-family:var(--font-display); font-style:italic;
+    letter-spacing:0;
+  }
+</style>

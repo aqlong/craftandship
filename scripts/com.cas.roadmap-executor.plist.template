@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Canonical launchd plist for the CAS local roadmap executor.
+
+  The placeholders __REPO_ROOT__ and __HOME__ are filled in at install time
+  (launchd does not expand $HOME or relative paths inside a plist):
+
+    sed -e "s|__REPO_ROOT__|$(pwd)|g" -e "s|__HOME__|$HOME|g" \
+        scripts/com.cas.roadmap-executor.plist.template \
+        > ~/Library/LaunchAgents/com.cas.roadmap-executor.plist
+    mkdir -p logs/executor
+    launchctl load ~/Library/LaunchAgents/com.cas.roadmap-executor.plist
+
+  Run the sed from the repo root. The executor ships disabled
+  ("enabled": false in scripts/cas-executor-config.json); enabling it lets an
+  autonomous Claude Code session implement roadmap items and push to master.
+  Read scripts/cas-roadmap-loop.sh before turning it on.
+
+  Design notes:
+    - KeepAlive = true is INTENTIONAL. cas-roadmap-loop.sh has a
+      CLEAN_EXIT sentinel + on_exit EXIT trap + check_crash_loop
+      back-off so the historically-bad combination of `set -u` crashes +
+      silent respawn is now surfaced in logs/executor/crash.log. See the
+      script header comments for the full contract.
+    - ThrottleInterval = 60 paces launchd respawns when the script exits
+      non-zero. Combined with check_crash_loop's 900s in-process back-off,
+      a crash-loop self-dampens without operator intervention.
+    - RunAtLoad = false because the script acquires a file lock and any
+      accidental double-load would immediately exit: set it true only
+      after you've verified nothing else is holding cas-executor.lock (in
+      $TMPDIR, or /tmp when TMPDIR is unset; see STATE_DIR in the script).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.cas.roadmap-executor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__REPO_ROOT__/scripts/cas-roadmap-loop.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO_ROOT__</string>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>__HOME__</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>__REPO_ROOT__/logs/executor/launchd-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__REPO_ROOT__/logs/executor/launchd-stderr.log</string>
+
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
+</dict>
+</plist>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Whenever you are ready</title>
+  <link rel="icon" type="image/png" href="/brand-harbor/harbor-tab-icon.png">
+  <style>
+    :root {
+      --color-oat:           #e8e0cd;
+      --color-clay:          #b89683;
+      --color-ink-brown:     #3a2f24;
+    }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--color-oat);
+      color: var(--color-ink-brown);
+      font-family: 'Tiempos Text', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+      min-height: 100vh;
+    }
+    main { max-width: 520px; margin: 0 auto; padding: 96px 28px; text-align: center; }
+    h1 { font-size: 30px; margin: 0 0 18px; font-weight: 600; line-height: 1.3; }
+    p { line-height: 1.7; margin: 0 0 18px; }
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background: var(--color-ink-brown);
+      color: #fff; text-decoration: none;
+      border-radius: 6px; font-weight: 600;
+      font-size: 16px; margin-top: 16px;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--color-ink-brown);
+      border: 1px solid rgba(58, 47, 36, 0.35);
+    }
+  </style>
+</head>
+<body>
+<%- include('../partials/_harbor-skip-link') %>
+<main id="main">
+  <h1>Whenever you are ready.</h1>
+  <p>The lamp is yours. Walk around in the preview as long as you need.</p>
+  <p>
+    <a class="btn btn-secondary" href="/lighthouse/lamp/<%= build.id %>">Back to your lamp</a>
+  </p>
+</main>
+</body>
+</html>

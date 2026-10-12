@@ -1,0 +1,99 @@
+<!-- compose:widget shell/nav-public -->
+<% var _cp = (typeof currentPath !== 'undefined' ? currentPath : (typeof locals !== 'undefined' && locals.currentPath) || '/'); %>
+<% var _user = (typeof user !== 'undefined' && user) ? user : (typeof locals !== 'undefined' ? locals.user : null); %>
+<% var _isAdmin = !!(_user && _user.role === 'admin'); %>
+<% // Placeholder-logo detector: picsum, lorem, placeholder, and "*-logo"
+   // filler URLs shouldn't ship in production navs.
+   // Default-monogram detector: /logo.svg (with optional cache-bust query)
+   // is the auto-generated initials squircle. It's "real" in the sense of
+   // existing on disk, but it's not a customer-supplied brand mark, so we
+   // treat the wordmark-only render as the default and only show the
+   // monogram circle when (a) settings.show_nav_logo is explicitly true
+   // (opt-in) or (b) settings.nav_logo_url points at a customer-uploaded
+   // asset (i.e. not the default /logo.svg and not a placeholder).
+   var _logoUrl = settings.nav_logo_url || '';
+   // wsimg.com is the GoDaddy Website Builder CDN; sites that never uploaded
+   // a logo get a generic earth-icon served from /isteam/.../logo/<uuid>.jpg.
+   // Treat any wsimg.com logo path as a placeholder so we render initials
+   // instead of GoDaddy's default globe.
+   var _isPlaceholderLogo = /picsum|placeholder|loremflickr|via\.placeholder|lorempixel|wsimg\.com.*\/logo\//i.test(_logoUrl) || !_logoUrl;
+   var _isDefaultMonogram = /^\/logo\.svg(\?|$)/.test(_logoUrl);
+   var _showNavLogoFlag = String(settings.show_nav_logo || '').toLowerCase() === 'true';
+   var _hasCustomLogo = !_isPlaceholderLogo && !_isDefaultMonogram;
+   var _showNavLogo = _showNavLogoFlag || _hasCustomLogo;
+   var _initials = String(settings.site_name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function(w){return w[0].toUpperCase();}).join('');
+%>
+<nav class="bg-primary border-b border-primary sticky top-0 z-50 cas-nav" style="background-color: var(--color-primary);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="flex items-center justify-between h-16">
+      <a href="/" class="brand font-display text-lg sm:text-xl font-bold tracking-tight whitespace-nowrap inline-flex items-center gap-3" style="color: var(--color-on-primary); text-decoration: none;">
+        <% if (_showNavLogo) { %>
+        <span class="nav-logo" style="display:inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; min-width: 40px; min-height: 40px; max-width: 40px; max-height: 40px; border-radius: 9999px; overflow: hidden; background-color: rgba(255,255,255,0.12); flex: 0 0 40px; font-size: 14px; font-weight: 700; letter-spacing: 0.03em;">
+          <% if (_isPlaceholderLogo) { %>
+            <%= _initials || '•' %>
+          <% } else { %>
+            <img src="<%= _logoUrl %>" alt="<%= settings.site_name %>" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+          <% } %>
+        </span>
+        <% } %>
+        <span class="site-name"><%= settings.site_name %></span>
+      </a>
+      <div class="hidden md:flex items-center gap-4 lg:gap-6">
+        <% (typeof nav_items !== 'undefined' ? nav_items : []).forEach(function(item) { %>
+          <% var isActive = (item.href === '/' ? _cp === '/' : _cp.indexOf(item.href) === 0); %>
+          <a href="<%= item.href %>" class="nav-link font-body text-sm font-medium transition-opacity hover:opacity-80 whitespace-nowrap" style="color: var(--color-on-primary); text-decoration: none; <% if (isActive) { %>opacity: 1; font-weight: 600; border-bottom: 2px solid var(--color-on-primary);<% } else { %>opacity: 0.85;<% } %>"><%= item.label %></a>
+        <% }); %>
+        <% if (_isAdmin) { %>
+          <a href="/admin" class="nav-link font-body text-sm font-medium transition-opacity hover:opacity-80 whitespace-nowrap" style="color: var(--color-on-primary); text-decoration: none; <% if (_cp.indexOf('/admin') === 0) { %>opacity: 1; font-weight: 600;<% } else { %>opacity: 0.85;<% } %>">Admin</a>
+          <form action="/logout" method="POST" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="font-body text-sm font-medium bg-transparent border-0 cursor-pointer transition-opacity hover:opacity-80 whitespace-nowrap" style="color: var(--color-on-primary); opacity: 0.85;">Logout</button>
+          </form>
+        <% } else if (_user) { %>
+          <form action="/logout" method="POST" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="font-body text-sm font-medium bg-transparent border-0 cursor-pointer transition-opacity hover:opacity-80 whitespace-nowrap" style="color: var(--color-on-primary); opacity: 0.85;">Logout</button>
+          </form>
+        <% } else { %>
+          <a href="/login" class="font-body text-sm font-medium px-4 py-2 rounded-md transition-opacity hover:opacity-90 whitespace-nowrap" style="background-color: var(--color-on-primary); color: var(--color-primary); text-decoration: none;">Login</a>
+        <% } %>
+      </div>
+      <button id="mobileMenuBtn" class="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent border-0 cursor-pointer" style="color: var(--color-on-primary);" aria-label="Toggle menu" aria-expanded="false">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <div class="md:hidden hidden pb-4" id="mobileMenu">
+      <div class="flex flex-col gap-2 pt-2">
+        <% (typeof nav_items !== 'undefined' ? nav_items : []).forEach(function(item) { %>
+          <% var isActive = (item.href === '/' ? _cp === '/' : _cp.indexOf(item.href) === 0); %>
+          <a href="<%= item.href %>" class="font-body text-sm font-medium py-2 min-h-[44px] flex items-center" style="color: var(--color-on-primary); text-decoration: none; opacity: <%= isActive ? '1' : '0.85' %>; <% if (isActive) { %>font-weight: 600;<% } %>"><%= item.label %></a>
+        <% }); %>
+        <% if (_isAdmin) { %>
+          <a href="/admin" class="font-body text-sm font-medium py-2 min-h-[44px] flex items-center" style="color: var(--color-on-primary); text-decoration: none; opacity: 0.85;">Admin</a>
+          <form action="/logout" method="POST" class="mt-1">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="font-body text-sm font-medium py-2 min-h-[44px] bg-transparent border-0 cursor-pointer text-left" style="color: var(--color-on-primary);">Logout</button>
+          </form>
+        <% } else if (_user) { %>
+          <form action="/logout" method="POST" class="mt-1">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="font-body text-sm font-medium py-2 min-h-[44px] bg-transparent border-0 cursor-pointer text-left" style="color: var(--color-on-primary);">Logout</button>
+          </form>
+        <% } else { %>
+          <a href="/login" class="font-body text-sm font-medium py-2 px-4 rounded-md text-center min-h-[44px] inline-flex items-center justify-center" style="background-color: var(--color-on-primary); color: var(--color-primary); text-decoration: none;">Login</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</nav>
+<script<% if (typeof cspNonce !== 'undefined' && cspNonce) { %> nonce="<%= cspNonce %>"<% } %>>
+  (function(){
+    var btn = document.getElementById('mobileMenuBtn');
+    var menu = document.getElementById('mobileMenu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function(){
+      var open = menu.classList.toggle('hidden') === false;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  })();
+</script>

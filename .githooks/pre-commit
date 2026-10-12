@@ -1,0 +1,138 @@
+#!/bin/sh
+# Reject unacknowledged destructive DDL and row changes in schema.sql, invalid
+# JSON in cli/failure_kb.json, brand-voice violations in customer-facing copy
+# and drift in the SEO surface.
+# Add '-- SAFE: <reason>' above a statement to acknowledge a DDL change or a
+# row change (UPDATE, INSERT, DELETE, MERGE, COPY ... FROM, dynamic EXECUTE; the
+# reason goes on the statement itself, not above the DO block around it). A
+# statement that names the status live is never acknowledged. See
+# scripts/check_destructive_ddl.py for what it reads and what it does not.
+# See docs/BRAND_VOICE.md for the copy rules.
+#
+# Every check reads what is being committed. The staged content of the files
+# a check looks at is copied out of the index into a scratch directory
+# (git checkout-index) and the check runs there, never on the file in the
+# working tree: the two differ after `git add -p`, and after any edit made
+# since `git add`. A check that read the working tree would pass a commit
+# whose staged schema drops a table, and refuse one whose staged schema is
+# fine.
+
+SCHEMA_FILE="web/src/db/schema.sql"
+FAILURE_KB_FILE="cli/failure_kb.json"
+# What scripts/check_seo_consistency.py reads.
+SEO_FILES="web/src/app.ts web/src/services/structured-data.ts web/src/services/pricing-faq.ts web/views/about-ocean.ejs"
+
+ROOT="$(git rev-parse --show-toplevel)" || exit 1
+cd "$ROOT" || exit 1
+
+STAGED_DIR="$(mktemp -d "${TMPDIR:-/tmp}/cas-pre-commit.XXXXXX")" || {
+  echo "pre-commit: cannot create a scratch directory for the staged files."
+  exit 1
+}
+trap 'rm -rf "$STAGED_DIR"' EXIT
+trap 'exit 1' INT TERM HUP
+
+# Paths this commit adds, copies, modifies or renames, one per line. (-z and
+# tr: without -z git quotes a path that has an unusual byte in it.)
+STAGED_PATHS="$(git diff --cached --name-only --diff-filter=ACMR -z | tr '\0' '\n')" || exit 1
+
+is_staged() {
+  printf '%s\n' "$STAGED_PATHS" | grep -qxF "$1"
+}
+
+# Copy the content the index holds for each given path to the same path under
+# $STAGED_DIR. Fails when a path is not in the index.
+export_staged() {
+  git checkout-index -f --prefix="$STAGED_DIR/" -- "$@"
+}
+
+# --- Destructive-DDL and row-change guard ---
+if is_staged "$SCHEMA_FILE"; then
+  export_staged "$SCHEMA_FILE" || {
+    echo "pre-commit: cannot read the staged $SCHEMA_FILE."
+    exit 1
+  }
+  python3 scripts/check_destructive_ddl.py - "$SCHEMA_FILE (as staged)" < "$STAGED_DIR/$SCHEMA_FILE"
+  DDL_RC=$?
+  if [ $DDL_RC -ne 0 ]; then
+    exit $DDL_RC
+  fi
+fi
+
+# --- failure_kb.json JSON parse guard ---
+# Malformed JSON here breaks worker startup and test collection silently.
+# Parse the staged file and surface the error message to the developer.
+if is_staged "$FAILURE_KB_FILE"; then
+  export_staged "$FAILURE_KB_FILE" || {
+    echo "pre-commit: cannot read the staged $FAILURE_KB_FILE."
+    exit 1
+  }
+  FAILURE_KB_ERR=$(python3 -c "import json, sys; json.load(open(sys.argv[1]))" "$STAGED_DIR/$FAILURE_KB_FILE" 2>&1)
+  if [ $? -ne 0 ]; then
+    echo "ERROR: $FAILURE_KB_FILE (as staged) is invalid JSON."
+    echo "$FAILURE_KB_ERR"
+    echo "Fix the syntax before committing."
+    exit 1
+  fi
+fi
+
+# --- Brand voice: em-dash guard on customer-facing copy ---
+# BRAND_VOICE.md rule 1: no em dashes (U+2014) or &mdash; in customer copy.
+# Scope:
+#   web/views/**/*.ejs, web/src/services/**/*.ts, web/src/cron/**/*.ts (the
+#   Harbor modules that build customer-facing prompts), web/src/routes/**/*.ts,
+#   web/src/app.ts (metaDescription/title + contact email body),
+#   queue/mailer.py (customer build-lifecycle emails),
+#   coordinator/actuators.py (permission-request + daily-report emails),
+#   compose/widgets/**/*.ejs (HTML-comment scope only: a <!-- ... --> comment
+#   there ships in the rendered page source even though it is not visible).
+# Worker customer-facing status messages are guarded by a dedicated pytest
+# regression (tests/test_brand_voice_python_copy.py) so internal logger lines
+# don't trigger false positives.
+# Allow-list: lines with a 'brand-voice-allow-em-dash:' marker above.
+COPY_FILES=$(printf '%s\n' "$STAGED_PATHS" \
+  | grep -E '^(web/views/.*\.ejs|web/src/services/.*\.ts|web/src/cron/.*\.ts|web/src/routes/.*\.ts|web/src/app\.ts|queue/mailer\.py|coordinator/actuators\.py|compose/widgets/.*\.ejs)$' \
+  || true)
+if [ -n "$COPY_FILES" ]; then
+  printf '%s\n' "$COPY_FILES" | git checkout-index -f --prefix="$STAGED_DIR/" --stdin || {
+    echo "pre-commit: cannot read the staged copy files."
+    exit 1
+  }
+  # The lint is given the same relative paths, inside the scratch directory.
+  printf '%s\n' "$COPY_FILES" | tr '\n' '\0' \
+    | ( cd "$STAGED_DIR" && xargs -0 python3 "$ROOT/scripts/check_brand_voice.py" )
+  BV_RC=$?
+  if [ $BV_RC -ne 0 ]; then
+    exit $BV_RC
+  fi
+fi
+
+# --- SEO consistency guard ---
+# When any of the SEO-touching files are staged, run the SEO consistency
+# lint. Catches: public route added without sitemap update, pricing literal
+# desync between app.ts and /llms.txt body, banned phrasings in customer-
+# facing source. See the docstring in scripts/check_seo_consistency.py.
+# The lint compares several files with each other, so all of them are taken
+# from the index: the staged version of each one that is staged, and the
+# committed version of the rest.
+SEO_TOUCHED=$(printf '%s\n' "$STAGED_PATHS" \
+  | grep -E '^(web/src/app\.ts|web/src/services/structured-data\.ts|web/src/services/pricing-faq\.ts|web/views/.*\.ejs)$' \
+  || true)
+if [ -n "$SEO_TOUCHED" ]; then
+  for seo_file in $SEO_FILES; do
+    # a file the index does not have is simply absent for the lint
+    if git ls-files --error-unmatch -- "$seo_file" >/dev/null 2>&1; then
+      export_staged "$seo_file" || {
+        echo "pre-commit: cannot read the staged $seo_file."
+        exit 1
+      }
+    fi
+  done
+  python3 scripts/check_seo_consistency.py --root "$STAGED_DIR"
+  SEO_RC=$?
+  if [ $SEO_RC -ne 0 ]; then
+    exit $SEO_RC
+  fi
+fi
+
+exit 0

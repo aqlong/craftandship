@@ -1,0 +1,306 @@
+<%#
+  Admin Settings: theme-neutral template (ADMIN_SETTINGS_SUPERSET, MW v12 fix).
+  Renders an input for every site_settings key the app seeded. Sections appear
+  only when at least one of their keys is present in settings, so apps that
+  only seed contact info don't get empty Hero/About blocks.
+
+  Image keys (*_logo_url, *_image_url, *_photo_url) render as <input type="url">
+  initially: _ensure_upload_form_ui converts them to drag-and-drop upload zones
+  after this template is written.
+
+  Uses semi-dark slate surfaces (rgba navy) that work on both light + dark themes
+  thanks to _fix_admin_dark_stat_cards. Text uses neutral tokens (gray-100 / slate-300)
+  that _fix_light_on_light_text keeps readable on the generated palette.
+%>
+<% var _has = function(k){ return typeof settings !== 'undefined' && Object.prototype.hasOwnProperty.call(settings, k); }; %>
+<% var _v = function(k){ return (typeof settings !== 'undefined' && settings[k]) || ''; }; %>
+
+<style>
+/* Admin settings surface: auto-flips between dark and light theme via primary lum.
+   _fix_admin_dark_stat_cards overrides .admin-settings-card on dark-primary apps;
+   this fallback block keeps it readable on light-primary apps too. */
+.admin-settings-card {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #1f2937;
+}
+.admin-settings-card h2 { color: #0f172a; }
+.admin-settings-card label { color: #334155; }
+.admin-settings-card p { color: #64748b; }
+
+/* Dark-theme override kicks in when body has dark primary (set by dark-mode overrides) */
+body.bg-slate-950 .admin-settings-card,
+body[class*="bg-primary"] .admin-settings-card,
+[data-theme="dark"] .admin-settings-card {
+  background: rgba(26, 36, 86, 0.35);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+body.bg-slate-950 .admin-settings-card h2,
+body[class*="bg-primary"] .admin-settings-card h2,
+[data-theme="dark"] .admin-settings-card h2 { color: #ffffff; }
+body.bg-slate-950 .admin-settings-card label,
+body[class*="bg-primary"] .admin-settings-card label,
+[data-theme="dark"] .admin-settings-card label { color: #cbd5e1; }
+body.bg-slate-950 .admin-settings-card p,
+body[class*="bg-primary"] .admin-settings-card p,
+[data-theme="dark"] .admin-settings-card p { color: #94a3b8; }
+
+/* v17 FIX F: dark-theme input contrast.
+   The base .input-premium (premium-base.css) uses background:white which makes
+   values near-invisible on dark-primary surfaces. These overrides use the same
+   three dark-mode selectors as admin-settings-card above, and cover every form
+   element the settings template renders: input[type], textarea, and select. */
+body.bg-slate-950 .admin-settings-card .input-premium,
+body.bg-slate-950 .admin-settings-card input,
+body.bg-slate-950 .admin-settings-card textarea,
+body.bg-slate-950 .admin-settings-card select,
+body[class*="bg-primary"] .admin-settings-card .input-premium,
+body[class*="bg-primary"] .admin-settings-card input,
+body[class*="bg-primary"] .admin-settings-card textarea,
+body[class*="bg-primary"] .admin-settings-card select,
+[data-theme="dark"] .admin-settings-card .input-premium,
+[data-theme="dark"] .admin-settings-card input,
+[data-theme="dark"] .admin-settings-card textarea,
+[data-theme="dark"] .admin-settings-card select {
+  background: rgba(15, 23, 42, 0.85);   /* slate-900 w/ slight transparency */
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;                        /* slate-200 readable on slate-900 */
+}
+body.bg-slate-950 .admin-settings-card .input-premium::placeholder,
+body.bg-slate-950 .admin-settings-card input::placeholder,
+body.bg-slate-950 .admin-settings-card textarea::placeholder,
+body[class*="bg-primary"] .admin-settings-card .input-premium::placeholder,
+body[class*="bg-primary"] .admin-settings-card input::placeholder,
+body[class*="bg-primary"] .admin-settings-card textarea::placeholder,
+[data-theme="dark"] .admin-settings-card .input-premium::placeholder,
+[data-theme="dark"] .admin-settings-card input::placeholder,
+[data-theme="dark"] .admin-settings-card textarea::placeholder {
+  color: #64748b;                        /* slate-500 subtle */
+}
+body.bg-slate-950 .admin-settings-card .input-premium:focus,
+body.bg-slate-950 .admin-settings-card input:focus,
+body.bg-slate-950 .admin-settings-card textarea:focus,
+body.bg-slate-950 .admin-settings-card select:focus,
+body[class*="bg-primary"] .admin-settings-card .input-premium:focus,
+body[class*="bg-primary"] .admin-settings-card input:focus,
+body[class*="bg-primary"] .admin-settings-card textarea:focus,
+body[class*="bg-primary"] .admin-settings-card select:focus,
+[data-theme="dark"] .admin-settings-card .input-premium:focus,
+[data-theme="dark"] .admin-settings-card input:focus,
+[data-theme="dark"] .admin-settings-card textarea:focus,
+[data-theme="dark"] .admin-settings-card select:focus {
+  border-color: var(--color-accent, #5a80c0);
+  box-shadow: 0 0 0 3px rgba(90, 128, 192, 0.25);
+  outline: none;
+}
+</style>
+
+<div class="max-w-4xl mx-auto py-8 px-4">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="font-display text-2xl font-bold ">Site Settings</h1>
+    <a href="/dashboard" class="text-sm text-[var(--color-accent,#5a80c0)] hover:underline">&larr; Back to Dashboard</a>
+  </div>
+
+  <% if (typeof flash !== 'undefined' && flash) { %>
+    <div class="mb-6 px-4 py-3 rounded-lg border"
+         style="background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.3);color:#6ee7b7;">
+      <%= flash %>
+    </div>
+  <% } %>
+
+  <%# NB: no multipart enctype, file uploads go through /api/uploads via image-upload.js AJAX %>
+  <form method="POST" action="/admin/settings" class="space-y-6">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <%# ==================== SITE IDENTITY ==================== %>
+    <% if (_has('site_name') || _has('site_url') || _has('site_description')) { %>
+      <div class="card-premium admin-settings-card p-6 rounded-xl border">
+        <h2 class="font-display text-lg font-semibold mb-1">Site Identity</h2>
+        <p class="text-xs mb-4">Brand name and canonical URL.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <% if (_has('site_name')) { %>
+          <div>
+            <label for="site_name" class="block text-sm font-medium mb-1">Site Name</label>
+            <input type="text" id="site_name" name="site_name" value="<%= _v('site_name') %>"
+                   class="input-premium w-full" placeholder="Your Business Name">
+          </div>
+          <% } %>
+          <% if (_has('site_url')) { %>
+          <div>
+            <label for="site_url" class="block text-sm font-medium mb-1">Site URL</label>
+            <input type="url" id="site_url" name="site_url" value="<%= _v('site_url') %>"
+                   class="input-premium w-full" placeholder="https://yoursite.example">
+          </div>
+          <% } %>
+          <% if (_has('site_description')) { %>
+          <div class="md:col-span-2">
+            <label for="site_description" class="block text-sm font-medium mb-1">Site Description</label>
+            <textarea id="site_description" name="site_description" rows="2"
+                      class="input-premium w-full"><%= _v('site_description') %></textarea>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <%# ==================== HERO ==================== %>
+    <% if (_has('hero_tagline') || _has('hero_description') || _has('hero_image_url')) { %>
+      <div class="card-premium admin-settings-card p-6 rounded-xl border">
+        <h2 class="font-display text-lg font-semibold mb-1">Hero Section</h2>
+        <p class="text-xs mb-4">Headline, supporting text, and background image at the top of the home page.</p>
+        <div class="space-y-4">
+          <% if (_has('hero_tagline')) { %>
+          <div>
+            <label for="hero_tagline" class="block text-sm font-medium mb-1">Hero Tagline</label>
+            <input type="text" id="hero_tagline" name="hero_tagline" value="<%= _v('hero_tagline') %>"
+                   class="input-premium w-full" placeholder="A short, evocative one-liner">
+          </div>
+          <% } %>
+          <% if (_has('hero_description')) { %>
+          <div>
+            <label for="hero_description" class="block text-sm font-medium mb-1">Hero Description</label>
+            <textarea id="hero_description" name="hero_description" rows="4"
+                      class="input-premium w-full"
+                      placeholder="A paragraph introducing the experience or brand"><%= _v('hero_description') %></textarea>
+          </div>
+          <% } %>
+          <% if (_has('hero_image_url')) { %>
+          <div>
+            <label for="hero_image_url" class="block text-sm font-medium mb-1">Hero Background Image</label>
+            <input type="url" id="hero_image_url" name="hero_image_url" value="<%= _v('hero_image_url') %>">
+          </div>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <%# ==================== LOGO + ABOUT ==================== %>
+    <% if (_has('nav_logo_url') || _has('about_title') || _has('about_body') || _has('about_photo_url')) { %>
+      <div class="card-premium admin-settings-card p-6 rounded-xl border">
+        <h2 class="font-display text-lg font-semibold mb-1">Logo &amp; About</h2>
+        <p class="text-xs mb-4">Navigation logo plus the story shown on the About page.</p>
+        <div class="space-y-4">
+          <% if (_has('nav_logo_url')) { %>
+          <div>
+            <label for="nav_logo_url" class="block text-sm font-medium mb-1">Navigation Logo</label>
+            <input type="url" id="nav_logo_url" name="nav_logo_url" value="<%= _v('nav_logo_url') %>">
+          </div>
+          <% } %>
+          <% if (_has('about_title')) { %>
+          <div>
+            <label for="about_title" class="block text-sm font-medium mb-1">About Page Title</label>
+            <input type="text" id="about_title" name="about_title" value="<%= _v('about_title') %>"
+                   class="input-premium w-full" placeholder="About Us">
+          </div>
+          <% } %>
+          <% if (_has('about_body')) { %>
+          <div>
+            <label for="about_body" class="block text-sm font-medium mb-1">About Page Body</label>
+            <textarea id="about_body" name="about_body" rows="8"
+                      class="input-premium w-full"
+                      placeholder="The story behind your business"><%= _v('about_body') %></textarea>
+          </div>
+          <% } %>
+          <% if (_has('about_photo_url')) { %>
+          <div>
+            <label for="about_photo_url" class="block text-sm font-medium mb-1">About Photo</label>
+            <input type="url" id="about_photo_url" name="about_photo_url" value="<%= _v('about_photo_url') %>">
+          </div>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <%# ==================== CONTACT ==================== %>
+    <% if (_has('contact_email') || _has('contact_phone') || _has('contact_address') ||
+           _has('business_name') || _has('phone') || _has('support_email') || _has('address')) { %>
+      <div class="card-premium admin-settings-card p-6 rounded-xl border">
+        <h2 class="font-display text-lg font-semibold mb-1">Contact Information</h2>
+        <p class="text-xs mb-4">Shown in the public "Get In Touch" block on /contact.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <% if (_has('business_name')) { %>
+          <div>
+            <label for="business_name" class="block text-sm font-medium mb-1">Business Name</label>
+            <input type="text" id="business_name" name="business_name" value="<%= _v('business_name') %>"
+                   class="input-premium w-full" placeholder="Your Business Name">
+          </div>
+          <% } %>
+          <% if (_has('contact_email')) { %>
+          <div>
+            <label for="contact_email" class="block text-sm font-medium mb-1">Contact Email</label>
+            <input type="email" id="contact_email" name="contact_email" value="<%= _v('contact_email') %>"
+                   class="input-premium w-full" placeholder="hello@example.com">
+          </div>
+          <% } else if (_has('support_email')) { %>
+          <div>
+            <label for="support_email" class="block text-sm font-medium mb-1">Support Email</label>
+            <input type="email" id="support_email" name="support_email" value="<%= _v('support_email') %>"
+                   class="input-premium w-full" placeholder="hello@example.com">
+          </div>
+          <% } %>
+          <% if (_has('contact_phone')) { %>
+          <div>
+            <label for="contact_phone" class="block text-sm font-medium mb-1">Contact Phone</label>
+            <input type="tel" id="contact_phone" name="contact_phone" value="<%= _v('contact_phone') %>"
+                   class="input-premium w-full" placeholder="(555) 555-0100">
+          </div>
+          <% } else if (_has('phone')) { %>
+          <div>
+            <label for="phone" class="block text-sm font-medium mb-1">Phone Number</label>
+            <input type="tel" id="phone" name="phone" value="<%= _v('phone') %>"
+                   class="input-premium w-full" placeholder="(555) 555-0100">
+          </div>
+          <% } %>
+          <% if (_has('contact_address')) { %>
+          <div class="md:col-span-2">
+            <label for="contact_address" class="block text-sm font-medium mb-1">Contact Address</label>
+            <input type="text" id="contact_address" name="contact_address" value="<%= _v('contact_address') %>"
+                   class="input-premium w-full" placeholder="123 Main St, City, State">
+          </div>
+          <% } else if (_has('address')) { %>
+          <div class="md:col-span-2">
+            <label for="address" class="block text-sm font-medium mb-1">Address</label>
+            <input type="text" id="address" name="address" value="<%= _v('address') %>"
+                   class="input-premium w-full" placeholder="123 Main St, City, State">
+          </div>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <%# ==================== SOCIAL ==================== %>
+    <% var _socials = [
+      ['instagram_url', 'Instagram', 'https://instagram.com/yourpage'],
+      ['facebook_url',  'Facebook',  'https://facebook.com/yourpage'],
+      ['youtube_url',   'YouTube',   'https://youtube.com/@yourchannel'],
+      ['tiktok_url',    'TikTok',    'https://tiktok.com/@yourpage'],
+      ['twitter_url',   'Twitter / X', 'https://twitter.com/yourpage'],
+      ['linkedin_url',  'LinkedIn',  'https://linkedin.com/company/yourco'],
+    ]; %>
+    <% var _anySocial = _socials.some(function(s){ return _has(s[0]); }); %>
+    <% if (_anySocial) { %>
+      <div class="card-premium admin-settings-card p-6 rounded-xl border">
+        <h2 class="font-display text-lg font-semibold mb-1">Social Media Links</h2>
+        <p class="text-xs mb-4">Shown in the footer and any "Follow Us" blocks.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <% _socials.forEach(function(s){ if (_has(s[0])) { %>
+            <div>
+              <label for="<%= s[0] %>" class="block text-sm font-medium mb-1"><%= s[1] %></label>
+              <input type="url" id="<%= s[0] %>" name="<%= s[0] %>" value="<%= _v(s[0]) %>"
+                     class="input-premium w-full" placeholder="<%= s[2] %>">
+            </div>
+          <% } }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="flex justify-end pt-2">
+      <button type="submit"
+              class="px-6 py-2.5 rounded-lg font-medium transition"
+              style="background:var(--color-accent,#5a80c0);color:#fff;">
+        Save Settings
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,518 @@
+{
+  "app_name": "sample-event-producer",
+  "archetype": "event-producer",
+  "palette": "deep-plum",
+  "font_pair": "playfair-source-sans",
+  "admin_email": "info@greenhousearts.example",
+  "settings": {
+    "site_name": "Greenhouse Arts Collective",
+    "site_description": "Greenhouse Arts Collective: Art show producers, concert promoters, performance curators, festival organizers, art walks. Events are the product. Core flow: announce upcoming events, build email list, sell tickets or take inquiries, showcase past work.",
+    "hero_tagline": "Curated",
+    "hero_description": "Greenhouse Arts Collective: Art show producers, concert promoters, performance curators, festival organizers, art walks. Events are the product. Core flow: announce upcoming events, build email list, sell tickets or take inquiries, showcase past work.",
+    "hero_image_url": "https://picsum.photos/id/500/1600/900",
+    "nav_logo_url": "",
+    "about_title": "About Greenhouse Arts Collective",
+    "about_body": "Greenhouse Arts Collective serves curated, confident, editorial, atmospheric. Established with care and intention.",
+    "about_photo_url": "https://picsum.photos/id/500/800/1000",
+    "contact_email": "info@greenhousearts.example",
+    "contact_phone": "",
+    "contact_address": "Sample City, ST",
+    "business_name": "Greenhouse Arts Collective",
+    "support_email": "info@greenhousearts.example",
+    "instagram_url": "",
+    "facebook_url": "",
+    "twitter_url": "",
+    "linkedin_url": "",
+    "youtube_url": "",
+    "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "GREENHOUSE ARTS COLLECTIVE",
+        "heading": "Curated",
+        "description": "Greenhouse Arts Collective: Art show producers, concert promoters, performance curators, festival organizers, art walks. Events are the product. Core flow: announce upcoming events, build email list, sell tickets or take inquiries, showcase past work.",
+        "image_url": "https://picsum.photos/id/500/1600/900",
+        "image_alt": "Greenhouse Arts Collective photo",
+        "cta_primary": {
+          "text": "Get in touch",
+          "href": "/contact"
+        },
+        "cta_secondary": {
+          "text": "Learn more",
+          "href": "/about"
+        }
+      },
+      "offerings": {
+        "eyebrow": "OFFERINGS",
+        "heading": "What I Offer",
+        "items": []
+      },
+      "services": {
+        "eyebrow": "OFFERINGS",
+        "heading": "What I Offer",
+        "items": []
+      },
+      "testimonials": {
+        "eyebrow": "VOICES",
+        "heading": "What Clients Say",
+        "items": [
+          {
+            "quote": "A draft quote about a memorable event night. Replace with a real quote from an attendee, artist, or venue partner when you collect one. (on Greenhouse Arts Collective)",
+            "author_name": "Attendee (sample)",
+            "service": "Past event"
+          },
+          {
+            "quote": "Another draft pull-quote slot for a press mention, an artist review, or an attendee. Keep it short and specific; one concrete detail reads stronger than a general compliment.",
+            "author_name": "Press mention (sample)",
+            "service": "Coverage"
+          },
+          {
+            "quote": "A third draft quote slot. Consider a quote from a partner venue or a returning attendee; replace this text as soon as you have a real one.",
+            "author_name": "Partner venue (sample)",
+            "service": "Collaboration"
+          }
+        ]
+      },
+      "reviews": {
+        "eyebrow": "VOICES",
+        "heading": "What Clients Say",
+        "items": [
+          {
+            "quote": "A draft quote about a memorable event night. Replace with a real quote from an attendee, artist, or venue partner when you collect one. (on Greenhouse Arts Collective)",
+            "author_name": "Attendee (sample)",
+            "service": "Past event"
+          },
+          {
+            "quote": "Another draft pull-quote slot for a press mention, an artist review, or an attendee. Keep it short and specific; one concrete detail reads stronger than a general compliment.",
+            "author_name": "Press mention (sample)",
+            "service": "Coverage"
+          },
+          {
+            "quote": "A third draft quote slot. Consider a quote from a partner venue or a returning attendee; replace this text as soon as you have a real one.",
+            "author_name": "Partner venue (sample)",
+            "service": "Collaboration"
+          }
+        ]
+      },
+      "cta": {
+        "heading": "Ready to begin?",
+        "description": "Reach out to start the conversation.",
+        "cta_text": "Get in touch",
+        "cta_href": "/contact"
+      },
+      "newsletter": {
+        "heading": "Stay in touch",
+        "description": "Occasional dispatches, one email every few weeks.",
+        "placeholder": "Your email",
+        "button_text": "Subscribe"
+      },
+      "trust": {
+        "items": [
+          {
+            "number": "Licensed",
+            "label": "& Insured",
+            "sub": "Fully credentialed"
+          },
+          {
+            "number": "5\u2605",
+            "label": "Rating",
+            "sub": "Happy customers"
+          },
+          {
+            "number": "24/7",
+            "label": "Available",
+            "sub": "Emergency service"
+          },
+          {
+            "number": "Local",
+            "label": "Family-Run",
+            "sub": "Your neighbors"
+          }
+        ]
+      },
+      "areas": {
+        "heading": "Service Areas",
+        "items": [
+          {
+            "city": "Sample City",
+            "state": "ST"
+          }
+        ]
+      },
+      "instructors": {
+        "heading": "Meet Your Team",
+        "items": []
+      },
+      "team": {
+        "heading": "Meet Your Team",
+        "items": []
+      },
+      "featured_dishes": {
+        "eyebrow": "OFFERINGS",
+        "heading": "What I Offer",
+        "items": []
+      },
+      "visit": {
+        "heading": "Visit",
+        "hours": [],
+        "address": "Sample City, ST",
+        "phone": "",
+        "email": "info@greenhousearts.example"
+      },
+      "upcoming_events": {
+        "eyebrow": "UPCOMING",
+        "heading": "What's Coming Up",
+        "items": [
+          {
+            "title": "April First Fridays: Gallery Night",
+            "date": "2026-05-01",
+            "description": "A draft listing for a monthly gallery walk. Replace with your own program when you have dates confirmed, the galleries participating, and how visitors can plan a route.",
+            "image_url": "https://picsum.photos/id/100/1200/800",
+            "detail_href": "/events"
+          },
+          {
+            "title": "Spring Concert Series: Opening Night",
+            "date": "2026-05-15",
+            "description": "A draft listing for the opening night of a four-week concert series. Replace with the actual lineup, the venue details, and ticketing link when you have them.",
+            "image_url": "https://picsum.photos/id/200/1200/800",
+            "detail_href": "/events"
+          },
+          {
+            "title": "Summer Art Fair: Early Registration",
+            "date": "2026-06-08",
+            "description": "A draft listing for the annual summer art fair. Replace with participating artists, the day-of schedule, and any early-registration information for vendors or attendees.",
+            "image_url": "https://picsum.photos/id/300/1200/800",
+            "detail_href": "/events"
+          },
+          {
+            "title": "Performance Workshop Series",
+            "date": "2026-06-22",
+            "description": "A draft listing for a weekend workshop series. Replace with the actual facilitators, the workshop topics, and how participants can register when you finalize the program.",
+            "image_url": "https://picsum.photos/id/400/1200/800",
+            "detail_href": "/events"
+          }
+        ]
+      },
+      "press": {
+        "eyebrow": "VOICES",
+        "heading": "What Clients Say",
+        "items": [
+          {
+            "quote": "A draft quote about a memorable event night. Replace with a real quote from an attendee, artist, or venue partner when you collect one. (on Greenhouse Arts Collective)",
+            "author_name": "Attendee (sample)",
+            "service": "Past event"
+          },
+          {
+            "quote": "Another draft pull-quote slot for a press mention, an artist review, or an attendee. Keep it short and specific; one concrete detail reads stronger than a general compliment.",
+            "author_name": "Press mention (sample)",
+            "service": "Coverage"
+          },
+          {
+            "quote": "A third draft quote slot. Consider a quote from a partner venue or a returning attendee; replace this text as soon as you have a real one.",
+            "author_name": "Partner venue (sample)",
+            "service": "Collaboration"
+          }
+        ]
+      }
+    },
+    "events": {
+      "hero": {
+        "eyebrow": "GATHER",
+        "heading": "Upcoming Events",
+        "description": "The full calendar of gatherings, shows, and performances."
+      },
+      "items": [
+        {
+          "title": "April First Fridays: Gallery Night",
+          "date": "2026-05-01",
+          "description": "A draft listing for a monthly gallery walk. Replace with your own program when you have dates confirmed, the galleries participating, and how visitors can plan a route.",
+          "image_url": "https://picsum.photos/id/100/1200/800",
+          "detail_href": "/events"
+        },
+        {
+          "title": "Spring Concert Series: Opening Night",
+          "date": "2026-05-15",
+          "description": "A draft listing for the opening night of a four-week concert series. Replace with the actual lineup, the venue details, and ticketing link when you have them.",
+          "image_url": "https://picsum.photos/id/200/1200/800",
+          "detail_href": "/events"
+        },
+        {
+          "title": "Summer Art Fair: Early Registration",
+          "date": "2026-06-08",
+          "description": "A draft listing for the annual summer art fair. Replace with participating artists, the day-of schedule, and any early-registration information for vendors or attendees.",
+          "image_url": "https://picsum.photos/id/300/1200/800",
+          "detail_href": "/events"
+        },
+        {
+          "title": "Performance Workshop Series",
+          "date": "2026-06-22",
+          "description": "A draft listing for a weekend workshop series. Replace with the actual facilitators, the workshop topics, and how participants can register when you finalize the program.",
+          "image_url": "https://picsum.photos/id/400/1200/800",
+          "detail_href": "/events"
+        }
+      ]
+    },
+    "past-events": {
+      "hero": {
+        "eyebrow": "ARCHIVE",
+        "heading": "Past Events",
+        "description": "A portfolio of recent productions."
+      },
+      "items": [
+        {
+          "title": "Past event 1",
+          "image_url": "https://picsum.photos/id/500/1200/800"
+        },
+        {
+          "title": "Past event 2",
+          "image_url": "https://picsum.photos/id/600/1200/800"
+        },
+        {
+          "title": "Past event 3",
+          "image_url": "https://picsum.photos/id/100/1200/800"
+        },
+        {
+          "title": "Past event 4",
+          "image_url": "https://picsum.photos/id/200/1200/800"
+        },
+        {
+          "title": "Past event 5",
+          "image_url": "https://picsum.photos/id/300/1200/800"
+        },
+        {
+          "title": "Past event 6",
+          "image_url": "https://picsum.photos/id/400/1200/800"
+        }
+      ]
+    },
+    "about": {
+      "hero": {
+        "eyebrow": "ABOUT",
+        "heading": "About Greenhouse Arts Collective",
+        "description": "Greenhouse Arts Collective serves curated, confident, editorial, atmospheric. Established with care and intention.",
+        "image_url": "https://picsum.photos/id/500/800/1000",
+        "image_alt": "Portrait of Greenhouse Arts Collective"
+      },
+      "cta": {
+        "heading": "Ready to work together?",
+        "description": "Reach out for an intro conversation.",
+        "cta_text": "Get in touch",
+        "cta_href": "/contact"
+      }
+    },
+    "contact": {
+      "hero": {
+        "eyebrow": "REACH OUT",
+        "heading": "Get in Touch",
+        "description": "I'd love to hear from you."
+      },
+      "form": {
+        "heading": "Send a Message",
+        "service_options": [
+          "General Inquiry"
+        ]
+      }
+    }
+  },
+  "seed_content": {
+    "testimonials": [
+      {
+        "author_name": "Attendee (sample)",
+        "quote": "A draft quote about a memorable event night. Replace with a real quote from an attendee, artist, or venue partner when you collect one. (on Greenhouse Arts Collective)",
+        "service": "Past event",
+        "published": true
+      },
+      {
+        "author_name": "Press mention (sample)",
+        "quote": "Another draft pull-quote slot for a press mention, an artist review, or an attendee. Keep it short and specific; one concrete detail reads stronger than a general compliment.",
+        "service": "Coverage",
+        "published": true
+      },
+      {
+        "author_name": "Partner venue (sample)",
+        "quote": "A third draft quote slot. Consider a quote from a partner venue or a returning attendee; replace this text as soon as you have a real one.",
+        "service": "Collaboration",
+        "published": true
+      }
+    ],
+    "contact_inquiries": [
+      {
+        "name": "Sample Lead",
+        "email": "sample@example.com",
+        "service_interest": "General Inquiry",
+        "message": "Just exploring: is this available in Q2?"
+      },
+      {
+        "name": "Returning Customer",
+        "email": "return@example.com",
+        "service_interest": "",
+        "message": "Had a great experience last year, reaching out again."
+      },
+      {
+        "name": "New Referral",
+        "email": "friend@example.com",
+        "service_interest": "",
+        "message": "A friend recommended you."
+      }
+    ],
+    "newsletter_subscribers": [
+      {
+        "email": "early.reader@example.com"
+      },
+      {
+        "email": "new.friend@example.com"
+      },
+      {
+        "email": "regular.subscriber@example.com"
+      },
+      {
+        "email": "community.voice@example.com"
+      }
+    ],
+    "photos": [
+      {
+        "title": "Photo 1",
+        "caption": "Sample photo #1",
+        "image_url": "https://picsum.photos/id/300/1200/1200",
+        "category": "general",
+        "featured": true
+      },
+      {
+        "title": "Photo 2",
+        "caption": "Sample photo #2",
+        "image_url": "https://picsum.photos/id/400/1200/1200",
+        "category": "general",
+        "featured": true
+      },
+      {
+        "title": "Photo 3",
+        "caption": "Sample photo #3",
+        "image_url": "https://picsum.photos/id/500/1200/1200",
+        "category": "general",
+        "featured": true
+      },
+      {
+        "title": "Photo 4",
+        "caption": "Sample photo #4",
+        "image_url": "https://picsum.photos/id/600/1200/1200",
+        "category": "general",
+        "featured": false
+      },
+      {
+        "title": "Photo 5",
+        "caption": "Sample photo #5",
+        "image_url": "https://picsum.photos/id/100/1200/1200",
+        "category": "general",
+        "featured": false
+      },
+      {
+        "title": "Photo 6",
+        "caption": "Sample photo #6",
+        "image_url": "https://picsum.photos/id/200/1200/1200",
+        "category": "general",
+        "featured": false
+      },
+      {
+        "title": "Photo 7",
+        "caption": "Sample photo #7",
+        "image_url": "https://picsum.photos/id/300/1200/1200",
+        "category": "general",
+        "featured": false
+      },
+      {
+        "title": "Photo 8",
+        "caption": "Sample photo #8",
+        "image_url": "https://picsum.photos/id/400/1200/1200",
+        "category": "general",
+        "featured": false
+      }
+    ],
+    "events": [
+      {
+        "title": "April First Fridays: Gallery Night",
+        "event_date": "2026-05-01",
+        "event_time": "18:00",
+        "end_time": "21:00",
+        "location": "Downtown Arts District",
+        "description": "A draft listing for a monthly gallery walk. Replace with your own program when you have dates confirmed, the galleries participating, and how visitors can plan a route.",
+        "registration_url": "",
+        "image_url": "https://picsum.photos/id/100/1200/800"
+      },
+      {
+        "title": "Spring Concert Series: Opening Night",
+        "event_date": "2026-05-15",
+        "event_time": "19:30",
+        "end_time": "22:00",
+        "location": "The Greenhouse Theater",
+        "description": "A draft listing for the opening night of a four-week concert series. Replace with the actual lineup, the venue details, and ticketing link when you have them.",
+        "registration_url": "",
+        "image_url": "https://picsum.photos/id/200/1200/800"
+      },
+      {
+        "title": "Summer Art Fair: Early Registration",
+        "event_date": "2026-06-08",
+        "event_time": "10:00",
+        "end_time": "18:00",
+        "location": "Heritage Park",
+        "description": "A draft listing for the annual summer art fair. Replace with participating artists, the day-of schedule, and any early-registration information for vendors or attendees.",
+        "registration_url": "",
+        "image_url": "https://picsum.photos/id/300/1200/800"
+      },
+      {
+        "title": "Performance Workshop Series",
+        "event_date": "2026-06-22",
+        "event_time": "13:00",
+        "end_time": "17:00",
+        "location": "Studio B, 100 Example St",
+        "description": "A draft listing for a weekend workshop series. Replace with the actual facilitators, the workshop topics, and how participants can register when you finalize the program.",
+        "registration_url": "",
+        "image_url": "https://picsum.photos/id/400/1200/800"
+      }
+    ],
+    "past_events": [
+      {
+        "title": "Previous production 1",
+        "event_date": "2025-01-15",
+        "location": "Various venues",
+        "description": "A draft archive entry. Replace with details from a real past production: the artists involved, the attendance, any press coverage or reviews.",
+        "image_url": "https://picsum.photos/id/500/1200/800"
+      },
+      {
+        "title": "Previous production 2",
+        "event_date": "2025-02-15",
+        "location": "Various venues",
+        "description": "A draft archive entry. Replace with details from a real past production: the artists involved, the attendance, any press coverage or reviews.",
+        "image_url": "https://picsum.photos/id/600/1200/800"
+      },
+      {
+        "title": "Previous production 3",
+        "event_date": "2025-03-15",
+        "location": "Various venues",
+        "description": "A draft archive entry. Replace with details from a real past production: the artists involved, the attendance, any press coverage or reviews.",
+        "image_url": "https://picsum.photos/id/100/1200/800"
+      },
+      {
+        "title": "Previous production 4",
+        "event_date": "2025-04-15",
+        "location": "Various venues",
+        "description": "A draft archive entry. Replace with details from a real past production: the artists involved, the attendance, any press coverage or reviews.",
+        "image_url": "https://picsum.photos/id/200/1200/800"
+      },
+      {
+        "title": "Previous production 5",
+        "event_date": "2025-05-15",
+        "location": "Various venues",
+        "description": "A draft archive entry. Replace with details from a real past production: the artists involved, the attendance, any press coverage or reviews.",
+        "image_url": "https://picsum.photos/id/300/1200/800"
+      },
+      {
+        "title": "Previous production 6",
+        "event_date": "2025-06-15",
+        "location": "Various venues",
+        "description": "A draft archive entry. Replace with details from a real past production: the artists involved, the attendance, any press coverage or reviews.",
+        "image_url": "https://picsum.photos/id/400/1200/800"
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+<!-- compose:widget cta/inquiry-block -->
+<% var _cta_heading = (typeof heading !== 'undefined' && heading) ? heading : 'Get in touch'; %>
+<% var _cta_href = (typeof cta_href !== 'undefined' && cta_href) ? cta_href : '/contact'; %>
+<% var _cta_text = (typeof cta_text !== 'undefined' && cta_text) ? cta_text : 'Contact Us'; %>
+<%# External CTAs (http(s)://) open in a new tab so the customer's site
+   stays put behind the click. Internal CTAs (/contact, /book, etc.)
+   navigate in-place. %>
+<% var _cta_external = /^https?:\/\//i.test(String(_cta_href)); %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+    <h2 class="font-display text-2xl md:text-3xl font-bold tracking-tight mb-4" style="color: var(--color-foreground);"><%= _cta_heading %></h2>
+    <% if (typeof description !== 'undefined' && description) { %>
+      <p class="font-body text-base md:text-lg mb-8" style="color: var(--color-foreground-muted);"><%= description %></p>
+    <% } %>
+    <a href="<%= _cta_href %>"<% if (_cta_external) { %> target="_blank" rel="noopener"<% } %> class="inline-flex items-center justify-center font-body font-medium px-8 py-3 rounded-md transition-opacity hover:opacity-90 min-h-[44px]" style="background-color: var(--color-primary); color: var(--color-on-primary);"><%= _cta_text %></a>
+  </div>
+</section>

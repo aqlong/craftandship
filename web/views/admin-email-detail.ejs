@@ -1,0 +1,72 @@
+<section class="max-w-[1000px] mx-auto px-3 py-4 sm:p-6 sm:pt-8">
+  <div class="flex items-center gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-gray-100">Email Preview</h1>
+  </div>
+
+  <p class="mb-6">
+    <a class="text-brand no-underline text-sm font-medium hover:underline hover:text-brand-sky" href="/admin/emails">&larr; Back to Email Log</a>
+  </p>
+
+  <div class="bg-surface-3 rounded-[10px] p-3 sm:p-6 mb-6">
+    <h2 class="text-sm font-semibold text-muted uppercase tracking-wider mb-4">Metadata</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+      <div class="flex flex-col gap-1">
+        <span class="text-xs text-subtle font-semibold uppercase tracking-wider">To</span>
+        <span class="text-sm text-gray-200 break-all"><%= log.to_email %></span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs text-subtle font-semibold uppercase tracking-wider">Template</span>
+        <span class="text-sm font-mono text-brand-sky"><%= log.template %></span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs text-subtle font-semibold uppercase tracking-wider">Subject</span>
+        <span class="text-sm text-gray-200"><%= log.subject %></span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs text-subtle font-semibold uppercase tracking-wider">Status</span>
+        <span class="text-sm">
+          <span class="admin-badge admin-badge-<%= log.status %>"><%= log.status %></span>
+        </span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs text-subtle font-semibold uppercase tracking-wider">Status Code</span>
+        <span class="text-sm font-mono text-muted"><%= log.status_code != null ? log.status_code : '-' %></span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs text-subtle font-semibold uppercase tracking-wider">Duration</span>
+        <span class="text-sm text-gray-200"><%= log.duration_ms != null ? log.duration_ms + 'ms' : '-' %></span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs text-subtle font-semibold uppercase tracking-wider">Resend ID</span>
+        <span class="text-sm font-mono text-muted"><%= log.resend_id || '-' %></span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs text-subtle font-semibold uppercase tracking-wider">Timestamp</span>
+        <span class="text-sm text-muted" data-ts="<%= new Date(log.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(log.created_at).toISOString().replace('T', ' ').slice(0, 19) %> UTC</span>
+      </div>
+      <% if (log.error_message) { %>
+        <div class="flex flex-col gap-1 col-span-full">
+          <span class="text-xs text-subtle font-semibold uppercase tracking-wider">Error</span>
+          <span class="text-sm text-red-300"><%= log.error_message %></span>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="bg-surface-3 rounded-[10px] p-3 sm:p-6">
+    <h2 class="text-sm font-semibold text-muted uppercase tracking-wider mb-4">Email Body</h2>
+    <% if (log.html_body) { %>
+      <div class="rounded-lg overflow-hidden">
+        <iframe
+          id="email-frame"
+          sandbox=""
+          srcdoc="<%= log.html_body %>"
+          class="w-full h-[400px] sm:h-[500px] border border-border rounded-lg bg-white block"
+          title="Email preview"
+        ></iframe>
+      </div>
+    <% } else { %>
+      <p class="text-subtle text-sm bg-bg border border-border rounded-lg p-6 m-0 text-center">No HTML body stored for this entry.</p>
+    <% } %>
+  </div>
+</section>

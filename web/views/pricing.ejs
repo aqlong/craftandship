@@ -1,0 +1,106 @@
+<%
+  var subscription = typeof harborSubscriptionPrice !== 'undefined' ? harborSubscriptionPrice : '$39';
+  var sliding      = typeof harborSlidingScalePrice !== 'undefined' ? harborSlidingScalePrice : '$19';
+%>
+
+<section class="pricing-hero">
+  <div class="max-site" style="max-width:760px;">
+    <span class="eyebrow" style="font-size:19px; display:block; margin-bottom:14px;">A simple, kind price,</span>
+    <h1 class="display pricing-hero__title">
+      Choose any amount from<br/>
+      <%= subscription %> down to <em style="color:var(--color-clay);"><%= sliding %>,</em><br/>
+      whatever fits your practice.
+    </h1>
+    <p style="font-size:21px; color:var(--color-ink-soft); line-height:1.55; max-width:620px; margin:24px 0 0;">
+      One subscription covers everything: a custom website shaped with you in conversation and built from a library of tested building blocks, hosting and care, an AI companion who helps you find the words, and unlimited revisions and rebuilds kept across the years.
+    </p>
+  </div>
+</section>
+
+<section style="padding:48px 0 96px;">
+  <div class="max-site" style="max-width:880px;">
+    <div class="included-card ruled-card">
+      <div class="included-card__price-row">
+        <div>
+          <div class="display included-card__price"><%= subscription %></div>
+          <div class="included-card__price-meta">a month, down to <%= sliding %> if that fits better</div>
+        </div>
+        <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+      </div>
+      <ul class="included-card__list">
+        <li><span class="included-card__bullet">&check;</span> A custom website, shaped with you in conversation and built from a library of tested building blocks</li>
+        <li><span class="included-card__bullet">&check;</span> Every website needs a recorded review approval before it goes live</li>
+        <li><span class="included-card__bullet">&check;</span> Hosting and care included, with uptime watched day and night</li>
+        <li><span class="included-card__bullet">&check;</span> Unlimited revisions and rebuilds, kept across the years</li>
+        <li><span class="included-card__bullet">&check;</span> Haven, an AI companion, helps you find the words whenever you need her</li>
+        <li><span class="included-card__bullet">&check;</span> Yours. If you ever leave, we hand the whole site over intact.</li>
+      </ul>
+      <div class="included-card__footnote">
+        A conversation first. When it's right, you begin together.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:0 0 120px;">
+  <div class="max-site" style="max-width:760px;">
+    <div style="display:flex; align-items:baseline; gap:24px; margin-bottom:14px;">
+      <span class="eyebrow">A few small things,</span>
+      <span style="flex:1; height:1px; background:var(--color-rule);"></span>
+    </div>
+    <h2 class="display" style="font-size:44px; margin:14px 0 32px; line-height:1.05;">
+      Frequently asked.
+    </h2>
+    <%
+      // FAQ list comes from `pricingFaqs` (route → web/src/services/pricing-faq.ts).
+      // The same list also feeds the FAQPage JSON-LD via `pageJsonLd` in the layout,
+      // so visible Q/A copy and AI-citation schema cannot drift. If `pricingFaqs`
+      // is missing (e.g. a future caller renders this view directly), fall back to
+      // an empty list rather than crashing the page.
+      var faqList = (typeof pricingFaqs !== 'undefined' && Array.isArray(pricingFaqs)) ? pricingFaqs : [];
+    %>
+    <% faqList.forEach(function(item, i){ %>
+      <div style="border-top:1px solid var(--color-rule); padding:24px 0;">
+        <div class="display" style="font-size:24px; margin-bottom:8px; display:flex; align-items:baseline; gap:14px;">
+          <span style="color:var(--color-clay); font-style:italic; font-size:18px;"><%= String(i + 1).padStart(2, '0') %></span>
+          <span><%= item.question %></span>
+        </div>
+        <p style="color:var(--color-ink-soft); font-size:18px; line-height:1.7; margin:0 0 0 36px; max-width:640px;"><%= item.answer %></p>
+      </div>
+    <% }) %>
+  </div>
+</section>
+
+<section style="padding:0 0 120px;">
+  <div class="max-site" style="max-width:760px;">
+    <div class="pricing-final-cta">
+      <span class="eyebrow" style="font-size:19px; display:block; margin-bottom:14px;">When you're ready,</span>
+      <h2 class="display" style="font-size:44px; margin:0 0 22px; line-height:1.05;">
+        Begin a conversation.
+      </h2>
+      <p style="font-size:19px; color:var(--color-ink-soft); line-height:1.6; max-width:520px; margin:0 0 28px;">
+        Tell us about your work. Your companion will write back. Talk for as long as it feels right. When it's time, you decide.
+      </p>
+      <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+        <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+        <a href="/how-it-works" class="btn btn-quiet"><span class="arrow">See how it works</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pricing-hero { padding:80px 0 32px; }
+  .pricing-hero__title { font-size:72px; line-height:1.02; margin:0; letter-spacing:-0.018em; }
+  @media (max-width: 900px) { .pricing-hero__title { font-size:48px; } }
+
+  .pricing-final-cta {
+    background:var(--color-companion-paper);
+    padding:48px 48px 44px;
+    box-shadow:var(--shadow-letter);
+    border-radius: 5px;
+  }
+  @media (max-width: 600px) {
+    .pricing-final-cta { padding:32px 24px 28px; }
+  }
+</style>

@@ -1,0 +1,101 @@
+<!-- compose:widget form/field - universal typed form-field partial.
+  Usage (via EJS include): pass {name, field_type, value?, required?, label?,
+  help?, options?, placeholder?, rows?}. field_type keys into
+  compose/data/field-types.json. The partial reads validation rules (pattern,
+  maxlength, minlength, inputmode, autocomplete, step, min, max, placeholder)
+  from settings._field_types which is injected by middleware/settings.js.
+  One source of truth for the whole generated app. -->
+<%
+var _types = (typeof settings !== 'undefined' && settings && settings._field_types) ? settings._field_types : {};
+var _US_STATES = (typeof settings !== 'undefined' && settings && settings._us_states) ? settings._us_states : [];
+// Tiny built-in fallback so common types work even when the registry
+// hasn't been wired into settings (e.g. in widget-unit-test render
+// contexts). Real generated apps always have the full registry.
+var _FT_FALLBACK = {
+  text: { html_input: 'input:text' },
+  long_text: { html_input: 'textarea' },
+  email: { html_input: 'input:email' },
+  phone_us: { html_input: 'input:tel' },
+  url: { html_input: 'input:url' },
+  select: { html_input: 'select:options' },
+  state_us: { html_input: 'select:state-us' },
+  date: { html_input: 'input:date' },
+  time: { html_input: 'input:time' },
+  image: { html_input: 'upload:image' },
+  boolean: { html_input: 'input:checkbox' },
+  color_hex: { html_input: 'input:color' },
+  password: { html_input: 'input:password' },
+  integer: { html_input: 'input:number' },
+  decimal: { html_input: 'input:number' },
+  currency_usd: { html_input: 'input:number' }
+};
+var _ft = _types[field_type] || _FT_FALLBACK[field_type] || { html_input: 'input:text' };
+var _inputKind = _ft.html_input || 'input:text';
+var _required = !!(typeof required !== 'undefined' && required);
+var _value = (typeof value !== 'undefined' && value !== null) ? value : '';
+var _label = (typeof label !== 'undefined' && label) ? label : name;
+var _help = (typeof help !== 'undefined' && help) ? help : '';
+var _placeholder = (typeof placeholder !== 'undefined' && placeholder) ? placeholder : (_ft.placeholder || '');
+var _fieldId = 'field-' + String(name).replace(/[^a-zA-Z0-9_-]/g, '-');
+var _sharedClass = 'w-full px-3 py-2 border rounded-md font-body text-sm';
+var _sharedStyle = 'border-color: var(--color-border); background: white;';
+// _attrs() is emitted with the raw output tag, so every value is
+// attribute-escaped here (placeholder comes from the spec).
+function _attr(v) { return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function _attrs() {
+  var out = [];
+  if (_ft.pattern) out.push('pattern="' + _attr(_ft.pattern) + '"');
+  if (_ft.maxlength) out.push('maxlength="' + _attr(_ft.maxlength) + '"');
+  if (_ft.minlength) out.push('minlength="' + _attr(_ft.minlength) + '"');
+  if (_ft.inputmode) out.push('inputmode="' + _attr(_ft.inputmode) + '"');
+  if (_ft.autocomplete) out.push('autocomplete="' + _attr(_ft.autocomplete) + '"');
+  if (_ft.step) out.push('step="' + _attr(_ft.step) + '"');
+  if (_ft.min !== undefined) out.push('min="' + _attr(_ft.min) + '"');
+  if (_ft.max !== undefined) out.push('max="' + _attr(_ft.max) + '"');
+  if (_placeholder) out.push('placeholder="' + _attr(_placeholder) + '"');
+  if (_required) out.push('required');
+  return out.join(' ');
+}
+%>
+<div class="cas-field">
+  <% if (_inputKind !== 'input:checkbox' && _inputKind !== 'input:hidden') { %>
+    <label for="<%= _fieldId %>" class="block font-body text-sm font-medium mb-1" style="color: var(--color-foreground);"><%= _label %><% if (_required) { %> <span style="color: var(--color-error);">*</span><% } %></label>
+  <% } %>
+  <% if (_inputKind === 'textarea') { %>
+    <textarea id="<%= _fieldId %>" name="<%= name %>" rows="<%= (typeof rows !== 'undefined' && rows) ? rows : 4 %>" <%- _attrs() %> class="<%= _sharedClass %>" style="<%= _sharedStyle %>"><%= _value %></textarea>
+  <% } else if (_inputKind === 'select:state-us') { %>
+    <select id="<%= _fieldId %>" name="<%= name %>" <% if (_required) { %>required<% } %> class="<%= _sharedClass %>" style="<%= _sharedStyle %>">
+      <option value=""><%= _placeholder || 'Select state' %></option>
+      <% _US_STATES.forEach(function(s) { %>
+        <option value="<%= s[0] %>"<% if (String(_value).toUpperCase() === s[0]) { %> selected<% } %>><%= s[1] %> (<%= s[0] %>)</option>
+      <% }); %>
+    </select>
+  <% } else if (_inputKind === 'select:options') { %>
+    <select id="<%= _fieldId %>" name="<%= name %>" <% if (_required) { %>required<% } %> class="<%= _sharedClass %>" style="<%= _sharedStyle %>">
+      <option value=""><%= _placeholder || 'Select...' %></option>
+      <% ((typeof options !== 'undefined' && options) ? options : []).forEach(function(opt) {
+        var val = (typeof opt === 'string') ? opt : opt.value;
+        var lbl = (typeof opt === 'string') ? opt : (opt.label || opt.value);
+      %>
+        <option value="<%= val %>"<% if (_value === val) { %> selected<% } %>><%= lbl %></option>
+      <% }); %>
+    </select>
+  <% } else if (_inputKind === 'input:checkbox') { %>
+    <label class="inline-flex items-center gap-2 cursor-pointer">
+      <input id="<%= _fieldId %>" type="checkbox" name="<%= name %>" value="1" <% if (_value) { %>checked<% } %> />
+      <span class="font-body text-sm" style="color: var(--color-foreground);"><%= _label %></span>
+    </label>
+  <% } else if (_inputKind === 'input:hidden') { %>
+    <input id="<%= _fieldId %>" type="hidden" name="<%= name %>" value="<%= _value || _ft.default_value || '' %>" />
+  <% } else if (_inputKind === 'upload:image') { %>
+    <%- include('../admin/upload-zone.ejs', { field_name: name, label: _label, current_url: _value || '', accept: 'PNG / JPG / WEBP' }) %>
+  <% } else if (_inputKind === 'input:color') { %>
+    <input id="<%= _fieldId %>" type="color" name="<%= name %>" value="<%= _value || '#000000' %>" <%- _attrs() %> style="<%= _sharedStyle %>; width: 80px; height: 44px; padding: 2px 4px;" class="border rounded-md" />
+  <% } else { %>
+    <% var _htmlType = _inputKind.replace(/^input:/, ''); %>
+    <input id="<%= _fieldId %>" type="<%= _htmlType %>" name="<%= name %>" value="<%= _value %>" <%- _attrs() %> class="<%= _sharedClass %>" style="<%= _sharedStyle %>" />
+  <% } %>
+  <% if (_help) { %>
+    <div class="font-body text-xs mt-1" style="color: var(--color-foreground-muted);"><%= _help %></div>
+  <% } %>
+</div>

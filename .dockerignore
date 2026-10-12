@@ -1,0 +1,33 @@
+# Keep local secrets, VCS data, dependencies, and caches out of the worker
+# image (Dockerfile.worker copies the build context with `COPY . .`).
+# Source directories, docs, and tests stay in: coordinator agents read docs and
+# web/src/db/schema.sql at runtime. `.env.example` templates are kept on purpose.
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.venv
+venv
+builds
+logs
+**/*.dump
+**/*.sql.gz
+**/.DS_Store
+**/*.pem
+**/*.key
+
+# Local tool state and generated output (all gitignored; never part of an image)
+.claude/settings.local.json
+.claude/worktrees
+.worktrees
+.playwright-mcp
+qa_results
+playwright-report
+test-results

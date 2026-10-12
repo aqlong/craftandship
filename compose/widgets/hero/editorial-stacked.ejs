@@ -1,0 +1,82 @@
+<!-- compose:widget hero/editorial-stacked -->
+<%
+   // Editorial-stacked hero variant.
+   //
+   // Visual contract; distinct from hero/centered + hero/split-image:
+   //   - Single-column, much airier vertical rhythm (py-20 / py-28).
+   //   - Display headline left-aligned (not centered); description sits
+   //     beneath at a wider measure for editorial feel.
+   //   - Eyebrow rendered as a horizontal rule + tiny caption ("01 Eyebrow"),
+   //     evoking a magazine column rather than a CTA shout.
+   //   - Hero image (when supplied) sits BELOW headline+description in a
+   //     capped 5xl frame, offset slightly with a thin caption rail to its
+   //     right on lg+ screens; never side-by-side at the headline level.
+   //   - CTAs: secondary rendered as a quiet underlined link, primary as a
+   //     pill, both bottom-anchored after the description block.
+   //
+   // Same data contract as hero/centered (eyebrow, heading, description,
+   // cta_primary, cta_secondary, image_url, image_alt) so the layout
+   // emitter can swap variants without re-shaping the source data.
+   var _eyebrowRaw = (typeof eyebrow !== 'undefined' && eyebrow) ? String(eyebrow).trim() : '';
+   var _siteNameUpper = (settings && settings.site_name || '').toUpperCase();
+   var _showEyebrow = _eyebrowRaw && _eyebrowRaw.toUpperCase() !== _siteNameUpper;
+   // Escape before splicing the static {word} accent; emitting an unescaped
+   // heading through the raw output tag would leak crafted HTML. Mirrors
+   // hero/centered.ejs.
+   function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+   var _raw = (typeof heading !== 'undefined' && heading !== null) ? String(heading) : '';
+   var _rendered = /\{[^}]+\}/.test(_raw)
+     ? _esc(_raw).replace(/\{([^}]+)\}/g, function(_m, inner){ return '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">' + inner + '</em>'; })
+     : _esc(_raw);
+   var _imgUrl = (typeof image_url !== 'undefined' && image_url) ? image_url : '';
+   var _dropCap = (typeof drop_cap !== 'undefined' && drop_cap) ? ' cas-drop-cap' : '';
+%>
+<section class="pt-12 md:pt-20 pb-16 md:pb-24" style="background-color: var(--color-secondary); border-bottom: 1px solid var(--color-border);">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <% if (_showEyebrow) { %>
+      <div class="flex items-center gap-4 mb-8" aria-hidden="false">
+        <span aria-hidden="true" style="display:inline-block; width:48px; height:1px; background-color: var(--color-foreground-muted); opacity: 0.6;"></span>
+        <span class="font-body text-xs font-semibold uppercase" style="color: var(--color-foreground-muted); letter-spacing: 0.18em;">01 &nbsp;<%= _eyebrowRaw %></span>
+      </div>
+    <% } %>
+    <h1 class="font-display text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight leading-[1.05] mb-8 max-w-3xl" style="color: var(--color-foreground); letter-spacing: -0.025em;"><%- _rendered %></h1>
+    <% if (typeof description !== 'undefined' && description) { %>
+      <p class="font-body text-lg md:text-xl max-w-2xl leading-relaxed mb-10<%= _dropCap %>" style="color: var(--color-foreground-muted);"><%= description %></p>
+    <% } %>
+    <% if ((typeof cta_primary !== 'undefined' && cta_primary) || (typeof cta_secondary !== 'undefined' && cta_secondary)) { %>
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+        <% if (typeof cta_primary !== 'undefined' && cta_primary) { %>
+          <a href="<%= cta_primary.href %>" class="inline-flex items-center justify-center font-body font-medium px-7 py-3 rounded-full transition-all hover:opacity-90 min-h-[44px]" style="background-color: var(--color-primary); color: var(--color-on-primary); gap: 8px; text-decoration: none;">
+            <span><%= cta_primary.text %></span>
+            <%- include('../utility/icon.ejs', { name: 'arrow-right', size: 16 }) %>
+          </a>
+        <% } %>
+        <% if (typeof cta_secondary !== 'undefined' && cta_secondary) { %>
+          <a href="<%= cta_secondary.href %>" class="inline-flex items-center font-body font-medium min-h-[44px]" style="color: var(--color-primary); text-decoration: underline; text-underline-offset: 4px;"><%= cta_secondary.text %></a>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+  <% if (_imgUrl) { %>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 mt-16 md:mt-24">
+      <div class="lg:flex lg:items-end lg:gap-8">
+        <div class="cas-hero-image-frame lg:flex-1" style="position: relative; border-radius: 0.75rem; overflow: hidden; box-shadow: var(--cas-shadow-diffuse);">
+          <img loading="eager"
+               fetchpriority="high"
+               src="<%= _imgUrl %>"
+               alt="<%= (typeof image_alt !== 'undefined' && image_alt) ? image_alt : (settings && settings.site_name) || '' %>"
+               class="w-full h-auto block cas-img-editorial"
+               style="aspect-ratio: 4 / 3; object-fit: cover; object-position: center 30%; filter: saturate(0.9) contrast(1.02) brightness(1.0);" />
+          <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none;
+               background: linear-gradient(to top,
+                 color-mix(in oklab, var(--color-secondary) 18%, transparent) 0%,
+                 transparent 30%);"></div>
+        </div>
+        <div class="hidden lg:block lg:w-48 lg:pb-2">
+          <div aria-hidden="true" style="height: 1px; background-color: var(--color-foreground-muted); opacity: 0.4; margin-bottom: 12px;"></div>
+          <p class="font-body text-xs uppercase" style="color: var(--color-foreground-muted); letter-spacing: 0.16em; line-height: 1.6;"><%= (typeof image_alt !== 'undefined' && image_alt) ? image_alt : 'A glimpse' %></p>
+        </div>
+      </div>
+    </div>
+  <% } %>
+</section>

@@ -1,0 +1,3940 @@
+{
+  "arts": [
+    {
+      "filename": "art-gallery-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "art",
+        "gallery"
+      ],
+      "alt_text": "Art gallery",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "editorial",
+        "creative"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "art-supplies-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "art",
+        "supplies"
+      ],
+      "alt_text": "Art supplies",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "editorial",
+        "creative"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "creative-studio-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "creative",
+        "studio"
+      ],
+      "alt_text": "Creative studio",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "editorial",
+        "creative"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "creative-studio-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "creative",
+        "studio"
+      ],
+      "alt_text": "Creative studio",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "editorial",
+        "creative"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "painting-studio-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "painting",
+        "studio"
+      ],
+      "alt_text": "Painting studio",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "editorial",
+        "creative"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "ceramic-hands-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "ceramic",
+        "hands",
+        "craft"
+      ],
+      "alt_text": "Hands shaping clay on a pottery wheel",
+      "use_case": [
+        "hero",
+        "feature",
+        "about"
+      ],
+      "mood": [
+        "intimate",
+        "warm",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "brush-strokes-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "brush",
+        "paint",
+        "abstract"
+      ],
+      "alt_text": "Close-up of brush strokes on canvas",
+      "use_case": [
+        "background",
+        "feature",
+        "gallery"
+      ],
+      "mood": [
+        "editorial",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "sculpture-studio-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "sculpture",
+        "studio"
+      ],
+      "alt_text": "Sculpture in progress on a studio bench",
+      "use_case": [
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "editorial",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "artist-portrait-01.jpg",
+      "width": 900,
+      "height": 1350,
+      "tags": [
+        "artist",
+        "portrait"
+      ],
+      "alt_text": "Portrait of an artist in their studio",
+      "use_case": [
+        "team",
+        "about"
+      ],
+      "mood": [
+        "intimate",
+        "editorial"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "gallery-wall-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "gallery",
+        "wall"
+      ],
+      "alt_text": "Framed art arranged on a gallery wall",
+      "use_case": [
+        "hero",
+        "gallery",
+        "background"
+      ],
+      "mood": [
+        "editorial",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "automotive": [
+    {
+      "filename": "car-dealership-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "car",
+        "dealership"
+      ],
+      "alt_text": "Car dealership",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "luxury-cars-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "luxury",
+        "cars"
+      ],
+      "alt_text": "Luxury cars",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "showroom-bw-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "showroom",
+        "bw"
+      ],
+      "alt_text": "Showroom bw",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "showroom-red-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "showroom",
+        "red"
+      ],
+      "alt_text": "Showroom red",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "supercar-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "supercar"
+      ],
+      "alt_text": "Supercar",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "vintage-engine-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "vintage",
+        "engine"
+      ],
+      "alt_text": "Detail of a vintage car engine",
+      "use_case": [
+        "feature",
+        "gallery"
+      ],
+      "mood": [
+        "bold",
+        "intimate"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "mechanic-hands-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "mechanic",
+        "hands"
+      ],
+      "alt_text": "Mechanic working on an engine",
+      "use_case": [
+        "hero",
+        "services",
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "garage-bay-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "garage",
+        "bay"
+      ],
+      "alt_text": "Clean service garage with lifts",
+      "use_case": [
+        "hero",
+        "background",
+        "feature"
+      ],
+      "mood": [
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "car-keys-01.jpg",
+      "width": 1200,
+      "height": 1200,
+      "tags": [
+        "car",
+        "keys"
+      ],
+      "alt_text": "Car keys on a polished surface",
+      "use_case": [
+        "feature"
+      ],
+      "mood": [
+        "minimal",
+        "professional"
+      ],
+      "orientation": "square"
+    },
+    {
+      "filename": "highway-night-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "highway",
+        "night"
+      ],
+      "alt_text": "Highway at dusk with motion lights",
+      "use_case": [
+        "background",
+        "hero"
+      ],
+      "mood": [
+        "bold",
+        "energetic"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "beauty": [
+    {
+      "filename": "hair-dryer-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "hair",
+        "dryer"
+      ],
+      "alt_text": "Hair dryer",
+      "use_case": [
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "mirror-brush-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "mirror",
+        "brush"
+      ],
+      "alt_text": "Mirror brush",
+      "use_case": [
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "salon-blower-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "salon",
+        "blower"
+      ],
+      "alt_text": "Salon blower",
+      "use_case": [
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "salon-chair-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "salon",
+        "chair"
+      ],
+      "alt_text": "Salon chair",
+      "use_case": [
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "salon-style-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "salon",
+        "style"
+      ],
+      "alt_text": "Salon style",
+      "use_case": [
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "makeup-flat-lay-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "makeup",
+        "flat lay"
+      ],
+      "alt_text": "Flat lay of cosmetics on marble",
+      "use_case": [
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "nail-detail-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "nail",
+        "manicure"
+      ],
+      "alt_text": "Manicure detail on soft towel",
+      "use_case": [
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "skincare-bottles-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "skincare",
+        "bottles"
+      ],
+      "alt_text": "Skincare bottles in soft light",
+      "use_case": [
+        "hero",
+        "feature",
+        "gallery"
+      ],
+      "mood": [
+        "minimal",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "client-portrait-01.jpg",
+      "width": 900,
+      "height": 1350,
+      "tags": [
+        "client",
+        "portrait"
+      ],
+      "alt_text": "Client portrait in salon light",
+      "use_case": [
+        "about",
+        "team"
+      ],
+      "mood": [
+        "intimate",
+        "warm"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "salon-front-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "salon",
+        "exterior"
+      ],
+      "alt_text": "Salon storefront with warm signage",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "warm",
+        "refined"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "business": [
+    {
+      "filename": "laptop-work-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "laptop",
+        "work"
+      ],
+      "alt_text": "Laptop work",
+      "use_case": [
+        "hero",
+        "about",
+        "team"
+      ],
+      "mood": [
+        "professional",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "meeting-room-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "meeting",
+        "room"
+      ],
+      "alt_text": "Meeting room",
+      "use_case": [
+        "hero",
+        "about",
+        "team"
+      ],
+      "mood": [
+        "professional",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "office-workspace-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "office",
+        "workspace"
+      ],
+      "alt_text": "Office workspace",
+      "use_case": [
+        "feature",
+        "hero",
+        "about",
+        "team"
+      ],
+      "mood": [
+        "professional",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "presentation-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "presentation"
+      ],
+      "alt_text": "Presentation",
+      "use_case": [
+        "hero",
+        "about",
+        "team"
+      ],
+      "mood": [
+        "professional",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "whiteboard-session-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "whiteboard",
+        "session"
+      ],
+      "alt_text": "Whiteboard session",
+      "use_case": [
+        "hero",
+        "about",
+        "team"
+      ],
+      "mood": [
+        "professional",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "coffee-meeting-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "coffee",
+        "meeting"
+      ],
+      "alt_text": "Two people in a coffee meeting",
+      "use_case": [
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "notebook-pen-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "notebook",
+        "pen"
+      ],
+      "alt_text": "Notebook and pen on a wooden desk",
+      "use_case": [
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "focused",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "analytics-screen-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "analytics",
+        "screen"
+      ],
+      "alt_text": "Analytics dashboard on a laptop screen",
+      "use_case": [
+        "feature",
+        "services"
+      ],
+      "mood": [
+        "focused",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "handshake-window-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "handshake",
+        "window"
+      ],
+      "alt_text": "Handshake by an office window",
+      "use_case": [
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "standup-meeting-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "standup",
+        "team"
+      ],
+      "alt_text": "Team standup at a whiteboard",
+      "use_case": [
+        "team",
+        "about"
+      ],
+      "mood": [
+        "focused",
+        "warm"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "childcare": [
+    {
+      "filename": "children-park-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "children",
+        "park"
+      ],
+      "alt_text": "Children park",
+      "use_case": [
+        "background",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "daycare-activity-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "daycare",
+        "activity"
+      ],
+      "alt_text": "Daycare activity",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "kids-playing-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "kids",
+        "playing"
+      ],
+      "alt_text": "Kids playing",
+      "use_case": [
+        "feature",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "playground-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "playground"
+      ],
+      "alt_text": "Playground",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "preschool-toys-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "preschool",
+        "toys"
+      ],
+      "alt_text": "Preschool toys",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "storytime-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "storytime",
+        "books"
+      ],
+      "alt_text": "Children gathered for storytime",
+      "use_case": [
+        "hero",
+        "feature",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "art-table-kids-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "art",
+        "kids"
+      ],
+      "alt_text": "Kids painting at a craft table",
+      "use_case": [
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "playful",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "nap-time-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "nap",
+        "rest"
+      ],
+      "alt_text": "Quiet nap-time corner with cushions",
+      "use_case": [
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "serene",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "garden-play-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "garden",
+        "play"
+      ],
+      "alt_text": "Children playing in a garden",
+      "use_case": [
+        "hero",
+        "gallery"
+      ],
+      "mood": [
+        "warm",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "teacher-helping-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "teacher",
+        "child"
+      ],
+      "alt_text": "Teacher helping a child with a puzzle",
+      "use_case": [
+        "about",
+        "team",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "intimate"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "construction": [
+    {
+      "filename": "building-site-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "building",
+        "site"
+      ],
+      "alt_text": "Building site",
+      "use_case": [
+        "hero",
+        "gallery",
+        "services"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "construction-france-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "construction",
+        "france"
+      ],
+      "alt_text": "Construction france",
+      "use_case": [
+        "hero",
+        "gallery",
+        "services"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "crane-sky-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "crane",
+        "sky"
+      ],
+      "alt_text": "Crane sky",
+      "use_case": [
+        "hero",
+        "gallery",
+        "services"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "crane-workers-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "crane",
+        "workers"
+      ],
+      "alt_text": "Crane workers",
+      "use_case": [
+        "hero",
+        "gallery",
+        "services"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "cranes-buildings-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "cranes",
+        "buildings"
+      ],
+      "alt_text": "Cranes buildings",
+      "use_case": [
+        "hero",
+        "gallery",
+        "services"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "blueprint-table-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "blueprint",
+        "plan"
+      ],
+      "alt_text": "Architect's blueprint on a worksite table",
+      "use_case": [
+        "feature",
+        "services"
+      ],
+      "mood": [
+        "focused",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "hardhat-portrait-01.jpg",
+      "width": 900,
+      "height": 1350,
+      "tags": [
+        "hardhat",
+        "worker"
+      ],
+      "alt_text": "Portrait of a worker in a hardhat",
+      "use_case": [
+        "team",
+        "about"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "toolbelt-detail-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "toolbelt",
+        "tools"
+      ],
+      "alt_text": "Detail of a worker's toolbelt",
+      "use_case": [
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "framing-house-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "framing",
+        "house"
+      ],
+      "alt_text": "House framing under construction",
+      "use_case": [
+        "hero",
+        "gallery",
+        "services"
+      ],
+      "mood": [
+        "bold",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "foreman-tablet-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "foreman",
+        "tablet"
+      ],
+      "alt_text": "Foreman reviewing plans on a tablet",
+      "use_case": [
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "focused"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "education": [
+    {
+      "filename": "books-library-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "books",
+        "library"
+      ],
+      "alt_text": "Books library",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "focused",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "classroom-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "classroom"
+      ],
+      "alt_text": "Classroom",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "focused",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "lecture-hall-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "lecture",
+        "hall"
+      ],
+      "alt_text": "Lecture hall",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "focused",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "school-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "school"
+      ],
+      "alt_text": "School",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "focused",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "study-desk-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "study",
+        "desk"
+      ],
+      "alt_text": "Study desk",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "focused",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "student-laptop-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "student",
+        "laptop"
+      ],
+      "alt_text": "Student studying on a laptop",
+      "use_case": [
+        "hero",
+        "feature"
+      ],
+      "mood": [
+        "focused",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "hands-raised-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "classroom",
+        "hands"
+      ],
+      "alt_text": "Students raising hands in class",
+      "use_case": [
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "energetic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "library-desk-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "library",
+        "desk"
+      ],
+      "alt_text": "Quiet library reading desk",
+      "use_case": [
+        "background",
+        "feature"
+      ],
+      "mood": [
+        "focused",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "teacher-board-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "teacher",
+        "board"
+      ],
+      "alt_text": "Teacher writing on a chalkboard",
+      "use_case": [
+        "about",
+        "team"
+      ],
+      "mood": [
+        "focused",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "graduation-caps-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "graduation",
+        "celebration"
+      ],
+      "alt_text": "Graduation caps in the air",
+      "use_case": [
+        "hero",
+        "gallery"
+      ],
+      "mood": [
+        "energetic",
+        "warm"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "fitness": [
+    {
+      "filename": "dumbbells-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "dumbbells"
+      ],
+      "alt_text": "Dumbbells",
+      "use_case": [
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "gym-workout-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "gym",
+        "workout"
+      ],
+      "alt_text": "Gym workout",
+      "use_case": [
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "outdoor-running-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "outdoor",
+        "running"
+      ],
+      "alt_text": "Outdoor running",
+      "use_case": [
+        "feature",
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "yoga-stretch-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "yoga",
+        "stretch"
+      ],
+      "alt_text": "Yoga stretch",
+      "use_case": [
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "yoga-studio-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "yoga",
+        "studio"
+      ],
+      "alt_text": "Yoga studio",
+      "use_case": [
+        "hero",
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "kettlebell-swing-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "kettlebell",
+        "strength"
+      ],
+      "alt_text": "Kettlebell swing in a sunlit gym",
+      "use_case": [
+        "hero",
+        "services"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "trail-run-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "trail",
+        "run"
+      ],
+      "alt_text": "Trail runner in golden light",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "energetic",
+        "serene"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "stretch-mat-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "stretch",
+        "mat"
+      ],
+      "alt_text": "Stretching on a yoga mat by a window",
+      "use_case": [
+        "services",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "group-class-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "group",
+        "class"
+      ],
+      "alt_text": "Group fitness class in motion",
+      "use_case": [
+        "gallery",
+        "feature",
+        "about"
+      ],
+      "mood": [
+        "energetic",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "trainer-coach-01.jpg",
+      "width": 900,
+      "height": 1350,
+      "tags": [
+        "trainer",
+        "coach"
+      ],
+      "alt_text": "Personal trainer coaching a client",
+      "use_case": [
+        "team",
+        "about",
+        "services"
+      ],
+      "mood": [
+        "professional",
+        "warm"
+      ],
+      "orientation": "portrait"
+    }
+  ],
+  "food": [
+    {
+      "filename": "cafe-interior-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "cafe",
+        "interior"
+      ],
+      "alt_text": "Cafe interior",
+      "use_case": [
+        "background",
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm",
+        "vibrant"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "dining-table-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "dining",
+        "table"
+      ],
+      "alt_text": "Dining table",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "vibrant"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "fresh-ingredients-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "fresh",
+        "ingredients"
+      ],
+      "alt_text": "Fresh ingredients",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "vibrant"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "kitchen-cooking-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "kitchen",
+        "cooking"
+      ],
+      "alt_text": "Kitchen cooking",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "vibrant"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "restaurant-dish-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "restaurant",
+        "dish"
+      ],
+      "alt_text": "Restaurant dish",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "vibrant"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "chef-plating-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "chef",
+        "plating"
+      ],
+      "alt_text": "Chef plating a dish in the kitchen",
+      "use_case": [
+        "hero",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "seasonal-produce-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "produce",
+        "seasonal"
+      ],
+      "alt_text": "Seasonal produce on a wooden counter",
+      "use_case": [
+        "gallery",
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "warm",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "espresso-pour-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "espresso",
+        "coffee"
+      ],
+      "alt_text": "Espresso pouring into a small cup",
+      "use_case": [
+        "hero",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "intimate"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "dining-room-evening-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "dining",
+        "evening"
+      ],
+      "alt_text": "Dining room set for evening service",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "pastry-detail-01.jpg",
+      "width": 1200,
+      "height": 1200,
+      "tags": [
+        "pastry",
+        "detail"
+      ],
+      "alt_text": "Detail of a fresh pastry on parchment",
+      "use_case": [
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "refined"
+      ],
+      "orientation": "square"
+    }
+  ],
+  "hospitality": [
+    {
+      "filename": "hotel-lobby-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "hotel",
+        "lobby"
+      ],
+      "alt_text": "Hotel lobby",
+      "use_case": [
+        "background",
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "hotel-view-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "hotel",
+        "view"
+      ],
+      "alt_text": "Hotel view",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "lobby-plants-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "lobby",
+        "plants"
+      ],
+      "alt_text": "Lobby plants",
+      "use_case": [
+        "background",
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "lounge-seating-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "lounge",
+        "seating"
+      ],
+      "alt_text": "Lounge seating",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "reception-desk-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "reception",
+        "desk"
+      ],
+      "alt_text": "Reception desk",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "suite-bed-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "suite",
+        "bed"
+      ],
+      "alt_text": "Hotel suite bed in soft morning light",
+      "use_case": [
+        "hero",
+        "gallery"
+      ],
+      "mood": [
+        "refined",
+        "serene"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "pool-deck-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "pool",
+        "deck"
+      ],
+      "alt_text": "Pool deck with lounge chairs",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "serene",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "concierge-desk-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "concierge",
+        "desk"
+      ],
+      "alt_text": "Concierge welcoming a guest",
+      "use_case": [
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "breakfast-tray-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "breakfast",
+        "tray"
+      ],
+      "alt_text": "Breakfast tray with linens and flowers",
+      "use_case": [
+        "feature",
+        "gallery"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "garden-courtyard-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "garden",
+        "courtyard"
+      ],
+      "alt_text": "Hotel garden courtyard with seating",
+      "use_case": [
+        "background",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "legal": [
+    {
+      "filename": "courthouse-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "courthouse"
+      ],
+      "alt_text": "Courthouse",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "gavel-book-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "gavel",
+        "book"
+      ],
+      "alt_text": "Gavel book",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "gavel-desk-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "gavel",
+        "desk"
+      ],
+      "alt_text": "Gavel desk",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "law-library-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "law",
+        "library"
+      ],
+      "alt_text": "Law library",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "law-office-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "law",
+        "office"
+      ],
+      "alt_text": "Law office",
+      "use_case": [
+        "hero",
+        "about",
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "law-books-stack-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "law",
+        "books"
+      ],
+      "alt_text": "Stack of legal reference books",
+      "use_case": [
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "professional",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "contract-pen-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "contract",
+        "pen"
+      ],
+      "alt_text": "Pen resting on a signed contract",
+      "use_case": [
+        "feature",
+        "services"
+      ],
+      "mood": [
+        "professional",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "attorney-portrait-01.jpg",
+      "width": 900,
+      "height": 1350,
+      "tags": [
+        "attorney",
+        "portrait"
+      ],
+      "alt_text": "Attorney portrait in their office",
+      "use_case": [
+        "team",
+        "about"
+      ],
+      "mood": [
+        "professional",
+        "intimate"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "conference-room-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "conference",
+        "room"
+      ],
+      "alt_text": "Empty conference room with table set",
+      "use_case": [
+        "background",
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "scales-justice-01.jpg",
+      "width": 1200,
+      "height": 1200,
+      "tags": [
+        "scales",
+        "justice"
+      ],
+      "alt_text": "Brass scales of justice on a desk",
+      "use_case": [
+        "feature"
+      ],
+      "mood": [
+        "professional",
+        "refined"
+      ],
+      "orientation": "square"
+    }
+  ],
+  "medical": [
+    {
+      "filename": "clinic-interior-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "clinic",
+        "interior"
+      ],
+      "alt_text": "Clinic interior",
+      "use_case": [
+        "background",
+        "hero",
+        "services",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "minimal",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "lab-tubes-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "lab",
+        "tubes"
+      ],
+      "alt_text": "Lab tubes",
+      "use_case": [
+        "hero",
+        "services",
+        "feature"
+      ],
+      "mood": [
+        "minimal",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "stethoscope-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "stethoscope"
+      ],
+      "alt_text": "Stethoscope",
+      "use_case": [
+        "hero",
+        "services",
+        "feature"
+      ],
+      "mood": [
+        "minimal",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "waiting-room-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "waiting",
+        "room"
+      ],
+      "alt_text": "Waiting room",
+      "use_case": [
+        "hero",
+        "services",
+        "feature"
+      ],
+      "mood": [
+        "minimal",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "wellness-spa-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "wellness",
+        "spa"
+      ],
+      "alt_text": "Wellness spa",
+      "use_case": [
+        "hero",
+        "services",
+        "feature"
+      ],
+      "mood": [
+        "minimal",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "doctor-tablet-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "doctor",
+        "tablet"
+      ],
+      "alt_text": "Doctor reviewing notes on a tablet",
+      "use_case": [
+        "hero",
+        "services",
+        "about"
+      ],
+      "mood": [
+        "professional",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "nurse-portrait-01.jpg",
+      "width": 900,
+      "height": 1350,
+      "tags": [
+        "nurse",
+        "portrait"
+      ],
+      "alt_text": "Nurse portrait in scrubs",
+      "use_case": [
+        "team",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "exam-room-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "exam",
+        "room"
+      ],
+      "alt_text": "Bright clinic exam room",
+      "use_case": [
+        "background",
+        "feature"
+      ],
+      "mood": [
+        "minimal",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "appointment-desk-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "reception",
+        "appointment"
+      ],
+      "alt_text": "Reception desk in a medical clinic",
+      "use_case": [
+        "feature",
+        "services"
+      ],
+      "mood": [
+        "professional",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "medical-supplies-01.jpg",
+      "width": 1200,
+      "height": 1200,
+      "tags": [
+        "medical",
+        "supplies"
+      ],
+      "alt_text": "Medical supplies arranged on a tray",
+      "use_case": [
+        "feature"
+      ],
+      "mood": [
+        "minimal",
+        "professional"
+      ],
+      "orientation": "square"
+    }
+  ],
+  "nature": [
+    {
+      "filename": "garden-flowers-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "garden",
+        "flowers"
+      ],
+      "alt_text": "Garden flowers",
+      "use_case": [
+        "hero",
+        "background",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "landscape-mountain-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "landscape",
+        "mountain"
+      ],
+      "alt_text": "Landscape mountain",
+      "use_case": [
+        "hero",
+        "background",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "park-pathway-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "park",
+        "pathway"
+      ],
+      "alt_text": "Park pathway",
+      "use_case": [
+        "hero",
+        "background",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "river-stream-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "river",
+        "stream"
+      ],
+      "alt_text": "River stream",
+      "use_case": [
+        "hero",
+        "background",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "sunset-golden-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "sunset",
+        "golden"
+      ],
+      "alt_text": "Sunset golden",
+      "use_case": [
+        "hero",
+        "background",
+        "gallery"
+      ],
+      "mood": [
+        "warm",
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "forest-path-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "forest",
+        "path"
+      ],
+      "alt_text": "Sunlit path through a forest",
+      "use_case": [
+        "hero",
+        "background",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "ocean-shore-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "ocean",
+        "shore"
+      ],
+      "alt_text": "Ocean shore at golden hour",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "serene",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "wildflowers-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "wildflowers",
+        "meadow"
+      ],
+      "alt_text": "Wildflowers in a summer meadow",
+      "use_case": [
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "organic",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "mist-mountain-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "mist",
+        "mountain"
+      ],
+      "alt_text": "Misty mountain ridge at dawn",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "serene",
+        "editorial"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "desert-dune-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "desert",
+        "dune"
+      ],
+      "alt_text": "Desert dune with long shadows",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "minimal",
+        "serene"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "people": [
+    {
+      "filename": "diverse-headshot-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "diverse",
+        "headshot"
+      ],
+      "alt_text": "Diverse headshot",
+      "use_case": [
+        "team",
+        "about",
+        "hero"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "group-activity-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "group",
+        "activity"
+      ],
+      "alt_text": "Group activity",
+      "use_case": [
+        "team",
+        "about",
+        "hero"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "handshake-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "handshake"
+      ],
+      "alt_text": "Handshake",
+      "use_case": [
+        "feature",
+        "team",
+        "about",
+        "hero"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "professional-headshot-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "professional",
+        "headshot"
+      ],
+      "alt_text": "Professional headshot",
+      "use_case": [
+        "team",
+        "about",
+        "hero"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "team-meeting-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "team",
+        "meeting"
+      ],
+      "alt_text": "Team meeting",
+      "use_case": [
+        "team",
+        "about",
+        "hero"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "smiling-portrait-01.jpg",
+      "width": 900,
+      "height": 1350,
+      "tags": [
+        "smile",
+        "portrait"
+      ],
+      "alt_text": "Smiling portrait in natural light",
+      "use_case": [
+        "team",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "intimate"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "collaboration-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "collaboration",
+        "team"
+      ],
+      "alt_text": "Two colleagues collaborating at a desk",
+      "use_case": [
+        "about",
+        "feature",
+        "team"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "speaker-stage-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "speaker",
+        "stage"
+      ],
+      "alt_text": "Speaker presenting on a small stage",
+      "use_case": [
+        "feature",
+        "hero"
+      ],
+      "mood": [
+        "energetic",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "hands-keyboard-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "hands",
+        "keyboard"
+      ],
+      "alt_text": "Hands typing on a laptop keyboard",
+      "use_case": [
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "focused",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "coworking-laugh-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "coworking",
+        "laugh"
+      ],
+      "alt_text": "Coworkers sharing a laugh",
+      "use_case": [
+        "about",
+        "team"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "pets": [
+    {
+      "filename": "cat-ball-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "cat",
+        "ball"
+      ],
+      "alt_text": "Cat ball",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "cat-relaxing-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "cat",
+        "relaxing"
+      ],
+      "alt_text": "Cat relaxing",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "dog-portrait-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "dog",
+        "portrait"
+      ],
+      "alt_text": "Dog portrait",
+      "use_case": [
+        "team",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "professional",
+        "intimate",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "kitten-playing-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "kitten",
+        "playing"
+      ],
+      "alt_text": "Kitten playing",
+      "use_case": [
+        "feature",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "puppy-corgi-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "puppy",
+        "corgi"
+      ],
+      "alt_text": "Puppy corgi",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "playful"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "dog-park-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "dog",
+        "park"
+      ],
+      "alt_text": "Dog running in a sunny park",
+      "use_case": [
+        "hero",
+        "gallery"
+      ],
+      "mood": [
+        "energetic",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "cat-windowsill-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "cat",
+        "windowsill"
+      ],
+      "alt_text": "Cat resting on a sunlit windowsill",
+      "use_case": [
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "serene",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "groomer-bath-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "groomer",
+        "bath"
+      ],
+      "alt_text": "Groomer bathing a friendly dog",
+      "use_case": [
+        "services",
+        "feature"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "rabbit-portrait-01.jpg",
+      "width": 1200,
+      "height": 1200,
+      "tags": [
+        "rabbit",
+        "portrait"
+      ],
+      "alt_text": "Portrait of a rabbit on soft hay",
+      "use_case": [
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "intimate",
+        "warm"
+      ],
+      "orientation": "square"
+    },
+    {
+      "filename": "vet-clinic-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "vet",
+        "clinic"
+      ],
+      "alt_text": "Veterinarian examining a small dog",
+      "use_case": [
+        "services",
+        "about"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "real_estate": [
+    {
+      "filename": "family-home-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "family",
+        "home"
+      ],
+      "alt_text": "Family home",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "house-garage-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "house",
+        "garage"
+      ],
+      "alt_text": "House garage",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "red-house-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "red",
+        "house"
+      ],
+      "alt_text": "Red house",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "suburban-home-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "suburban",
+        "home"
+      ],
+      "alt_text": "Suburban home",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "white-house-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "white",
+        "house"
+      ],
+      "alt_text": "White house",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "kitchen-marble-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "kitchen",
+        "marble"
+      ],
+      "alt_text": "Modern kitchen with marble counters",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "refined",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "living-room-light-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "living",
+        "room"
+      ],
+      "alt_text": "Bright living room with large windows",
+      "use_case": [
+        "hero",
+        "gallery"
+      ],
+      "mood": [
+        "warm",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "front-porch-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "porch",
+        "front"
+      ],
+      "alt_text": "Welcoming front porch in afternoon light",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "warm",
+        "refined"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "backyard-garden-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "backyard",
+        "garden"
+      ],
+      "alt_text": "Backyard garden with seating",
+      "use_case": [
+        "gallery",
+        "background"
+      ],
+      "mood": [
+        "organic",
+        "warm"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "agent-keys-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "agent",
+        "keys"
+      ],
+      "alt_text": "Real-estate agent handing over keys",
+      "use_case": [
+        "about",
+        "feature",
+        "services"
+      ],
+      "mood": [
+        "warm",
+        "professional"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "sports": [
+    {
+      "filename": "arena-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "arena"
+      ],
+      "alt_text": "Arena",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "basketball-action-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "basketball",
+        "action"
+      ],
+      "alt_text": "Basketball action",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "basketball-court-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "basketball",
+        "court"
+      ],
+      "alt_text": "Basketball court",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "basketball-game-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "basketball",
+        "game"
+      ],
+      "alt_text": "Basketball game",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "court-overhead-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "court",
+        "overhead"
+      ],
+      "alt_text": "Court overhead",
+      "use_case": [
+        "hero",
+        "gallery",
+        "feature"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "soccer-field-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "soccer",
+        "field"
+      ],
+      "alt_text": "Soccer field at sunset",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "energetic",
+        "serene"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "locker-room-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "locker",
+        "room"
+      ],
+      "alt_text": "Empty locker room before the game",
+      "use_case": [
+        "background",
+        "feature"
+      ],
+      "mood": [
+        "bold",
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "running-track-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "running",
+        "track"
+      ],
+      "alt_text": "Running track with starting blocks",
+      "use_case": [
+        "hero",
+        "feature"
+      ],
+      "mood": [
+        "energetic",
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "baseball-bat-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "baseball",
+        "bat"
+      ],
+      "alt_text": "Baseball bat resting on home plate",
+      "use_case": [
+        "feature",
+        "gallery"
+      ],
+      "mood": [
+        "bold"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "crowd-cheer-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "crowd",
+        "cheer"
+      ],
+      "alt_text": "Crowd cheering at a stadium",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "energetic",
+        "vibrant"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "tech": [
+    {
+      "filename": "circuit-board-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "circuit",
+        "board"
+      ],
+      "alt_text": "Circuit board",
+      "use_case": [
+        "hero",
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "minimal",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "code-screen-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "code",
+        "screen"
+      ],
+      "alt_text": "Code screen",
+      "use_case": [
+        "hero",
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "minimal",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "laptop-desk-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "laptop",
+        "desk"
+      ],
+      "alt_text": "Laptop desk",
+      "use_case": [
+        "hero",
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "minimal",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "mobile-dev-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "mobile",
+        "dev"
+      ],
+      "alt_text": "Mobile dev",
+      "use_case": [
+        "hero",
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "minimal",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "server-room-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "server",
+        "room"
+      ],
+      "alt_text": "Server room",
+      "use_case": [
+        "hero",
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "minimal",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "dashboard-screen-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "dashboard",
+        "screen"
+      ],
+      "alt_text": "Dashboard interface on a wide monitor",
+      "use_case": [
+        "hero",
+        "feature"
+      ],
+      "mood": [
+        "minimal",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "workstation-light-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "workstation",
+        "light"
+      ],
+      "alt_text": "Developer workstation with ambient light",
+      "use_case": [
+        "background",
+        "hero"
+      ],
+      "mood": [
+        "minimal",
+        "focused"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "rack-cables-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "rack",
+        "cables"
+      ],
+      "alt_text": "Server rack with patch cables",
+      "use_case": [
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "minimal"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "phone-app-01.jpg",
+      "width": 900,
+      "height": 1350,
+      "tags": [
+        "phone",
+        "app"
+      ],
+      "alt_text": "Phone showing a clean app interface",
+      "use_case": [
+        "feature",
+        "gallery"
+      ],
+      "mood": [
+        "minimal",
+        "professional"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "standup-whiteboard-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "standup",
+        "whiteboard"
+      ],
+      "alt_text": "Engineers at a whiteboard sketch",
+      "use_case": [
+        "about",
+        "team"
+      ],
+      "mood": [
+        "focused",
+        "warm"
+      ],
+      "orientation": "landscape"
+    }
+  ],
+  "wellness": [
+    {
+      "filename": "aromatherapy-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "aromatherapy"
+      ],
+      "alt_text": "Aromatherapy",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "ceremony-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "ceremony"
+      ],
+      "alt_text": "Ceremony",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "intimate",
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "crystals-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "crystals"
+      ],
+      "alt_text": "Crystals",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "massage-02.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "massage"
+      ],
+      "alt_text": "Massage",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "meditation-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "meditation"
+      ],
+      "alt_text": "Meditation",
+      "use_case": [
+        "background",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "sound-healing-01.jpg",
+      "width": 1200,
+      "height": 800,
+      "tags": [
+        "sound",
+        "healing"
+      ],
+      "alt_text": "Sound healing",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "dome-venue-01.jpg",
+      "width": 896,
+      "height": 1200,
+      "tags": [
+        "dome",
+        "ceremony",
+        "sound",
+        "healing"
+      ],
+      "alt_text": "Dome venue",
+      "use_case": [
+        "feature",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "dome-venue-02.jpg",
+      "width": 900,
+      "height": 1200,
+      "tags": [
+        "dome",
+        "venue",
+        "healing"
+      ],
+      "alt_text": "Dome venue",
+      "use_case": [
+        "feature",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "event-gathering-01.jpg",
+      "width": 900,
+      "height": 1200,
+      "tags": [
+        "gathering",
+        "ceremony",
+        "community"
+      ],
+      "alt_text": "Event gathering",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "practitioner-portrait-01.jpg",
+      "width": 1083,
+      "height": 1200,
+      "tags": [
+        "portrait",
+        "practitioner",
+        "healer"
+      ],
+      "alt_text": "Practitioner portrait",
+      "use_case": [
+        "team",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "professional",
+        "intimate",
+        "serene"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "facilitator-portrait-01.jpg",
+      "width": 800,
+      "height": 1200,
+      "tags": [
+        "portrait",
+        "facilitator",
+        "wellness"
+      ],
+      "alt_text": "Facilitator portrait",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "event-venue-01.jpg",
+      "width": 1200,
+      "height": 1068,
+      "tags": [
+        "venue",
+        "sanctuary",
+        "outdoor"
+      ],
+      "alt_text": "Event venue",
+      "use_case": [
+        "background",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "intimate",
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "event-venue-02.jpg",
+      "width": 897,
+      "height": 1200,
+      "tags": [
+        "venue",
+        "nature",
+        "sanctuary"
+      ],
+      "alt_text": "Event venue",
+      "use_case": [
+        "background",
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "intimate",
+        "serene",
+        "organic"
+      ],
+      "orientation": "portrait"
+    },
+    {
+      "filename": "breathwork-circle-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "breathwork",
+        "circle"
+      ],
+      "alt_text": "Breathwork circle in soft light",
+      "use_case": [
+        "hero",
+        "gallery",
+        "about"
+      ],
+      "mood": [
+        "serene",
+        "intimate"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "singing-bowl-01.jpg",
+      "width": 1200,
+      "height": 1200,
+      "tags": [
+        "singing",
+        "bowl"
+      ],
+      "alt_text": "Singing bowl on a wooden floor",
+      "use_case": [
+        "feature",
+        "gallery"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "square"
+    },
+    {
+      "filename": "herbal-tea-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "herbal",
+        "tea"
+      ],
+      "alt_text": "Herbal tea poured into a ceramic cup",
+      "use_case": [
+        "feature",
+        "background"
+      ],
+      "mood": [
+        "warm",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "forest-bathing-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "forest",
+        "bathing"
+      ],
+      "alt_text": "Forest bathing on a quiet path",
+      "use_case": [
+        "hero",
+        "background"
+      ],
+      "mood": [
+        "serene",
+        "organic"
+      ],
+      "orientation": "landscape"
+    },
+    {
+      "filename": "altar-candles-01.jpg",
+      "width": 1600,
+      "height": 1067,
+      "tags": [
+        "altar",
+        "candles"
+      ],
+      "alt_text": "Altar with candles and dried flowers",
+      "use_case": [
+        "feature",
+        "gallery"
+      ],
+      "mood": [
+        "intimate",
+        "organic"
+      ],
+      "orientation": "landscape"
+    }
+  ]
+}

@@ -1,0 +1,198 @@
+<%
+  var msgList = typeof messages !== 'undefined' && Array.isArray(messages) ? messages : [];
+  var turnUsed = typeof turnCount !== 'undefined' ? turnCount : 0;
+  var turnMax = typeof turnCap !== 'undefined' ? turnCap : 6;
+  var specPreview = typeof specPreview !== 'undefined' ? specPreview : null;
+%>
+
+<section class="intake-anon">
+  <div class="max-site intake-anon__head">
+    <div>
+      <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:8px;">Begin a conversation,</span>
+      <h1 class="display intake-anon__title">Tell us about your work.</h1>
+      <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.55; margin:14px 0 0; max-width:660px;">
+        A conversation. Haven listens and writes a summary of everything about your website from your own words. Sign up free at any point to keep going.
+      </p>
+    </div>
+  </div>
+
+  <div class="max-site intake-anon__grid">
+    <div class="intake-anon__chat">
+      <div class="intake-anon__chat-head">
+        <span class="intake-anon__counter">
+          <span id="anon-turns-used"><%= turnUsed %></span> of <%= turnMax %> preview messages
+        </span>
+        <a href="/signup" class="intake-anon__signup-link">Sign up to keep going &rarr;</a>
+      </div>
+
+      <div id="chat-messages" class="intake-anon__messages" role="log" aria-live="polite">
+        <% msgList.forEach(function(msg) { %>
+          <div class="harbor-chat-row harbor-chat-row--<%= msg.role %>">
+            <div class="harbor-chat-bubble harbor-chat-bubble--<%= msg.role %>">
+              <pre class="harbor-chat-text"><%- renderChatMarkdown(msg.content) %></pre>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+
+      <div id="anon-signup-banner" class="intake-anon__banner" style="display:none;">
+        <span class="hand" style="font-size:22px; color:var(--color-ink-pencil); display:block; margin-bottom:6px;">When you're ready,</span>
+        <p style="font-family:var(--font-display); font-style:italic; font-size:18px; color:var(--color-ink); margin:0 0 14px; line-height:1.5;">
+          Sign up free to finish your spec and queue the build. We'll save this conversation.
+        </p>
+        <a href="/signup" class="btn btn-primary">Create your account &rarr;</a>
+      </div>
+
+      <div id="anon-chat-input-area" class="intake-anon__input">
+        <textarea id="message-input" class="intake-anon__textarea" placeholder="Tell us a few sentences about your work." aria-label="Type your message" rows="3" maxlength="1000"></textarea>
+        <button id="send-btn" class="btn btn-primary" type="button">Send</button>
+      </div>
+    </div>
+
+    <aside class="intake-anon__aside">
+      <%- include('partials/_anon-spec-preview', { specPreview: specPreview }) %>
+    </aside>
+  </div>
+
+  <p class="intake-anon__footnote">
+    Anonymous preview. Sign up at any time to keep going.
+  </p>
+</section>
+
+<script nonce="<%= cspNonce %>">
+  window.ANON_BUILD_ID = <%- safeJSON(buildId) %>;
+  window.ANON_CSRF_TOKEN = <%- safeJSON(csrfToken) %>;
+  window.ANON_TURN_COUNT = <%= turnUsed %>;
+  window.ANON_TURN_CAP = <%= turnMax %>;
+</script>
+<script nonce="<%= cspNonce %>" src="/intake-anon.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+
+<style>
+  .intake-anon { padding:48px 0 96px; }
+  .intake-anon__head { max-width:1100px; margin-bottom:32px; }
+  .intake-anon__title { font-size:48px; line-height:1.04; margin:0; letter-spacing:-0.012em; }
+  @media (max-width: 900px) { .intake-anon__title { font-size:36px; } }
+
+  .intake-anon__grid {
+    max-width:1100px;
+    display:grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap:32px;
+    align-items:start;
+  }
+  @media (max-width: 900px) {
+    .intake-anon__grid { grid-template-columns:1fr; gap:24px; }
+  }
+
+  .intake-anon__chat {
+    background:var(--color-vellum);
+    border:1px solid var(--color-rule);
+    border-radius: 5px;
+    box-shadow:var(--shadow-slip);
+    display:flex; flex-direction:column;
+    height: clamp(420px, 70vh, 660px);
+  }
+
+  .intake-anon__chat-head {
+    display:flex; justify-content:space-between; align-items:center; gap:16px;
+    padding:14px 22px;
+    border-bottom:1px solid var(--color-rule);
+    background:var(--color-companion-paper);
+  }
+  .intake-anon__counter {
+    font-family: var(--font-display); font-style: italic; font-size: 15px; color: var(--color-clay);
+  }
+  .intake-anon__signup-link {
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    color: var(--color-ink-soft); text-decoration: none;
+  }
+  .intake-anon__signup-link:hover { color: var(--color-clay); }
+
+  .intake-anon__messages {
+    flex:1; overflow-y:auto;
+    padding:24px;
+    display:flex; flex-direction:column; gap:14px;
+    scroll-behavior:smooth;
+    background-image:
+      radial-gradient(rgba(126, 100, 72, 0.04) 1px, transparent 1px),
+      radial-gradient(rgba(126, 100, 72, 0.03) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+  }
+
+  .harbor-chat-row { display:flex; max-width:82%; }
+  .harbor-chat-row--user { align-self:flex-end; }
+  .harbor-chat-row--assistant { align-self:flex-start; }
+
+  .harbor-chat-bubble {
+    padding:14px 18px;
+    border-radius: 5px;
+    border:1px solid var(--color-rule);
+    box-shadow:0 1px 0 rgba(255, 250, 235, 0.40) inset, 0 2px 6px rgba(58, 42, 31, 0.06);
+  }
+  .harbor-chat-bubble--user {
+    background: var(--color-ink);
+    color: var(--color-vellum);
+    border-color: var(--color-ink);
+  }
+  .harbor-chat-bubble--assistant {
+    background: var(--color-companion-paper);
+    color: var(--color-ink);
+  }
+
+  .harbor-chat-text {
+    margin:0;
+    font-family: var(--font-body);
+    font-size:15px; line-height:1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .harbor-chat-bubble--user .harbor-chat-text { color: var(--color-vellum); }
+
+  .intake-anon__banner {
+    padding:18px 22px;
+    border-top:1px solid var(--color-rule);
+    background: var(--color-paper-soft);
+  }
+
+  .intake-anon__input {
+    display:flex; gap:10px;
+    padding:14px;
+    border-top:1px solid var(--color-rule);
+    background:var(--color-companion-paper);
+    border-radius:0 0 5px 5px;
+  }
+  .intake-anon__textarea {
+    flex:1;
+    font-family: var(--font-body); font-size:15px; color: var(--color-ink);
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    padding: 10px 14px;
+    resize: none;
+    line-height: 1.55;
+    outline: none;
+    transition: border-color .15s ease;
+  }
+  .intake-anon__textarea:focus { border-color: var(--color-ink); }
+
+  .intake-anon__aside {
+    position: sticky; top: 96px;
+  }
+  @media (max-width: 900px) {
+    .intake-anon__aside { position: static; }
+  }
+
+  .intake-anon__footnote {
+    margin: 24px auto 0;
+    max-width:1100px;
+    text-align:center;
+    font-family: var(--font-display); font-style: italic;
+    font-size:14px; color: var(--color-ink-faded);
+  }
+
+  /* Override any leftover legacy chat classes from /intake-anon.js if it
+     queries by the old class names. The JS's existing logic runs against
+     window.ANON_* state vars; class names are visual-only here. */
+  .chat-message, .chat-bubble, .chat-bubble-user, .chat-bubble-assistant,
+  .chat-message-user, .chat-message-assistant { all: unset; }
+</style>

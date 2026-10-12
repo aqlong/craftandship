@@ -1,0 +1,780 @@
+{
+  "version": 1,
+  "updated_at": "2026-04-28",
+  "widgets": {
+    "shell-nav-public": {
+      "file": "widgets/shell/nav-public.ejs",
+      "data_contract": {
+        "site_name": "string",
+        "nav_items": "array of {label, href}",
+        "user": "optional (locals.user) -- when present shows Dashboard+Logout; absent shows Login"
+      }
+    },
+    "shell-nav-admin": {
+      "file": "widgets/shell/nav-admin.ejs",
+      "data_contract": {
+        "site_name": "string",
+        "admin_nav_items": "array of {label, href}",
+        "csrf_token": "string"
+      }
+    },
+    "shell-footer": {
+      "file": "widgets/shell/footer.ejs",
+      "data_contract": {
+        "site_name": "string",
+        "tagline": "string",
+        "nav_items": "array of {label, href}",
+        "contact_email": "optional string",
+        "social": "optional {instagram_url, facebook_url, twitter_url, linkedin_url, tiktok_url, youtube_url}",
+        "year": "number"
+      }
+    },
+    "shell-skip-to-content": {
+      "file": "widgets/shell/skip-to-content.ejs",
+      "data_contract": {}
+    },
+    "shell-admin-subnav": {
+      "file": "widgets/shell/admin-subnav.ejs",
+      "data_contract": {
+        "admin_nav_items": "array of {label, href}",
+        "currentPath": "optional string (for active-state highlighting)"
+      }
+    },
+    "hero-centered": {
+      "file": "widgets/hero/centered.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "string",
+        "description": "string",
+        "cta_primary": "optional {text, href}",
+        "cta_secondary": "optional {text, href}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "description": "text",
+        "cta_primary": {
+          "text": "text",
+          "href": "text"
+        },
+        "cta_secondary": {
+          "text": "text",
+          "href": "text"
+        },
+        "image_url": "text",
+        "image_alt": "text",
+        "credential_lines": [
+          "text"
+        ],
+        "body_html": "text",
+        "compact": "flag",
+        "drop_cap": "flag"
+      }
+    },
+    "hero-split-image": {
+      "file": "widgets/hero/split-image.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "string",
+        "description": "string",
+        "cta_primary": "optional {text, href}",
+        "image_url": "string",
+        "image_alt": "string"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "description": "text",
+        "cta_primary": {
+          "text": "text",
+          "href": "text"
+        },
+        "image_url": "text",
+        "image_alt": "text",
+        "drop_cap": "flag"
+      }
+    },
+    "offerings-grid-3col": {
+      "file": "widgets/offerings/grid-3col.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "string",
+        "items": "array of {label, title, description, price_display, cta_text, cta_href, image_url}",
+        "note": "image_url is optional per item; when present a 16:9 thumbnail renders at the top of the card. photo_url and cover_url are accepted aliases."
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "items": [
+          {
+            "label": "text",
+            "title": "text",
+            "description": "text",
+            "price_display": "text",
+            "cta_text": "text",
+            "cta_href": "text",
+            "image_url": "text",
+            "photo_url": "text",
+            "cover_url": "text",
+            "image_alt": "text",
+            "image_aspect": "text",
+            "image_fit": "text"
+          }
+        ]
+      },
+      "required_params": [
+        "heading"
+      ]
+    },
+    "offerings-services-editorial-table": {
+      "file": "widgets/offerings/services-editorial-table.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "items": "array of {title, description, price_display, cta_text, cta_href, image_url}",
+        "note": "Editorial table layout. Each row renders text only by default; when item.image_url is present a 64px square thumbnail renders to the left. Default sibling for tradesperson-contractor + local-service when keeper hints minimal/spare in _harbor_meta."
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "items": [
+          {
+            "title": "text",
+            "description": "text",
+            "price_display": "text",
+            "cta_text": "text",
+            "cta_href": "text",
+            "image_url": "text",
+            "photo_url": "text",
+            "cover_url": "text",
+            "image_alt": "text"
+          }
+        ]
+      }
+    },
+    "testimonials-stack": {
+      "file": "widgets/testimonials/stack.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "string",
+        "items": "array of {quote, author_name, service}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "columns": "number",
+        "limit": "number",
+        "order": "text"
+      }
+    },
+    "cta-newsletter-inline": {
+      "file": "widgets/cta/newsletter-inline.ejs",
+      "data_contract": {
+        "heading": "string",
+        "description": "optional string",
+        "placeholder": "optional string",
+        "button_text": "optional string",
+        "csrf_token": "string"
+      },
+      "params": {
+        "heading": "text",
+        "description": "text",
+        "placeholder": "text",
+        "button_text": "text"
+      }
+    },
+    "cta-inquiry-block": {
+      "file": "widgets/cta/inquiry-block.ejs",
+      "data_contract": {
+        "heading": "string",
+        "description": "optional string",
+        "cta_text": "string",
+        "cta_href": "string"
+      },
+      "params": {
+        "heading": "text",
+        "description": "text",
+        "cta_text": "text",
+        "cta_href": "text"
+      }
+    },
+    "form-contact": {
+      "file": "widgets/form/contact.ejs",
+      "data_contract": {
+        "heading": "string",
+        "service_options": "array of strings",
+        "csrf_token": "string",
+        "flash_success": "optional string",
+        "flash_error": "optional string"
+      },
+      "params": {
+        "heading": "text",
+        "service_options": [
+          "text"
+        ]
+      }
+    },
+    "form-login": {
+      "file": "widgets/form/login.ejs",
+      "data_contract": {
+        "site_name": "string",
+        "csrf_token": "string",
+        "error": "optional string",
+        "magic_link_available": "optional bool"
+      }
+    },
+    "form-field": {
+      "file": "widgets/form/field.ejs",
+      "data_contract": {
+        "name": "string (input name attribute)",
+        "field_type": "string (key into compose/data/field-types.json, email, phone_us, url, zip_us, state_us, etc)",
+        "value": "optional string (current value, for edit forms)",
+        "required": "optional bool",
+        "label": "optional string (defaults to humanized name)",
+        "help": "optional string (small gray text under input)",
+        "options": "optional array (only for field_type: select)",
+        "placeholder": "optional override",
+        "rows": "optional int (textarea only, default 4)"
+      },
+      "note": "Canonical typed form-field renderer. Every custom form widget should compose from this instead of hand-coding input attrs. Reads all validation attrs (pattern/inputmode/autocomplete/maxlength/minlength/step/min/max) from settings._field_types which is injected by middleware/settings.js. One source of truth for client + server form validation."
+    },
+    "admin-dashboard": {
+      "file": "widgets/admin/dashboard.ejs",
+      "data_contract": {
+        "site_name": "string",
+        "stats": "array of {label, count, manage_href}",
+        "recent_inquiries": "array of {id, name, email, service, created_at}"
+      }
+    },
+    "admin-crud-list": {
+      "file": "widgets/admin/crud-list.ejs",
+      "data_contract": {
+        "resource_name_plural": "string",
+        "resource_slug": "string",
+        "columns": "array of {key, label}",
+        "rows": "array of objects matching columns",
+        "csrf_token": "string"
+      }
+    },
+    "admin-crud-form": {
+      "file": "widgets/admin/crud-form.ejs",
+      "data_contract": {
+        "resource_name": "string",
+        "resource_slug": "string",
+        "mode": "new | edit",
+        "fields": "array of {name, label, type, required, value, options}",
+        "record_id": "optional number",
+        "csrf_token": "string",
+        "error": "optional string"
+      }
+    },
+    "admin-settings-form": {
+      "file": "widgets/admin/settings-form.ejs",
+      "data_contract": {
+        "sections": "array of {heading, fields: [{key, label, type, value}]}",
+        "csrf_token": "string"
+      }
+    },
+    "resource-list-card-grid": {
+      "file": "widgets/offerings/resource-list-card-grid.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "string",
+        "items": "array of {title, description, date, image_url, detail_href}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text"
+      }
+    },
+    "books-grid": {
+      "file": "widgets/offerings/books-grid.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "items": "array of Book rows (db:books), fields: slug, title, subtitle, series_label, description (limited HTML: p, br, em, strong, i, b, ul, ol, li, blockquote; anything else is shown as text), cover_image_url, cover_image_alt, cover_credit, accolade, rating_callout, price_display, amazon_url, goodreads_url, local_bookstore_url, barnesnoble_url, netgalley_url, audible_url, featured_on_home, sort_order, published",
+        "books": "alternate local name accepted when source is spec.<page>.books literal",
+        "note": "Composes retailer links into each card (Amazon primary CTA; Goodreads / Local bookstore / Barnes & Noble / NetGalley / Audible inline secondary). Unpublished rows filtered. Series grouping: 2+ distinct series_label groups render as sub-sections with the label as eyebrow + per-card badge suppressed; a single-member group renders the full-width spotlight card, never a lone orphan in a 3-up grid. Card markup lives in book-card.ejs."
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text"
+      }
+    },
+    "reviews-grid": {
+      "file": "widgets/offerings/reviews-grid.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "string",
+        "items": "array of {author_name, rating (1-5), body, service, created_at}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text"
+      }
+    },
+    "photo-gallery-grid": {
+      "file": "widgets/offerings/photo-gallery-grid.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "items": "array of {image_url, title, caption}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text"
+      }
+    },
+    "admin-quick-links": {
+      "file": "widgets/admin/quick-links.ejs",
+      "data_contract": {
+        "items": "array of {label, href, description}"
+      }
+    },
+    "admin-upcoming-events": {
+      "file": "widgets/admin/upcoming-events.ejs",
+      "data_contract": {
+        "events": "array of {id, title, event_date, location}"
+      }
+    },
+    "admin-tools-row": {
+      "file": "widgets/admin/tools-row.ejs",
+      "data_contract": {
+        "csrf_token": "string"
+      }
+    },
+    "admin-upload-zone": {
+      "file": "widgets/admin/upload-zone.ejs",
+      "data_contract": {
+        "field_name": "string",
+        "current_url": "optional string",
+        "label": "string",
+        "accept": "optional mime list"
+      }
+    },
+    "error-404": {
+      "file": "widgets/error/404.ejs",
+      "data_contract": {
+        "site_name": "string"
+      }
+    },
+    "error-500": {
+      "file": "widgets/error/500.ejs",
+      "data_contract": {
+        "site_name": "string"
+      }
+    },
+    "utility-format-date": {
+      "file": "widgets/utility/format-date.js",
+      "data_contract": {
+        "helper": "formatDate(date, style='medium')"
+      }
+    },
+    "faq-accordion": {
+      "file": "widgets/offerings/faq-accordion.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "items": "array of {question, answer, category?, sort_order?}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "items": [
+          {
+            "question": "text",
+            "answer": "text"
+          }
+        ]
+      }
+    },
+    "pricing-tier-table": {
+      "file": "widgets/offerings/pricing-tier-table.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "description": "optional string",
+        "items": "array of {name, description?, price_display, billing_period?, features (array or JSON string), cta_text?, cta_href?, featured?}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "description": "text",
+        "items": [
+          {
+            "name": "text",
+            "description": "text",
+            "price_display": "text",
+            "price": "text",
+            "billing_period": "text",
+            "features": "text_or_list",
+            "cta_text": "text",
+            "cta_href": "text",
+            "featured": "flag"
+          }
+        ]
+      }
+    },
+    "hours-location-block": {
+      "file": "widgets/offerings/hours-location-block.ejs",
+      "data_contract": {
+        "heading": "optional string",
+        "hours": "array of {day, hours} or JSON-stringified",
+        "address": "optional multi-line string",
+        "phone": "optional string",
+        "email": "optional string",
+        "map_embed_url": "optional string (iframe src)"
+      },
+      "params": {
+        "heading": "text",
+        "hours": [
+          {
+            "day": "text",
+            "hours": "text"
+          }
+        ],
+        "address": "text",
+        "phone": "text",
+        "email": "text",
+        "map_embed_url": "text"
+      }
+    },
+    "menu-grouped-list": {
+      "file": "widgets/offerings/menu-grouped-list.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "sections": "array of {name, description?, items: [{name, description?, price/price_display, dietary_tags? (array|csv)}]}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text"
+      }
+    },
+    "staff-card-grid": {
+      "file": "widgets/offerings/staff-card-grid.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "items": "array of {name, role?, bio?, photo_url/image_url?, specialties? (array|csv), booking_url?}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text"
+      }
+    },
+    "trust-badges-row": {
+      "file": "widgets/offerings/trust-badges-row.ejs",
+      "data_contract": {
+        "items": "array of {number?, label, sub?}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "items": [
+          {
+            "number": "text",
+            "label": "text",
+            "sub": "text",
+            "label_top": "text"
+          }
+        ],
+        "badges": [
+          {
+            "number": "text",
+            "label": "text",
+            "sub": "text",
+            "label_top": "text"
+          }
+        ]
+      }
+    },
+    "service-area-list": {
+      "file": "widgets/offerings/service-area-list.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "description": "optional string",
+        "items": "array of {city/name, state?, zip_codes? (array|csv)}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "description": "text"
+      }
+    },
+    "instructor-grid": {
+      "file": "widgets/offerings/instructor-grid.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "items": "array of {name, role?, photo_url/image_url?, specialties? (array|csv)}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text"
+      }
+    },
+    "weekly-schedule-grid": {
+      "file": "widgets/offerings/weekly-schedule-grid.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "items": "array of {class_name/title, instructor_name?, day_of_week/day, start_time (HH:MM), end_time? (HH:MM), room?}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text"
+      }
+    },
+    "credentials-block": {
+      "file": "widgets/offerings/credentials-block.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "license_text": "optional string",
+        "items": "array of {label/type, value, sub?}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "license_text": "text",
+        "items": [
+          {
+            "label": "text",
+            "type": "text",
+            "value": "text",
+            "sub": "text"
+          }
+        ],
+        "credentials": [
+          {
+            "label": "text",
+            "type": "text",
+            "value": "text",
+            "sub": "text"
+          }
+        ]
+      }
+    },
+    "service-menu-priced": {
+      "file": "widgets/offerings/service-menu-priced.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string",
+        "items": "array of {title/name, description?, price_display/price_from/price, category?, duration_min?, booking_url?}"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "items": [
+          {
+            "title": "text",
+            "name": "text",
+            "description": "text",
+            "category": "text",
+            "duration_min": "text",
+            "price_display": "text",
+            "price_from": "text",
+            "price": "text",
+            "booking_url": "text"
+          }
+        ]
+      }
+    },
+    "impact-stats-row": {
+      "file": "widgets/offerings/impact-stats-row.ejs",
+      "data_contract": {
+        "heading": "optional string",
+        "items": "array of {value/number, label, sub?}"
+      }
+    },
+    "hero-editorial-stacked": {
+      "file": "widgets/hero/editorial-stacked.ejs",
+      "data_contract": {
+        "eyebrow": "optional string (rendered as '01 - Eyebrow' magazine column)",
+        "heading": "string (supports {italic-accent} markup like other hero variants)",
+        "description": "string",
+        "cta_primary": "optional {text, href}",
+        "cta_secondary": "optional {text, href} -- rendered as quiet underlined link",
+        "image_url": "optional string",
+        "image_alt": "optional string"
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "description": "text",
+        "cta_primary": {
+          "text": "text",
+          "href": "text"
+        },
+        "cta_secondary": {
+          "text": "text",
+          "href": "text"
+        },
+        "image_url": "text",
+        "image_alt": "text",
+        "drop_cap": "flag"
+      }
+    },
+    "hero-two-col-statement": {
+      "file": "widgets/hero/two-col-statement.ejs",
+      "data_contract": {
+        "heading": "string (the H1; usually the brand name itself)",
+        "credentials_lines": "optional array<string> (small-caps subtitle stack like 'Jane Doe / Licensed Practitioner')",
+        "body_blocks": "optional array<string|array<string>>; each entry renders as a paragraph cluster, nested arrays render as multiple lines without paragraph spacing",
+        "cta_primary": "optional {text, href, icon?: 'message'|'phone'|'mail'} -- single primary CTA, often an sms: link",
+        "secondary_links": "optional array<{text, href}> -- small button row under the CTA (commonly Services/About/Contact)",
+        "image_url": "optional string -- portrait or hero photo, rendered 3:4 in the right column",
+        "image_alt": "optional string",
+        "uppercase_heading": "optional bool, default true -- render H1 uppercase + tracked"
+      },
+      "params": {
+        "heading": "text",
+        "credentials_lines": [
+          "text"
+        ],
+        "body_blocks": [
+          "text_or_list"
+        ],
+        "cta_primary": {
+          "text": "text",
+          "href": "text",
+          "icon": "text"
+        },
+        "secondary_links": [
+          {
+            "text": "text",
+            "href": "text"
+          }
+        ],
+        "image_url": "text",
+        "image_alt": "text",
+        "uppercase_heading": "flag"
+      }
+    },
+    "shell-nav-thin-statement": {
+      "file": "widgets/shell/nav-thin-statement.ejs",
+      "data_contract": {
+        "settings": "object (site_name required for wordmark; contact_email optional)",
+        "nav_items": "array of {label, href}",
+        "user": "optional (locals.user)",
+        "csrfToken": "optional (only used when admin logout form rendered)",
+        "currentPath": "optional (for active-link highlighting)"
+      }
+    },
+    "shell-footer-minimal-line": {
+      "file": "widgets/shell/footer-minimal-line.ejs",
+      "data_contract": {
+        "settings": "object (site_name required; contact_email optional)",
+        "nav_items": "array of {label, href}"
+      }
+    },
+    "shell-nav-side-rail": {
+      "file": "widgets/shell/nav-side-rail.ejs",
+      "data_contract": {
+        "settings": "object (site_name, optional contact_phone, optional nav_logo_url)",
+        "nav_items": "array of {label, href}",
+        "user": "optional",
+        "csrfToken": "optional",
+        "currentPath": "optional"
+      }
+    },
+    "shell-nav-centered-minimal": {
+      "file": "widgets/shell/nav-centered-minimal.ejs",
+      "data_contract": {
+        "settings": "object (site_name required)",
+        "nav_items": "array of {label, href}",
+        "user": "optional",
+        "currentPath": "optional"
+      }
+    },
+    "shell-nav-image-banner": {
+      "file": "widgets/shell/nav-image-banner.ejs",
+      "data_contract": {
+        "settings": "object (site_name + hero_image_url for banner)",
+        "nav_items": "array of {label, href}",
+        "user": "optional",
+        "csrfToken": "optional",
+        "currentPath": "optional"
+      }
+    },
+    "shell-footer-grid-five-col": {
+      "file": "widgets/shell/footer-grid-five-col.ejs",
+      "data_contract": {
+        "settings": "object (site_name + contact_email + contact_phone + business_hours optional)",
+        "nav_items": "array of {label, href}"
+      }
+    },
+    "shell-footer-single-line": {
+      "file": "widgets/shell/footer-single-line.ejs",
+      "data_contract": {
+        "settings": "object (site_name + contact_email)",
+        "nav_items": "ignored"
+      }
+    },
+    "shell-nav-sanctuary": {
+      "file": "widgets/shell/nav-sanctuary.ejs",
+      "data_contract": {
+        "settings": "object (site_name required; nav_logo_url optional)",
+        "nav_items": "array of {label, href} (last item rendered as sage CTA pill)",
+        "user": "optional (locals.user)",
+        "csrfToken": "optional (only used when admin logout form rendered)",
+        "currentPath": "optional (for active-link highlighting)"
+      }
+    },
+    "content-raw-markdown": {
+      "file": "widgets/content/raw-markdown.ejs",
+      "data_contract": {
+        "copy_html": "string (pre-rendered safe HTML)",
+        "source_url": "optional string (for audit only; not rendered)"
+      },
+      "params": {
+        "copy_html": "text",
+        "source_url": "text"
+      }
+    },
+    "hero-nameplate-shelf": {
+      "file": "widgets/hero/nameplate-shelf.ejs",
+      "data_contract": {
+        "eyebrow": "optional string, hairline-flanked small caps",
+        "heading": "string; the owner's name / brand line ({accent} supported)",
+        "description": "optional one-line welcome sentence",
+        "cta_primary": "optional {text, href}",
+        "cta_secondary": "optional {text, href}",
+        "items": "optional Book rows (db:books); a linked cover shelf renders when 2+ published covers exist",
+        "note": "Photo-free home hero: centered nameplate anchored by an entity shelf instead of whitespace. Each cover links to its detail_href."
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "description": "text",
+        "cta_primary": {
+          "text": "text",
+          "href": "text"
+        },
+        "cta_secondary": {
+          "text": "text",
+          "href": "text"
+        }
+      }
+    },
+    "book-spotlight": {
+      "file": "widgets/offerings/book-spotlight.ejs",
+      "data_contract": {
+        "eyebrow": "optional string",
+        "heading": "optional string ({accent} supported)",
+        "items": "Book rows (db:books); the first row with featured_on_home set wins, else the first by sort_order",
+        "browse_text": "optional link text to the full catalog",
+        "browse_href": "optional catalog href (default /books)",
+        "note": "ONE spotlight entity for the author-forward home; never a catalog clone."
+      },
+      "params": {
+        "eyebrow": "text",
+        "heading": "text",
+        "browse_text": "text",
+        "browse_href": "text"
+      }
+    }
+  }
+}

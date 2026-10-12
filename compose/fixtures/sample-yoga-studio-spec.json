@@ -1,0 +1,220 @@
+{
+  "app_name": "sample-yoga-studio",
+  "archetype": "fitness-studio",
+  "palette": "terracotta-sage",
+  "font_pair": "cormorant-lato",
+  "admin_email": "admin@sampleyogastudio.example",
+  "settings": {
+    "site_name": "Sample Yoga Studio",
+    "site_description": "A fictional neighborhood yoga studio, used as sample content. Classes for all levels.",
+    "hero_tagline": "Move. Breathe. Rest.",
+    "hero_description": "A neighborhood yoga studio. Slow flow, yin and meditation classes for all levels.",
+    "hero_image_url": "https://picsum.photos/seed/studio-hero/1400/1000",
+    "nav_logo_url": "",
+    "about_title": "About the Studio",
+    "about_body": "This studio is fictional sample content. It offers slow flow, yin and meditation classes for all levels, taught in plain English by four sample teachers. Every name, class and price on this site is invented.",
+    "about_photo_url": "https://picsum.photos/seed/studio-about/900/1100",
+    "contact_email": "hello@sampleyogastudio.example",
+    "contact_phone": "(555) 555-0188",
+    "contact_address": "100 Example St, Sample City, ST",
+    "business_name": "Sample Yoga Studio LLC",
+    "support_email": "hello@sampleyogastudio.example",
+    "instagram_url": "https://instagram.example/sampleyogastudio",
+    "facebook_url": "",
+    "twitter_url": "",
+    "linkedin_url": "",
+    "youtube_url": "",
+    "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "SAMPLE YOGA STUDIO",
+        "heading": "Move. Breathe. Rest.",
+        "description": "A neighborhood yoga studio. Slow flow, yin and meditation.",
+        "image_url": "https://picsum.photos/seed/studio-hero/1400/1000",
+        "image_alt": "Sample Yoga Studio interior",
+        "cta_primary": {"text": "See the schedule", "href": "/schedule"},
+        "cta_secondary": {"text": "View membership", "href": "/pricing"}
+      },
+      "offerings": {
+        "eyebrow": "PRACTICES",
+        "heading": "Find Your Practice",
+        "items": [
+          {"label": "OPEN", "title": "Open Practice", "description": "Unstructured practice time with a teacher in the room.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "SLOW FLOW", "title": "Slow Flow", "description": "Breath-led movement at an easy pace.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "RESTORE", "title": "Yin", "description": "Long, supported holds.", "cta_text": "See schedule", "cta_href": "/schedule"}
+        ]
+      },
+      "instructors": {
+        "eyebrow": "OUR TEACHERS",
+        "heading": "Meet Your Teachers",
+        "items": [
+          {"name": "Teacher One", "role": "LEAD", "photo_url": "https://picsum.photos/seed/teacher-one/900/900", "specialties": ["Open Practice", "Guided Flow"]},
+          {"name": "Teacher Two", "role": "TEACHER", "photo_url": "https://picsum.photos/seed/teacher-two/900/900", "specialties": ["Slow Flow"]},
+          {"name": "Teacher Three", "role": "TEACHER", "photo_url": "https://picsum.photos/seed/teacher-three/900/900", "specialties": ["Yin", "Restorative"]},
+          {"name": "Teacher Four", "role": "TEACHER", "photo_url": "https://picsum.photos/seed/teacher-four/900/900", "specialties": ["Gentle Flow", "Meditation"]}
+        ]
+      },
+      "testimonials": {
+        "eyebrow": "VOICES",
+        "heading": "From Our Community",
+        "items": [
+          {"quote": "Sample testimonial one. Open Practice suits my schedule.", "author_name": "Student A.", "service": "Open Practice"},
+          {"quote": "Sample testimonial two. The community class is a friendly place to start.", "author_name": "Student B.", "service": "Community Class"},
+          {"quote": "Sample testimonial three. Yin is the hour I protect each week.", "author_name": "Student C.", "service": "Yin"}
+        ]
+      },
+      "newsletter": {
+        "heading": "Studio news",
+        "description": "One short letter a month. Schedule changes and upcoming workshops.",
+        "placeholder": "Your email",
+        "button_text": "Subscribe"
+      }
+    },
+    "classes": {
+      "hero": {"eyebrow": "CLASSES", "heading": "Class Types", "description": "Seven sample class formats. Every class is all-levels unless noted."},
+      "items": {
+        "heading": "What We Teach",
+        "items": [
+          {"label": "OPEN", "title": "Open Practice", "description": "Unstructured practice time with a teacher in the room. 60 min. All levels.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "GUIDED", "title": "Guided Flow", "description": "A led sequence from start to finish. 90 min. Intermediate.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "SLOW FLOW", "title": "Slow Flow", "description": "Breath-led and unhurried. 75 min. All levels.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "RESTORE", "title": "Yin", "description": "Long, supported holds. 75 min. All levels.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "GENTLE", "title": "Gentle Flow", "description": "A softer class with more props. 60 min. All levels.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "MEDITATION", "title": "Meditation", "description": "A quiet sit with brief guidance. 30 min. No experience needed.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "COMMUNITY", "title": "Community Class", "description": "A relaxed all-levels class. 60 min.", "cta_text": "See schedule", "cta_href": "/schedule"}
+        ]
+      }
+    },
+    "schedule": {
+      "hero": {"eyebrow": "SCHEDULE", "heading": "This Week at the Studio", "description": "Open practice in the mornings. Slow flow, yin and gentle classes later in the day."},
+      "slots": {
+        "heading": "Weekly Schedule",
+        "items": [
+          {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Monday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+          {"class_name": "Slow Flow", "instructor_name": "Teacher Two", "day_of_week": "Monday", "start_time": "18:00", "end_time": "19:15", "room": "Main Room"},
+          {"class_name": "Yin", "instructor_name": "Teacher Three", "day_of_week": "Monday", "start_time": "20:00", "end_time": "21:15", "room": "Main Room"},
+          {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Tuesday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+          {"class_name": "Gentle Flow", "instructor_name": "Teacher Four", "day_of_week": "Tuesday", "start_time": "10:00", "end_time": "11:00", "room": "Main Room"},
+          {"class_name": "Slow Flow", "instructor_name": "Teacher Two", "day_of_week": "Tuesday", "start_time": "18:00", "end_time": "19:15", "room": "Main Room"},
+          {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Wednesday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+          {"class_name": "Meditation", "instructor_name": "Teacher Four", "day_of_week": "Wednesday", "start_time": "08:15", "end_time": "08:45", "room": "Main Room"},
+          {"class_name": "Guided Flow", "instructor_name": "Teacher One", "day_of_week": "Wednesday", "start_time": "18:00", "end_time": "19:30", "room": "Main Room"},
+          {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Thursday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+          {"class_name": "Slow Flow", "instructor_name": "Teacher Two", "day_of_week": "Thursday", "start_time": "12:00", "end_time": "13:00", "room": "Main Room"},
+          {"class_name": "Yin", "instructor_name": "Teacher Three", "day_of_week": "Thursday", "start_time": "20:00", "end_time": "21:15", "room": "Main Room"},
+          {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Friday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+          {"class_name": "Gentle Flow", "instructor_name": "Teacher Four", "day_of_week": "Friday", "start_time": "10:00", "end_time": "11:00", "room": "Main Room"},
+          {"class_name": "Community Class", "instructor_name": "Teacher Two", "day_of_week": "Friday", "start_time": "18:00", "end_time": "19:00", "room": "Main Room"},
+          {"class_name": "Guided Flow", "instructor_name": "Teacher One", "day_of_week": "Saturday", "start_time": "09:00", "end_time": "10:30", "room": "Main Room"},
+          {"class_name": "Slow Flow", "instructor_name": "Teacher Two", "day_of_week": "Saturday", "start_time": "11:00", "end_time": "12:15", "room": "Main Room"},
+          {"class_name": "Meditation", "instructor_name": "Teacher Four", "day_of_week": "Sunday", "start_time": "08:00", "end_time": "08:30", "room": "Main Room"},
+          {"class_name": "Yin", "instructor_name": "Teacher Three", "day_of_week": "Sunday", "start_time": "18:00", "end_time": "19:15", "room": "Main Room"}
+        ]
+      }
+    },
+    "instructors": {
+      "hero": {"eyebrow": "OUR TEACHERS", "heading": "The Team", "description": "Four sample teachers. Every name and biography here is invented."},
+      "items": {
+        "heading": "Meet Your Teachers",
+        "items": [
+          {"name": "Teacher One", "role": "LEAD TEACHER", "photo_url": "https://picsum.photos/seed/teacher-one/900/900", "specialties": ["Open Practice", "Guided Flow"]},
+          {"name": "Teacher Two", "role": "SLOW FLOW", "photo_url": "https://picsum.photos/seed/teacher-two/900/900", "specialties": ["Slow Flow"]},
+          {"name": "Teacher Three", "role": "YIN", "photo_url": "https://picsum.photos/seed/teacher-three/900/900", "specialties": ["Yin", "Restorative"]},
+          {"name": "Teacher Four", "role": "GENTLE FLOW & MEDITATION", "photo_url": "https://picsum.photos/seed/teacher-four/900/900", "specialties": ["Gentle Flow", "Meditation"]}
+        ]
+      }
+    },
+    "pricing": {
+      "hero": {"eyebrow": "MEMBERSHIP", "heading": "Simple Pricing", "description": "One drop-in rate, one membership, one pack. Sample prices."},
+      "plans": {
+        "heading": "Ways to Practice",
+        "items": [
+          {"name": "Drop-In", "price_display": "$20", "billing_period": "class", "features": ["Any single class", "No sign-up required"], "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"name": "Unlimited Monthly", "price_display": "$120", "billing_period": "month", "features": ["Unlimited classes", "Early access to workshops", "Pause or cancel any time"], "cta_text": "Become a member", "cta_href": "/contact", "featured": true},
+          {"name": "Ten-Class Pack", "price_display": "$160", "billing_period": "pack", "features": ["Ten classes, any format", "Six-month expiry"], "cta_text": "Purchase a pack", "cta_href": "/contact"}
+        ]
+      },
+      "faq": {
+        "heading": "Common Questions",
+        "items": [
+          {"question": "I am brand new. Where do I start?", "answer": "Slow Flow or the Community Class. Both are all-levels and unhurried. Arrive ten minutes early so we can show you around."},
+          {"question": "What is Open Practice and can I try it?", "answer": "Open Practice is unstructured time on the mat with a teacher in the room. Beginners are welcome."},
+          {"question": "Do you have mats and props?", "answer": "Yes. Loaner mats are free. Bolsters, blocks, straps, and blankets are in the back of the room."},
+          {"question": "Do I need to book ahead?", "answer": "No. Drop in to any class on the schedule."}
+        ]
+      }
+    },
+    "about": {
+      "hero": {"eyebrow": "ABOUT", "heading": "Our Story", "description": "A fictional sample studio, built for everyday practice.", "image_url": "https://picsum.photos/seed/studio-about/900/1100", "image_alt": "Studio exterior"},
+      "cta": {"heading": "Come practice with us", "description": "The schedule is always live.", "cta_text": "See the schedule", "cta_href": "/schedule"}
+    },
+    "contact": {
+      "hero": {"eyebrow": "REACH OUT", "heading": "Get in Touch", "description": "Questions about classes, memberships, private lessons, or workshops? Send us a note and one of us will write back within a day or two."},
+      "form": {
+        "heading": "Send a Message",
+        "service_options": ["New to the Studio", "Open Practice", "Membership", "Private lessons", "Workshop inquiry", "Other"]
+      }
+    }
+  },
+  "seed_content": {
+    "testimonials": [
+      {"author_name": "Student A.", "quote": "Sample testimonial one. Open Practice suits my schedule.", "service": "Open Practice", "published": true},
+      {"author_name": "Student B.", "quote": "Sample testimonial two. The community class is a friendly place to start.", "service": "Community Class", "published": true},
+      {"author_name": "Student C.", "quote": "Sample testimonial three. Yin is the hour I protect each week.", "service": "Yin", "published": true},
+      {"author_name": "Student D.", "quote": "Sample testimonial four. Gentle Flow is the right pace for me.", "service": "Gentle Flow", "published": true},
+      {"author_name": "Student E.", "quote": "Sample testimonial five. Slow Flow is clear and unhurried.", "service": "Slow Flow", "published": true}
+    ],
+    "class_types": [
+      {"name": "Open Practice", "description": "Unstructured practice time with a teacher in the room.", "duration_min": 60, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-open/900/700"},
+      {"name": "Guided Flow", "description": "A led sequence from start to finish.", "duration_min": 90, "difficulty": "intermediate", "image_url": "https://picsum.photos/seed/class-guided/900/700"},
+      {"name": "Slow Flow", "description": "Breath-led and unhurried.", "duration_min": 75, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-slowflow/900/700"},
+      {"name": "Yin", "description": "Long, supported holds.", "duration_min": 75, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-yin/900/700"},
+      {"name": "Gentle Flow", "description": "A softer class with more props.", "duration_min": 60, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-gentle/900/700"},
+      {"name": "Meditation", "description": "A quiet sit with brief guidance.", "duration_min": 30, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-meditation/900/700"},
+      {"name": "Community Class", "description": "A relaxed all-levels class.", "duration_min": 60, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-community/900/700"}
+    ],
+    "instructors": [
+      {"name": "Teacher One", "role": "Lead Teacher", "bio": "Fictional sample teacher. Leads Open Practice and Guided Flow.", "photo_url": "https://picsum.photos/seed/teacher-one/900/900", "specialties": "Open Practice, Guided Flow", "is_lead": true},
+      {"name": "Teacher Two", "role": "Slow Flow Teacher", "bio": "Fictional sample teacher. Leads Slow Flow and the Community Class.", "photo_url": "https://picsum.photos/seed/teacher-two/900/900", "specialties": "Slow Flow", "is_lead": false},
+      {"name": "Teacher Three", "role": "Yin Teacher", "bio": "Fictional sample teacher. Leads Yin.", "photo_url": "https://picsum.photos/seed/teacher-three/900/900", "specialties": "Yin, Restorative", "is_lead": false},
+      {"name": "Teacher Four", "role": "Gentle Flow & Meditation Teacher", "bio": "Fictional sample teacher. Leads Gentle Flow and Meditation.", "photo_url": "https://picsum.photos/seed/teacher-four/900/900", "specialties": "Gentle Flow, Meditation", "is_lead": false}
+    ],
+    "schedule_slots": [
+      {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Monday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+      {"class_name": "Slow Flow", "instructor_name": "Teacher Two", "day_of_week": "Monday", "start_time": "18:00", "end_time": "19:15", "room": "Main Room"},
+      {"class_name": "Yin", "instructor_name": "Teacher Three", "day_of_week": "Monday", "start_time": "20:00", "end_time": "21:15", "room": "Main Room"},
+      {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Tuesday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+      {"class_name": "Gentle Flow", "instructor_name": "Teacher Four", "day_of_week": "Tuesday", "start_time": "10:00", "end_time": "11:00", "room": "Main Room"},
+      {"class_name": "Slow Flow", "instructor_name": "Teacher Two", "day_of_week": "Tuesday", "start_time": "18:00", "end_time": "19:15", "room": "Main Room"},
+      {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Wednesday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+      {"class_name": "Meditation", "instructor_name": "Teacher Four", "day_of_week": "Wednesday", "start_time": "08:15", "end_time": "08:45", "room": "Main Room"},
+      {"class_name": "Guided Flow", "instructor_name": "Teacher One", "day_of_week": "Wednesday", "start_time": "18:00", "end_time": "19:30", "room": "Main Room"},
+      {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Thursday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+      {"class_name": "Slow Flow", "instructor_name": "Teacher Two", "day_of_week": "Thursday", "start_time": "12:00", "end_time": "13:00", "room": "Main Room"},
+      {"class_name": "Yin", "instructor_name": "Teacher Three", "day_of_week": "Thursday", "start_time": "20:00", "end_time": "21:15", "room": "Main Room"},
+      {"class_name": "Open Practice", "instructor_name": "Teacher One", "day_of_week": "Friday", "start_time": "07:00", "end_time": "08:00", "room": "Main Room"},
+      {"class_name": "Gentle Flow", "instructor_name": "Teacher Four", "day_of_week": "Friday", "start_time": "10:00", "end_time": "11:00", "room": "Main Room"},
+      {"class_name": "Community Class", "instructor_name": "Teacher Two", "day_of_week": "Friday", "start_time": "18:00", "end_time": "19:00", "room": "Main Room"},
+      {"class_name": "Guided Flow", "instructor_name": "Teacher One", "day_of_week": "Saturday", "start_time": "09:00", "end_time": "10:30", "room": "Main Room"},
+      {"class_name": "Slow Flow", "instructor_name": "Teacher Two", "day_of_week": "Saturday", "start_time": "11:00", "end_time": "12:15", "room": "Main Room"},
+      {"class_name": "Meditation", "instructor_name": "Teacher Four", "day_of_week": "Sunday", "start_time": "08:00", "end_time": "08:30", "room": "Main Room"},
+      {"class_name": "Yin", "instructor_name": "Teacher Three", "day_of_week": "Sunday", "start_time": "18:00", "end_time": "19:15", "room": "Main Room"}
+    ],
+    "pricing_plans": [
+      {"name": "Drop-In", "price_display": "$20", "billing_period": "class", "features": "Any single class\nNo sign-up required", "cta_text": "See schedule", "cta_href": "/schedule", "featured": false, "sort_order": 1},
+      {"name": "Unlimited Monthly", "price_display": "$120", "billing_period": "month", "features": "Unlimited classes\nEarly access to workshops\nPause or cancel any time", "cta_text": "Become a member", "cta_href": "/contact", "featured": true, "sort_order": 2},
+      {"name": "Ten-Class Pack", "price_display": "$160", "billing_period": "pack", "features": "Ten classes, any format\nSix-month expiry", "cta_text": "Purchase a pack", "cta_href": "/contact", "featured": false, "sort_order": 3}
+    ],
+    "contact_inquiries": [
+      {"name": "Sample Visitor One", "email": "visitor.one@example.com", "service_interest": "Open Practice", "message": "Sample inquiry one. Can I join a morning Open Practice this week?"},
+      {"name": "Sample Visitor Two", "email": "visitor.two@example.com", "service_interest": "Membership", "message": "Sample inquiry two. I would like to try a week before choosing a membership."}
+    ],
+    "newsletter_subscribers": [
+      {"email": "subscriber.one@example.com"},
+      {"email": "subscriber.two@example.com"},
+      {"email": "subscriber.three@example.com"}
+    ]
+  }
+}

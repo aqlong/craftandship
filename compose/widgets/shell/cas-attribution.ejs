@@ -1,0 +1,20 @@
+<!-- compose:widget shell/cas-attribution -->
+<%
+   // Quiet "made with [lighthouse] Craft & Ship" attribution. Included
+   // once at the bottom row of every footer family. Hover-pill, italic
+   // Cormorant 12-14px, opens https://craftandship.io in a new tab.
+   //
+   // Suppression: set site_settings.show_cas_attribution = 'false' (string)
+   // to hide for white-label keepers on a higher tier. Default is to show.
+   //
+   // Lighthouse SVG comes from /brand/cas-lighthouse.svg (emitted by
+   // emit_public_assets).
+   var _show = !(typeof settings !== 'undefined' && settings && (settings.show_cas_attribution === false || settings.show_cas_attribution === 'false'));
+%>
+<% if (_show) { %>
+  <a href="https://craftandship.io" target="_blank" rel="noopener" class="cas-footer-attribution" aria-label="Made with Craft and Ship">
+    <span class="cas-footer-attribution-text">made with</span>
+    <img src="/brand/cas-lighthouse.svg" width="22" height="22" class="cas-footer-attribution-mark" alt="" aria-hidden="true">
+    <span class="cas-footer-attribution-name">Craft <em>&amp;</em> Ship</span>
+  </a>
+<% } %>

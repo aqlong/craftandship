@@ -1,0 +1,916 @@
+<section style="padding:48px 0 96px;">
+  <div class="max-site" style="max-width:760px;">
+
+    <div class="status-head">
+      <span class="eyebrow" style="font-size:14px; display:block; margin-bottom:8px;">Your website,</span>
+      <h1 class="display status-title"><%= build.app_name || 'Your Project' %></h1>
+    </div>
+
+    <% if (build.status === 'payment_pending') { %>
+      <div class="status-card status-card--lantern">
+        <span class="caps status-card__head" style="color:var(--color-lantern-deep);">Waiting on payment</span>
+        <h2 class="display status-card__title">We are waiting for payment confirmation.</h2>
+        <p class="status-card__lede">Your spec is saved. Once payment is confirmed, your website goes into the build queue. Questions? Write to <a href="mailto:support@craftandship.io" class="status-card__link">support@craftandship.io</a>.</p>
+      </div>
+
+    <% } else if (build.status === 'preview') { %>
+      <% if (build.review_status === 'approved') { %>
+        <div class="status-card status-card--ok">
+          <div class="status-card__badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <span class="caps">Reviewed</span>
+          </div>
+          <h2 class="display status-card__title">Your website is ready.</h2>
+          <p class="status-card__lede">Your website has been reviewed and approved.</p>
+          <% if (build.reviewed_at) { %>
+            <% const approvedDate = new Date(build.reviewed_at); %>
+            <p class="status-card__meta">Reviewed <span data-ts="<%= approvedDate.toISOString() %>" data-ts-fmt="date"><%= approvedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %></span></p>
+          <% } else { %>
+            <p class="status-card__meta">Preview it below, then approve it to go live.</p>
+          <% } %>
+          <div class="status-card__actions">
+            <a href="<%= httpUrl(build.preview_url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Preview your website</a>
+            <form action="/builds/<%= build.id %>/approve" method="POST" class="status-card__form">
+              <%- include('_csrf-field') %>
+              <button type="submit" class="btn btn-primary">Approve and go live</button>
+            </form>
+          </div>
+          <p class="status-card__url"><%= build.preview_url %></p>
+          <div class="status-card__sub">
+            <% if (revisionInfo && revisionInfo.remaining > 0) { %>
+              <a href="/builds/<%= build.id %>/revision" class="btn btn-tertiary btn-sm">Request revision</a>
+            <% } %>
+            <%# The source download follows the publishing rule (routes/builds.ts):
+                the link is shown only when the route would serve the file. %>
+            <% if (locals.canDownloadSource) { %>
+              <a href="/builds/<%= build.id %>/download-source" class="btn btn-tertiary btn-sm">Download source</a>
+            <% } %>
+          </div>
+          <% if (revisionInfo) { %>
+            <p class="status-card__note">
+              <% if (revisionInfo.remaining > 0) { %>
+                Revisions and rebuilds are unlimited.
+              <% } else { %>
+                You have reached the revision limit for this website. Write to <a href="mailto:support@craftandship.io" class="status-card__link">support@craftandship.io</a> and we will help from there.
+              <% } %>
+            </p>
+          <% } %>
+        </div>
+
+      <% } else if (build.review_status === 'changes_requested') { %>
+        <div class="status-card status-card--lantern">
+          <span class="caps status-card__head" style="color:var(--color-lantern-deep);">Review complete</span>
+          <h2 class="display status-card__title">The review left notes for your website.</h2>
+          <p class="status-card__lede">The review flagged a few things. Request a revision to apply the feedback.</p>
+          <% if (build.review_notes) { %>
+            <div class="status-card__notes">
+              <span class="caps status-card__notes-head">Review notes</span>
+              <p class="status-card__notes-body"><%= build.review_notes %></p>
+            </div>
+          <% } %>
+          <div class="status-card__actions">
+            <% if (revisionInfo && revisionInfo.remaining > 0) { %>
+              <a href="/builds/<%= build.id %>/revision" class="btn btn-primary">Request revision</a>
+            <% } %>
+            <a href="<%= httpUrl(build.preview_url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Preview your website</a>
+          </div>
+          <p class="status-card__url"><%= build.preview_url %></p>
+          <% if (locals.canDownloadSource) { %>
+            <div class="status-card__sub">
+              <a href="/builds/<%= build.id %>/download-source" class="btn btn-tertiary btn-sm">Download source</a>
+            </div>
+          <% } %>
+          <% if (revisionInfo) { %>
+            <p class="status-card__note">
+              <% if (revisionInfo.remaining > 0) { %>
+                Revisions and rebuilds are unlimited.
+              <% } else { %>
+                You have reached the revision limit for this website. Write to <a href="mailto:support@craftandship.io" class="status-card__link">support@craftandship.io</a> and we will help from there.
+              <% } %>
+            </p>
+          <% } %>
+        </div>
+
+      <% } else { %>
+        <div class="status-card">
+          <div class="status-card__badge">
+            <span class="status-dot"></span>
+            <span class="caps">In review</span>
+          </div>
+          <h2 class="display status-card__title">Your website is in review.</h2>
+          <p class="status-card__lede">Your website is built and staged, and its preview is ready to open below. It needs a recorded review approval before it goes live. We'll email you when the review is done.</p>
+          <a href="<%= httpUrl(build.preview_url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Preview your website</a>
+          <p class="status-card__url"><%= build.preview_url %></p>
+          <div class="status-card__sub">
+            <% if (revisionInfo && revisionInfo.remaining > 0) { %>
+              <a href="/builds/<%= build.id %>/revision" class="btn btn-tertiary btn-sm">Request revision</a>
+            <% } %>
+            <% if (locals.canDownloadSource) { %>
+              <a href="/builds/<%= build.id %>/download-source" class="btn btn-tertiary btn-sm">Download source</a>
+            <% } %>
+          </div>
+          <% if (revisionInfo) { %>
+            <p class="status-card__note">
+              <% if (revisionInfo.remaining > 0) { %>
+                Revisions and rebuilds are unlimited.
+              <% } else { %>
+                You have reached the revision limit for this website. Write to <a href="mailto:support@craftandship.io" class="status-card__link">support@craftandship.io</a> and we will help from there.
+              <% } %>
+            </p>
+          <% } %>
+        </div>
+      <% } %>
+
+    <% } else if (build.status === 'live') { %>
+      <div class="status-card status-card--ok">
+        <div class="status-card__badge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="caps">Live</span>
+          <% if (build.reviewed_at) { %>
+            <span class="status-pill">Reviewed</span>
+          <% } %>
+        </div>
+        <h2 class="display status-card__title">Your website is live.</h2>
+        <% if (build.reviewed_at) { %>
+          <% const liveReviewedDate = new Date(build.reviewed_at); %>
+          <p class="status-card__lede">Reviewed and approved on <span data-ts="<%= liveReviewedDate.toISOString() %>" data-ts-fmt="date"><%= liveReviewedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %></span>.</p>
+        <% } else { %>
+          <p class="status-card__lede">Reviewed and approved.</p>
+        <% } %>
+        <div class="status-card__actions">
+          <a href="<%= httpUrl(build.live_url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Visit site</a>
+          <button type="button" class="btn btn-secondary" data-action="open-rebuild">Rebuild with changes</button>
+        </div>
+        <p class="status-card__url"><%= build.live_url %></p>
+        <% if (locals.canDownloadSource) { %>
+          <div class="status-card__sub">
+            <a href="/builds/<%= build.id %>/download-source" class="btn btn-tertiary btn-sm">Download source</a>
+          </div>
+        <% } %>
+      </div>
+
+    <% } else if (build.status === 'failed') { %>
+      <div class="status-card status-card--alert">
+        <span class="caps status-card__head" style="color:#8C3A3A;">Build failed</span>
+        <h2 class="display status-card__title">Something went wrong.</h2>
+        <p class="status-card__lede"><%= build.error_message || 'An unexpected error occurred during the build.' %></p>
+        <p class="status-card__lede">Our team has been notified. You can retry, or <a href="mailto:support@craftandship.io?subject=Build%20Failed%20-%20<%= build.id %>" class="status-card__link">reach Ocean</a>.</p>
+        <div class="status-card__actions">
+          <form action="/builds/<%= build.id %>/retry" method="POST" class="status-card__form">
+            <%- include('_csrf-field') %>
+            <button type="submit" class="btn btn-primary">Retry build</button>
+          </form>
+          <button type="button" class="btn btn-secondary" data-action="open-rebuild">Rebuild with changes</button>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (['preview', 'live'].includes(build.status) && adminEmail) { %>
+      <div class="status-login">
+        <div class="status-login__icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+        </div>
+        <div>
+          <h3 class="status-login__title">Login instructions</h3>
+          <p class="status-login__body">Check your inbox for a secure login link.</p>
+          <p class="status-login__meta">Admin account: <span class="mono"><%= adminEmail %></span></p>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="status-stepper" id="progress-steps" role="group" aria-label="Build progress">
+      <% const steps = ['intake', 'payment_pending', 'queued', 'building', 'testing', 'deploying', 'preview', 'live']; %>
+      <% const stepLabels = { intake: 'Intake', payment_pending: 'Payment', queued: 'Queued', building: 'Building', testing: 'Testing', deploying: 'Deploying', preview: 'Review', live: 'Live' }; %>
+      <% const currentIdx = steps.indexOf(build.status); %>
+      <% steps.forEach(function(step, idx) { %>
+        <%
+          var isNearCurrent = Math.abs(idx - currentIdx) <= 1;
+          var mobileClass = isNearCurrent ? '' : ' stepper-distant';
+        %>
+        <% if (!isNearCurrent && idx === currentIdx - 2) { %>
+          <div class="stepper-ellipsis" aria-hidden="true">
+            <div class="progress-step-dot progress-step-dot--ellipsis">&hellip;</div>
+            <div class="progress-step-label">&nbsp;</div>
+          </div>
+        <% } %>
+        <div class="status-stepper__step<%= mobileClass %>" data-step="<%= step %>" data-step-idx="<%= idx %>"<% if (idx === currentIdx) { %> aria-current="step"<% } %>>
+          <div class="progress-step-dot
+            <% if (idx < currentIdx || (idx === currentIdx && (build.status === 'live' || build.status === 'preview'))) { %>
+              bg-brand border-brand text-black
+            <% } else if (idx === currentIdx) { %>
+              border-brand text-brand shadow-glow
+            <% } else { %>
+              border-border text-subtle bg-bg
+            <% } %>
+          ">
+            <% if (idx < currentIdx) { %>&#10003;<% } else if (idx === currentIdx) { %>
+              <% if (build.status === 'failed') { %>&#10007;<% } else if (build.status === 'live' || build.status === 'preview') { %>&#10003;<% } else { %><span class="progress-spinner"></span><% } %>
+            <% } else { %><%= idx + 1 %><% } %>
+          </div>
+          <div class="progress-step-label
+            <% if (idx < currentIdx || (idx === currentIdx && (build.status === 'live' || build.status === 'preview'))) { %>text-brand
+            <% } else if (idx === currentIdx) { %>text-gray-100 font-semibold
+            <% } else { %>text-subtle<% } %>
+          "><%= stepLabels[step] %></div>
+        </div>
+        <% if (idx < steps.length - 1) { %>
+          <div class="progress-connector <%= idx < currentIdx ? 'bg-brand' : 'bg-border' %><%= (Math.abs(idx - currentIdx) > 1 || Math.abs(idx + 1 - currentIdx) > 1) ? ' stepper-distant' : '' %>"></div>
+        <% } %>
+        <% if (!isNearCurrent && idx === currentIdx + 2) { %>
+          <div class="stepper-ellipsis" aria-hidden="true">
+            <div class="progress-step-dot progress-step-dot--ellipsis">&hellip;</div>
+            <div class="progress-step-label">&nbsp;</div>
+          </div>
+        <% } %>
+      <% }); %>
+    </div>
+
+    <div class="status-info" id="status-info">
+      <div class="status-badge status-badge-<%= build.status %>" id="status-badge"><%= statusMessages[build.status] || build.status %></div>
+      <% if (build.status === 'queued') { %>
+        <p class="status-info__note" id="queue-note">Your build is in the queue. We'll notify you when it starts.</p>
+      <% } %>
+      <% if (['queued', 'building', 'testing', 'deploying'].includes(build.status)) { %>
+        <p class="status-info__note" id="estimate-note">Estimated time: under <%= estimateMinutes %> minutes</p>
+      <% } %>
+    </div>
+
+    <div class="status-meta">
+      <% if (build.created_at) { %>
+        <span>Created: <span data-ts="<%= new Date(build.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(build.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></span>
+      <% } %>
+      <% if (build.started_at) { %>
+        <span>Started: <span data-ts="<%= new Date(build.started_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(build.started_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></span>
+      <% } %>
+      <% if (build.completed_at) { %>
+        <span>Completed: <span data-ts="<%= new Date(build.completed_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(build.completed_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></span>
+      <% } %>
+      <% if (build.started_at && build.completed_at) { %>
+        <span>Duration: <%= Math.round((new Date(build.completed_at) - new Date(build.started_at)) / 60000) %> min</span>
+      <% } else if (build.started_at && ['building', 'testing', 'deploying'].includes(build.status)) { %>
+        <span>Elapsed: <%= Math.round((Date.now() - new Date(build.started_at)) / 60000) %> min</span>
+      <% } %>
+    </div>
+
+    <% if (build.qa_status && build.qa_status !== 'pending' && build.qa_results && build.qa_results.length > 0) { %>
+      <div class="status-section">
+        <div class="status-section__head">
+          <span class="caps">Quality checks</span>
+          <% if (build.qa_status === 'passed') { %>
+            <span class="status-pill status-pill--ok">All passed</span>
+          <% } else if (build.qa_status === 'warned') { %>
+            <span class="status-pill status-pill--warn">Issues found</span>
+          <% } else if (build.qa_status === 'skipped') { %>
+            <span class="status-pill">Skipped</span>
+          <% } %>
+        </div>
+        <div class="status-checks">
+          <% build.qa_results.forEach(function(r) { %>
+            <div class="status-checks__row">
+              <% if (r.passed) { %>
+                <svg class="status-checks__icon status-checks__icon--ok" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <% } else { %>
+                <svg class="status-checks__icon status-checks__icon--warn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <% } %>
+              <div>
+                <span class="status-checks__name<%= r.passed ? '' : ' status-checks__name--warn' %>"><%= r.name %></span>
+                <% if (!r.passed && r.error) { %>
+                  <p class="status-checks__detail"><%= r.error.replace(/Timeout \d+ms exceeded\.?/, 'Slow response').replace(/Page\.\w+:\s*/, '').length > 80 ? r.error.replace(/Timeout \d+ms exceeded\.?/, 'Slow response').replace(/Page\.\w+:\s*/, '').slice(0, 80) + '...' : r.error.replace(/Timeout \d+ms exceeded\.?/, 'Slow response').replace(/Page\.\w+:\s*/, '') %></p>
+                <% } %>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="status-active" id="build-logs" style="display:none;">
+      <div class="status-active__panel">
+        <div class="status-active__rings">
+          <div class="status-active__ring status-active__ring--1"></div>
+          <div class="status-active__ring status-active__ring--2"></div>
+          <div class="status-active__core" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          </div>
+        </div>
+        <p id="build-activity-stage" class="status-active__stage">Working on your website&hellip;</p>
+        <p id="build-activity-latest" class="status-active__latest"></p>
+        <p class="status-active__hint">This usually takes 10 to 20 minutes. We'll email you when it's done.</p>
+      </div>
+      <div id="build-logs-container" style="display:none;" aria-hidden="true"></div>
+    </div>
+
+    <% if (build.screenshots && build.screenshots.length > 0 && ['preview', 'live'].includes(build.status)) { %>
+      <div class="status-section">
+        <div class="status-section__head">
+          <span class="caps">Website screenshots</span>
+        </div>
+        <div class="status-shots">
+          <% build.screenshots.forEach(function(ss, idx) { %>
+            <% const label = typeof ss === 'object' ? ss.page : ss; %>
+            <% const phase = typeof ss === 'object' ? ss.phase : ''; %>
+            <div class="status-shots__cell" data-action="open-screenshot">
+              <div class="status-shots__frame">
+                <img
+                  src="/api/builds/<%= build.id %>/screenshots/<%= idx %>"
+                  alt="Screenshot of <%= label %>"
+                  loading="lazy"
+                />
+              </div>
+              <p class="status-shots__caption"><%= label %><%= phase === 'deploy' ? ' (live)' : '' %></p>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (['preview', 'live'].includes(build.status)) { %>
+      <div class="status-survey" id="post-build-survey">
+        <span class="caps status-survey__head">Feedback</span>
+        <p class="status-survey__title">Two quick questions, if you have a moment.</p>
+        <div class="status-survey__fields">
+          <div class="status-survey__field">
+            <label for="survey-unanswered" class="status-survey__label">What questions did you have before you decided to build?</label>
+            <textarea id="survey-unanswered" rows="2" maxlength="2000" placeholder="Anything that was unclear or missing on the site..." class="status-survey__textarea"></textarea>
+          </div>
+          <div class="status-survey__field">
+            <label for="survey-referral" class="status-survey__label">Who else do you know that could use something like this?</label>
+            <textarea id="survey-referral" rows="2" maxlength="2000" placeholder="A friend, colleague, community..." class="status-survey__textarea"></textarea>
+          </div>
+          <div class="status-survey__actions">
+            <button type="button" id="survey-submit" class="btn btn-secondary btn-sm" data-action="submit-survey">Send feedback</button>
+            <span id="survey-status" class="status-survey__thanks hidden">Thanks, genuinely appreciated.</span>
+          </div>
+        </div>
+      </div>
+      <script nonce="<%= cspNonce %>">
+        function submitSurvey() {
+          var unanswered = document.getElementById('survey-unanswered').value.trim();
+          var referral = document.getElementById('survey-referral').value.trim();
+          if (!unanswered && !referral) return;
+          var btn = document.getElementById('survey-submit');
+          btn.disabled = true;
+          btn.textContent = 'Sending...';
+          var promises = [];
+          var csrf = window.STATUS_CSRF_TOKEN;
+          if (unanswered) {
+            promises.push(fetch('/feedback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+              body: JSON.stringify({ category: 'question', message: '[Unanswered question] ' + unanswered, page_url: window.location.pathname })
+            }));
+          }
+          if (referral) {
+            promises.push(fetch('/feedback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+              body: JSON.stringify({ category: 'suggestion', message: '[Referral] ' + referral, page_url: window.location.pathname })
+            }));
+          }
+          Promise.all(promises).then(function() {
+            document.getElementById('survey-status').classList.remove('hidden');
+            btn.textContent = 'Sent';
+            document.getElementById('survey-unanswered').value = '';
+            document.getElementById('survey-referral').value = '';
+          }).catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Send feedback';
+          });
+        }
+      </script>
+    <% } %>
+
+    <div class="status-foot">
+      <a href="/dashboard" class="status-foot__back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Dashboard
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<% if (build.status === 'live' || build.status === 'failed') { %>
+<div id="rebuild-modal" class="harbor-modal" style="display:none;">
+  <div class="harbor-modal__panel">
+    <h3 class="display harbor-modal__title">Rebuild project</h3>
+    <p class="harbor-modal__lede">Create a fresh build from the same spec. Optionally describe changes you want.</p>
+    <form action="/builds/<%= build.id %>/rebuild" method="POST">
+      <%- include('_csrf-field') %>
+      <textarea name="rebuild_request" rows="4" placeholder="Optional: describe what you want changed" class="harbor-modal__textarea"></textarea>
+      <div class="harbor-modal__actions">
+        <button type="button" class="btn btn-tertiary" data-action="close-rebuild">Cancel</button>
+        <button type="submit" class="btn btn-primary">Start rebuild</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script nonce="<%= cspNonce %>">
+  function openRebuildModal() { document.getElementById('rebuild-modal').style.display = 'flex'; }
+  function closeRebuildModal() { document.getElementById('rebuild-modal').style.display = 'none'; }
+  document.getElementById('rebuild-modal').addEventListener('click', function(e) { if (e.target === this) closeRebuildModal(); });
+</script>
+<% } %>
+
+<div id="screenshot-lightbox" class="harbor-modal" style="display:none;" role="dialog" aria-label="Screenshot preview">
+  <div class="harbor-modal__shot" data-action="close-screenshot">
+    <button type="button" data-action="close-screenshot" class="harbor-modal__close" aria-label="Close screenshot">&times;</button>
+    <img id="screenshot-lightbox-img" src="" alt="Screenshot" />
+  </div>
+</div>
+<script nonce="<%= cspNonce %>">
+  function openScreenshot(el) {
+    var img = el.querySelector('img');
+    if (!img) return;
+    document.getElementById('screenshot-lightbox-img').src = img.src;
+    document.getElementById('screenshot-lightbox').style.display = 'flex';
+  }
+  function closeScreenshot() { document.getElementById('screenshot-lightbox').style.display = 'none'; }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('screenshot-lightbox').style.display !== 'none') {
+      closeScreenshot();
+    }
+  });
+  // The page's Content-Security-Policy blocks inline onclick="" attributes, so
+  // every button declares data-action and is dispatched from here.
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    var action = el.getAttribute('data-action');
+    if (action === 'open-rebuild' && typeof openRebuildModal === 'function') openRebuildModal();
+    else if (action === 'close-rebuild' && typeof closeRebuildModal === 'function') closeRebuildModal();
+    else if (action === 'open-screenshot') openScreenshot(el);
+    else if (action === 'close-screenshot') closeScreenshot();
+    else if (action === 'submit-survey' && typeof submitSurvey === 'function') submitSurvey();
+  });
+</script>
+
+<script nonce="<%= cspNonce %>">
+  window.STATUS_BUILD_ID = <%- safeJSON(build.id) %>;
+  window.STATUS_CURRENT = <%- safeJSON(build.status) %>;
+  window.STATUS_CSRF_TOKEN = <%- safeJSON(csrfToken) %>;
+  window.STATUS_REVIEW_STATUS = <%- safeJSON(build.review_status || null) %>;
+</script>
+<script nonce="<%= cspNonce %>" src="/status.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+
+<style>
+  .status-head { margin-bottom: 32px; }
+  .status-title {
+    font-size: 44px; line-height: 1.05; margin: 0;
+    letter-spacing: -0.012em;
+  }
+  @media (max-width: 600px) { .status-title { font-size: 32px; } }
+
+  .status-card {
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    box-shadow: var(--shadow-letter);
+    padding: 32px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 600px) { .status-card { padding: 22px; } }
+  .status-card--ok {
+    background: var(--color-companion-paper);
+    border-color: var(--color-companion-rule);
+  }
+  .status-card--lantern {
+    background: rgba(198, 138, 58, 0.04);
+    border-color: rgba(198, 138, 58, 0.32);
+  }
+  .status-card--alert {
+    background: rgba(196, 70, 70, 0.04);
+    border-color: rgba(196, 70, 70, 0.28);
+  }
+  .status-card__head {
+    display: block; margin-bottom: 10px;
+    color: var(--color-clay);
+  }
+  .status-card__title {
+    font-size: 30px; line-height: 1.1; margin: 0 0 12px;
+    letter-spacing: -0.012em;
+  }
+  @media (max-width: 600px) { .status-card__title { font-size: 24px; } }
+  .status-card__lede {
+    font-size: 15px; color: var(--color-ink-soft); line-height: 1.6;
+    margin: 0 0 8px;
+  }
+  .status-card__meta {
+    font-size: 13px; color: var(--color-ink-faded);
+    font-family: var(--font-display); font-style: italic;
+    margin: 0 0 18px;
+  }
+  .status-card__badge {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 14px;
+    color: var(--color-companion-deep);
+  }
+  .status-card__actions {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin: 18px 0 12px;
+  }
+  .status-card__form { display: inline-block; }
+  .status-card__url {
+    font-family: var(--font-mono, monospace);
+    font-size: 12px; color: var(--color-ink-faded);
+    margin: 4px 0 0; word-break: break-all;
+  }
+  .status-card__sub {
+    margin-top: 18px; padding-top: 16px;
+    border-top: 1px dashed var(--color-rule);
+    display: flex; flex-wrap: wrap; gap: 10px;
+  }
+  .status-card__note {
+    font-size: 13px; color: var(--color-ink-faded);
+    font-family: var(--font-display); font-style: italic;
+    margin: 12px 0 0;
+  }
+  .status-card__link { color: var(--color-clay); text-decoration: underline; }
+  .status-card__notes {
+    background: var(--color-companion-paper);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    padding: 16px 18px;
+    margin: 14px 0 18px;
+  }
+  .status-card__notes-head { color: var(--color-clay); display: block; margin-bottom: 8px; }
+  .status-card__notes-body {
+    font-size: 14px; color: var(--color-ink);
+    white-space: pre-wrap; line-height: 1.6; margin: 0;
+  }
+
+  .status-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border: 1px solid var(--color-companion-rule);
+    background: rgba(110, 138, 122, 0.08);
+    color: var(--color-companion-deep);
+    border-radius: 5px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .status-pill--ok {
+    background: rgba(110, 138, 122, 0.1);
+    border-color: var(--color-companion-rule);
+    color: var(--color-companion-deep);
+  }
+  .status-pill--warn {
+    background: rgba(198, 138, 58, 0.1);
+    border-color: rgba(198, 138, 58, 0.32);
+    color: var(--color-lantern-deep);
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--color-lantern);
+    box-shadow: 0 0 0 4px rgba(198, 138, 58, 0.16);
+  }
+
+  .status-login {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--color-companion-paper);
+    border: 1px solid var(--color-rule);
+    padding: 18px 20px;
+    margin-bottom: 24px;
+  }
+  .status-login__icon {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    border: 1px solid var(--color-rule);
+    background: var(--color-vellum);
+    color: var(--color-clay);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .status-login__title {
+    font-family: var(--font-body); font-weight: 600; font-size: 14px;
+    color: var(--color-ink); margin: 0 0 4px;
+  }
+  .status-login__body { font-size: 14px; color: var(--color-ink-soft); margin: 0; }
+  .status-login__meta {
+    font-size: 12px; color: var(--color-ink-faded);
+    margin: 8px 0 0;
+  }
+  .status-login__meta .mono { font-family: var(--font-mono, monospace); color: var(--color-ink); }
+
+  .status-stepper {
+    display: flex; align-items: center;
+    overflow-x: auto;
+    padding: 8px 4px 14px;
+    margin-bottom: 18px;
+  }
+  .status-stepper__step { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .progress-step-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--color-rule);
+    background: var(--color-vellum);
+    color: var(--color-ink-faded);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    transition: all .25s ease;
+  }
+  .progress-step-dot--ellipsis { border: none; background: transparent; color: var(--color-ink-faded); }
+  .progress-step-label {
+    font-family: var(--font-body); font-size: 11px;
+    color: var(--color-ink-faded); margin-top: 6px;
+    text-align: center; white-space: nowrap;
+  }
+  .progress-connector {
+    flex: 1; height: 2px;
+    min-width: 18px;
+    margin-bottom: 22px;
+    background: var(--color-rule);
+    transition: background .35s ease;
+  }
+  .stepper-ellipsis { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .progress-spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid var(--color-lantern-deep);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: status-spin .8s linear infinite;
+  }
+  @keyframes status-spin { to { transform: rotate(360deg); } }
+  @media (max-width: 639px) { .stepper-distant { display: none; } }
+
+  .status-info {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; margin-bottom: 22px;
+  }
+  .status-badge {
+    display: inline-block;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--color-clay);
+    padding: 4px 12px;
+    border: 1px solid var(--color-rule);
+    background: var(--color-companion-paper);
+    border-radius: 5px;
+  }
+  .status-badge-live, .status-badge-preview { color: var(--color-companion-deep); border-color: var(--color-companion-rule); }
+  .status-badge-failed { color: #8C3A3A; border-color: rgba(196,70,70,0.32); background: rgba(196,70,70,0.05); }
+  .status-info__note {
+    font-size: 13px; color: var(--color-ink-faded);
+    font-family: var(--font-display); font-style: italic; margin: 0;
+  }
+
+  .status-meta {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 4px 22px;
+    font-size: 12px; color: var(--color-ink-faded);
+    margin-bottom: 28px;
+  }
+
+  .status-section { margin: 24px 0; }
+  .status-section__head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .status-section__head .caps { color: var(--color-clay); }
+
+  .status-checks {
+    border: 1px solid var(--color-rule);
+    background: var(--color-vellum);
+  }
+  .status-checks__row {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .status-checks__row:last-child { border-bottom: none; }
+  .status-checks__icon { flex-shrink: 0; margin-top: 2px; }
+  .status-checks__icon--ok { color: var(--color-companion-deep); }
+  .status-checks__icon--warn { color: var(--color-lantern-deep); }
+  .status-checks__name { font-size: 14px; color: var(--color-ink); }
+  .status-checks__name--warn { color: var(--color-lantern-deep); }
+  .status-checks__detail { font-size: 12px; color: var(--color-ink-soft); margin: 4px 0 0; }
+
+  .status-active__panel {
+    padding: 36px;
+    text-align: center;
+    background: var(--color-companion-paper);
+    border: 1px solid var(--color-companion-rule);
+    border-radius: 5px;
+  }
+  .status-active__rings {
+    position: relative;
+    width: 80px; height: 80px;
+    margin: 0 auto 18px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .status-active__ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--color-companion-rule);
+    animation: status-pulse 2.4s ease-out infinite;
+  }
+  .status-active__ring--1 { width: 60px; height: 60px; }
+  .status-active__ring--2 { width: 80px; height: 80px; animation-delay: .6s; opacity: .55; }
+  .status-active__core {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(110, 138, 122, 0.18);
+    color: var(--color-companion-deep);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1;
+  }
+  @keyframes status-pulse {
+    0%   { transform: scale(0.85); opacity: .9; }
+    100% { transform: scale(1.5);  opacity: 0; }
+  }
+  .status-active__stage {
+    font-family: var(--font-display);
+    font-size: 22px; color: var(--color-ink);
+    letter-spacing: -0.005em; margin: 0 0 4px;
+  }
+  .status-active__latest {
+    font-size: 13px; color: var(--color-ink-soft);
+    min-height: 1.25rem; margin: 4px 0 0;
+  }
+  .status-active__hint {
+    font-family: var(--font-display); font-style: italic;
+    font-size: 12px; color: var(--color-ink-faded);
+    margin: 14px 0 0;
+  }
+
+  .status-shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 700px) { .status-shots { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .status-shots { grid-template-columns: 1fr; } }
+  .status-shots__cell { cursor: pointer; }
+  .status-shots__frame {
+    overflow: hidden;
+    border: 1px solid var(--color-rule);
+    background: var(--color-vellum);
+    border-radius: 5px;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .status-shots__frame img { display: block; width: 100%; height: auto; }
+  .status-shots__cell:hover .status-shots__frame { transform: translateY(-2px); box-shadow: var(--shadow-slip); }
+  .status-shots__caption {
+    text-align: center; font-size: 12px;
+    color: var(--color-ink-soft); margin: 6px 0 0;
+  }
+
+  .status-survey {
+    margin: 24px 0;
+    padding: 24px;
+    background: var(--color-companion-paper);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+  }
+  .status-survey__head { color: var(--color-clay); display: block; margin-bottom: 6px; }
+  .status-survey__title {
+    font-family: var(--font-display); font-style: italic;
+    font-size: 18px; color: var(--color-ink);
+    margin: 0 0 18px; line-height: 1.4;
+  }
+  .status-survey__fields { display: flex; flex-direction: column; gap: 16px; }
+  .status-survey__field { display: flex; flex-direction: column; gap: 6px; }
+  .status-survey__label {
+    font-family: var(--font-body); font-size: 13px;
+    color: var(--color-ink-soft);
+  }
+  .status-survey__textarea {
+    width: 100%;
+    font-family: var(--font-body); font-size: 14px;
+    color: var(--color-ink);
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    padding: 10px 12px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  .status-survey__textarea:focus { outline: none; border-color: var(--color-ink); }
+  .status-survey__actions { display: flex; align-items: center; gap: 12px; }
+  .status-survey__thanks {
+    font-family: var(--font-display); font-style: italic;
+    font-size: 14px; color: var(--color-companion-deep);
+  }
+  .status-survey__thanks.hidden { display: none; }
+
+  .status-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 22px; margin-top: 20px;
+    border-top: 1px solid var(--color-rule);
+  }
+  .status-foot__back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; color: var(--color-ink-soft);
+    text-decoration: none;
+  }
+  .status-foot__back:hover { color: var(--color-clay); }
+
+  .harbor-modal {
+    position: fixed; inset: 0;
+    background: rgba(58, 42, 31, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+  }
+  .harbor-modal__panel {
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule);
+    box-shadow: var(--shadow-letter);
+    padding: 28px;
+    max-width: 520px; width: 100%;
+    border-radius: 5px;
+  }
+  .harbor-modal__title { font-size: 26px; margin: 0 0 8px; line-height: 1.1; }
+  .harbor-modal__lede { font-size: 14px; color: var(--color-ink-soft); margin: 0 0 14px; line-height: 1.55; }
+  .harbor-modal__textarea {
+    width: 100%;
+    font-family: var(--font-body); font-size: 14px;
+    color: var(--color-ink);
+    background: var(--color-companion-paper);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    resize: vertical;
+  }
+  .harbor-modal__actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .harbor-modal__shot {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .harbor-modal__shot img { max-width: 100%; max-height: 100%; box-shadow: var(--shadow-letter); }
+  .harbor-modal__close {
+    position: absolute; top: 16px; right: 16px;
+    width: 38px; height: 38px;
+    border: none;
+    background: rgba(58, 42, 31, 0.55);
+    color: var(--color-vellum);
+    font-size: 24px; cursor: pointer;
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .harbor-modal__close:hover { background: rgba(58, 42, 31, 0.8); }
+
+  /* btn-tertiary: Harbor "ghost" tone for low-emphasis actions */
+  .btn-tertiary {
+    background: transparent;
+    border: 1px solid var(--color-rule);
+    color: var(--color-ink-soft);
+    padding: 8px 14px;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .btn-tertiary:hover { border-color: var(--color-clay); color: var(--color-clay); }
+  .btn-sm { font-size: 12px; padding: 6px 12px; }
+
+  /* ─── Compat layer for status.js dynamic class mutations ─────────────────
+     status.js adds/removes Tailwind utility class names on the progress
+     stepper elements and injects banner divs with Tailwind utility class
+     strings. These rules map those class names to Harbor warm-paper /
+     lantern values so the page renders correctly without pulling in the
+     full Tailwind /style.css. Selectors are scoped to the parent element
+     so they have higher specificity than the base .progress-step-dot /
+     .progress-step-label / .progress-connector rules above. */
+  .progress-step-dot.bg-brand {
+    background: var(--color-lantern);
+    border-color: var(--color-lantern-deep);
+  }
+  .progress-step-dot.border-brand { border-color: var(--color-lantern-deep); }
+  .progress-step-dot.text-brand   { color: var(--color-lantern-deep); }
+  .progress-step-dot.text-black   { color: var(--color-ink); }
+  .progress-step-dot.border-border { border-color: var(--color-rule); }
+  .progress-step-dot.text-subtle   { color: var(--color-ink-faded); }
+  .progress-step-dot.bg-bg         { background: var(--color-vellum); }
+  .progress-step-dot.shadow-glow   { box-shadow: 0 0 0 4px rgba(198, 138, 58, 0.22); }
+  .progress-step-label.text-brand    { color: var(--color-lantern-deep); }
+  .progress-step-label.text-gray-100 { color: var(--color-ink); }
+  .progress-step-label.text-subtle   { color: var(--color-ink-faded); }
+  .progress-step-label.font-semibold { font-weight: 600; }
+  .progress-connector.bg-brand  { background: var(--color-lantern); }
+  .progress-connector.bg-border { background: var(--color-rule); }
+  /* Tailwind utility classes status.js uses on injected banner divs */
+  .text-center { text-align: center; }
+  .p-8 { padding: 28px; }
+  .p-5 { padding: 20px; }
+  .mb-8 { margin-bottom: 24px; }
+  .rounded-2xl, .rounded-xl { border-radius: 5px; }
+  .border { border: 1px solid var(--color-rule); }
+  .bg-surface-2 { background: var(--color-companion-paper); }
+  /* Tailwind opacity-suffix utility names cast literally by status.js */
+  [class*="bg-brand/[0.08]"] { background: rgba(198, 138, 58, 0.08); }
+  [class*="border-brand/30"] { border: 1px solid rgba(198, 138, 58, 0.45); }
+  /* status-failed-banner used by status.js for failure state */
+  .status-failed-banner {
+    padding: 22px 24px; margin-bottom: 24px;
+    background: rgba(196, 70, 70, 0.06);
+    border: 1px solid rgba(196, 70, 70, 0.32);
+    border-radius: 5px;
+    color: #8C3A3A;
+  }
+</style>

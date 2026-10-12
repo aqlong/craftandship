@@ -1,0 +1,14 @@
+{
+  "enabled": false,
+  "interval_minutes": 120,
+  "max_parallel": 1,
+  "max_items_per_day": 3,
+  "max_budget_per_item_usd": 3,
+  "daily_spend_ceiling_usd": 10,
+  "pause_until": null,
+  "max_total_failures_before_defer": 4,
+  "skip_complex_items": true,
+  "target_branch": "master",
+  "use_staging_workflow": false,
+  "tiered_governance": false
+}

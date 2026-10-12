@@ -1,0 +1,54 @@
+name: Hook Integrity
+
+# Server-side guardrail verification. Client-side hooks are bypassable via
+# --no-verify, chmod -x, or a rogue commit that deletes .githooks/*. This
+# workflow catches all of those by re-running the same checks on every push
+# and PR, where no bypass is possible.
+#
+# If this job fails, the push/PR should not be merged (mark "Hook Integrity"
+# as a required status check in branch protection to enforce that).
+#
+# Needs no secrets and no repository variables: it only reads files from the
+# checkout.
+
+on:
+  # Manual trigger: re-run CI on demand without manufacturing a code push.
+  workflow_dispatch:
+  push:
+    # Pushes to the default branch; every other branch is covered by the
+    # pull_request trigger below (avoids running the same commit twice).
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Hook-integrity is fast (~10s) but still worth deduping when rapid
+# fixups stack. Cancel the older run for the same PR or branch when a newer
+# commit lands.
+concurrency:
+  group: hook-integrity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hooks:
+    name: Verify guardrail hooks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+
+      - name: Verify .githooks/ integrity
+        run: bash scripts/verify_hooks.sh
+
+      - name: Re-run destructive DDL check (server-side)
+        # Redundant server-side run of the same check the pre-commit hook
+        # performs. Catches any commit that added destructive DDL via
+        # git commit --no-verify.
+        run: python3 scripts/check_destructive_ddl.py
+

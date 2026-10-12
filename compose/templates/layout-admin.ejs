@@ -1,0 +1,60 @@
+<% var _s = (typeof settings !== 'undefined' && settings) ? settings : {}; %>
+<% var _pv = _s._palette_vars || {'--color-primary':'#111','--color-background':'#fff','--color-foreground':'#111','--color-surface':'#f8f8f8','--color-border':'#e5e5e5','--color-on-primary':'#fff','--color-foreground-muted':'#666'}; %>
+<% var _fn = _s._fonts || { display: {family:'Georgia', is_serif: true}, body: {family:'system-ui', is_serif: false} }; %>
+<% var _fu = _s._fonts_url || ''; %>
+<% var _nav = (typeof nav_items !== 'undefined' && nav_items) ? nav_items : []; %>
+<% var _csrf = (typeof csrfToken !== 'undefined' && csrfToken) ? csrfToken : ''; %>
+<% var _adminNav = (typeof admin_nav_items !== 'undefined' && admin_nav_items) ? admin_nav_items : []; %>
+<% var _body = (typeof body !== 'undefined' && body) ? body : ''; %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="<%= _pv['--color-primary'] %>">
+  <meta name="csrf-token" content="<%= (typeof csrfToken !== 'undefined' && csrfToken) ? csrfToken : '' %>">
+  <title><%= (typeof title !== 'undefined' && title) ? title : ((_s.site_name || 'Site') + ' Admin') %></title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <% if (_fu) { %><link href="<%= _fu %>" rel="stylesheet"><% } %>
+  <style>
+    :root {
+      <% Object.keys(_pv).forEach(function(k) { %><%= k %>: <%= _pv[k] %>;
+      <% }); %>
+    }
+    body {
+      font-family: '<%= _fn.body.family %>', sans-serif;
+      background-color: var(--color-background);
+      color: var(--color-foreground);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .font-display { font-family: '<%= _fn.display.family %>', <%= _fn.display.is_serif ? "Georgia, serif" : "system-ui, sans-serif" %>; }
+    .font-body { font-family: '<%= _fn.body.family %>', system-ui, sans-serif; }
+    main { flex: 1; }
+    a { color: var(--color-primary); }
+    a.no-underline, nav a { text-decoration: none; }
+  </style>
+</head>
+<body>
+  <%- include('./widgets/shell/skip-to-content') %>
+  <%- include('./widgets/shell/nav-public', { nav_items: _nav, user: locals.user, csrfToken: _csrf, settings: _s, currentPath: (typeof currentPath !== 'undefined') ? currentPath : '/' }) %>
+  <% /* The sub-navigation links to /admin routes, which only the admin can
+        open. This layout also frames auth_required custom pages, and those
+        can admit other roles, so the links are shown to the admin only. */ %>
+  <% if (locals.user && locals.user.role === 'admin') { %>
+  <%- include('./widgets/shell/admin-subnav', { admin_nav_items: _adminNav, currentPath: (typeof currentPath !== 'undefined') ? currentPath : '/' }) %>
+  <% } %>
+  <main id="main-content">
+    <%- _body %>
+  </main>
+  <script src="/js/upload-zone.js"></script>
+  <script src="/js/cas-form-validate.js"></script>
+  <script src="/js/cas-reveal.js"></script>
+  <script src="/js/cas-fmt.js"></script>
+</body>
+</html>

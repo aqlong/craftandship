@@ -1,0 +1,19 @@
+<!-- compose:widget cta/newsletter-inline -->
+<% var _nl_heading = (typeof heading !== 'undefined' && heading) ? heading : 'Stay in touch'; %>
+<section class="py-10" style="background-color: var(--color-primary); color: var(--color-on-primary);">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 text-center">
+    <h2 class="font-display text-2xl md:text-3xl font-bold tracking-tight mb-3" style="color: var(--color-on-primary);"><%= _nl_heading %></h2>
+    <% if (typeof description !== 'undefined' && description) { %>
+      <p class="font-body text-sm md:text-base mb-6 opacity-90"><%= description %></p>
+    <% } %>
+    <% if (locals.flashSuccess) { %>
+      <div class="mb-4 text-sm font-medium px-4 py-3 rounded-md" style="background: rgba(255,255,255,0.15);"><%= flashSuccess %></div>
+    <% } %>
+    <form action="/newsletter-signup" method="POST" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label for="newsletter-inline-email" class="sr-only">Email address</label>
+      <input type="email" id="newsletter-inline-email" name="email" required aria-label="Email address" placeholder="<%= (typeof placeholder !== 'undefined' && placeholder) ? placeholder : 'Your email address' %>" class="flex-1 px-4 py-3 rounded-md border-0 font-body text-sm text-gray-900" style="background: rgba(255,255,255,0.95);" />
+      <button type="submit" class="font-body font-medium px-6 py-3 rounded-md transition-opacity hover:opacity-90 min-h-[44px]" style="background-color: var(--color-on-primary); color: var(--color-primary);"><%= (typeof button_text !== 'undefined' && button_text) ? button_text : 'Subscribe' %></button>
+    </form>
+  </div>
+</section>

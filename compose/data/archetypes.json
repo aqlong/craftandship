@@ -1,0 +1,610 @@
+{
+  "version": 1,
+  "updated_at": "2026-04-28",
+  "archetypes": [
+    {
+      "id": "healer-wellness",
+      "name": "Healer / Wellness Practitioner",
+      "description": "Solo wellness practitioners: Reiki, breathwork, sound baths, bodywork, intuitive guidance. Revenue mix = 1:1 sessions + group events + longer programs.",
+      "default_pages": [
+        "home",
+        "work-with-me",
+        "about",
+        "journal",
+        "events",
+        "gallery",
+        "contact"
+      ],
+      "default_data_models": [
+        {
+          "name": "BlogPost",
+          "plural": "blog-posts"
+        },
+        {
+          "name": "Event",
+          "plural": "events"
+        },
+        {
+          "name": "Photo",
+          "plural": "photos"
+        },
+        {
+          "name": "Testimonial",
+          "plural": "testimonials",
+          "public_listing_path": null
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        },
+        {
+          "name": "NewsletterSubscriber",
+          "plural": "newsletter-subscribers",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "warm-earth",
+        "soft-rose",
+        "forest-emerald",
+        "deep-plum"
+      ],
+      "default_font_pair_suggestions": [
+        "cormorant-lato",
+        "lora-raleway",
+        "lora-inter",
+        "playfair-source-sans",
+        "newsreader-publicsans"
+      ],
+      "copy_tone": "warm, grounded, intuitive, embodied",
+      "page_layouts": {
+        "home": "healer-home-default",
+        "work-with-me": "healer-offerings-default",
+        "about": "healer-about-default",
+        "journal": "healer-journal-default",
+        "events": "healer-events-default",
+        "gallery": "healer-gallery-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout"
+    },
+    {
+      "id": "coach-consultant",
+      "name": "Coach / Consultant",
+      "description": "Business, life, or executive coach with 1:1 and group program offerings, plus a pipeline of lead magnets and testimonials.",
+      "default_pages": [
+        "home",
+        "services",
+        "about",
+        "blog",
+        "case-studies",
+        "contact"
+      ],
+      "default_data_models": [
+        {
+          "name": "BlogPost",
+          "plural": "blog-posts"
+        },
+        {
+          "name": "CaseStudy",
+          "plural": "case-studies"
+        },
+        {
+          "name": "Testimonial",
+          "plural": "testimonials",
+          "public_listing_path": null
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        },
+        {
+          "name": "NewsletterSubscriber",
+          "plural": "newsletter-subscribers",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "ocean-blue",
+        "slate-gold",
+        "forest-emerald"
+      ],
+      "default_font_pair_suggestions": [
+        "inter-inter",
+        "playfair-source-sans",
+        "rubik-nunito",
+        "lora-inter"
+      ],
+      "copy_tone": "confident, practical, results-driven",
+      "page_layouts": {
+        "home": "coach-home-default",
+        "services": "coach-services-default",
+        "about": "coach-about-default",
+        "blog": "coach-blog-default",
+        "case-studies": "coach-case-studies-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout"
+    },
+    {
+      "id": "local-service",
+      "name": "Local Service Business",
+      "description": "Plumber, electrician, massage therapist, landscaper, tax preparer. Core flow: customer finds the site via search, books a service, gets a callback.",
+      "default_pages": [
+        "home",
+        "services",
+        "about",
+        "contact",
+        "reviews"
+      ],
+      "default_data_models": [
+        {
+          "name": "Service",
+          "plural": "services"
+        },
+        {
+          "name": "Review",
+          "plural": "reviews"
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "navy-clean",
+        "forest-emerald",
+        "warm-earth",
+        "terracotta-sage"
+      ],
+      "default_font_pair_suggestions": [
+        "inter-inter",
+        "rubik-nunito",
+        "karla-karla",
+        "archivo-dm-sans",
+        "newsreader-publicsans"
+      ],
+      "copy_tone": "direct, trustworthy, local, practical",
+      "page_layouts": {
+        "home": "local-service-home-default",
+        "services": "local-service-services-default",
+        "about": "local-service-about-default",
+        "reviews": "shared-reviews-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout"
+    },
+    {
+      "id": "therapist-counselor",
+      "name": "Therapist / Counselor",
+      "description": "Licensed therapist, psychologist, or counselor. Emphasizes approach + credentials + clear fees + confidential inquiry flow.",
+      "default_pages": [
+        "home",
+        "about",
+        "approach",
+        "fees-insurance",
+        "faq",
+        "contact"
+      ],
+      "default_data_models": [
+        {
+          "name": "Modality",
+          "plural": "modalities"
+        },
+        {
+          "name": "PricingPlan",
+          "plural": "pricing-plans",
+          "public_listing_path": null
+        },
+        {
+          "name": "FAQ",
+          "plural": "faqs",
+          "public_listing_path": null
+        },
+        {
+          "name": "Testimonial",
+          "plural": "testimonials",
+          "public_listing_path": null
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        },
+        {
+          "name": "NewsletterSubscriber",
+          "plural": "newsletter-subscribers",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "ocean-blue",
+        "forest-emerald",
+        "soft-rose",
+        "warm-earth"
+      ],
+      "default_font_pair_suggestions": [
+        "lora-inter",
+        "playfair-source-sans",
+        "inter-inter",
+        "lora-raleway",
+        "newsreader-publicsans"
+      ],
+      "copy_tone": "calm, credentialed, non-clinical warmth",
+      "page_layouts": {
+        "home": "therapist-home-default",
+        "about": "healer-about-default",
+        "approach": "therapist-approach-default",
+        "fees-insurance": "therapist-fees-default",
+        "faq": "therapist-faq-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout"
+    },
+    {
+      "id": "fitness-studio",
+      "name": "Fitness Studio",
+      "description": "Yoga, pilates, barre, CrossFit studios. Class schedule + instructors + intro pricing + community.",
+      "default_pages": [
+        "home",
+        "classes",
+        "schedule",
+        "instructors",
+        "pricing",
+        "about",
+        "contact"
+      ],
+      "default_data_models": [
+        {
+          "name": "ClassType",
+          "plural": "class-types"
+        },
+        {
+          "name": "Instructor",
+          "plural": "instructors"
+        },
+        {
+          "name": "ScheduleSlot",
+          "plural": "schedule-slots"
+        },
+        {
+          "name": "PricingPlan",
+          "plural": "pricing-plans"
+        },
+        {
+          "name": "Testimonial",
+          "plural": "testimonials",
+          "public_listing_path": null
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        },
+        {
+          "name": "NewsletterSubscriber",
+          "plural": "newsletter-subscribers",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "sage-clay",
+        "forest-emerald",
+        "soft-rose",
+        "navy-clean"
+      ],
+      "default_font_pair_suggestions": [
+        "rubik-nunito",
+        "inter-inter",
+        "archivo-dm-sans",
+        "karla-karla"
+      ],
+      "copy_tone": "energetic, welcoming, transformation-oriented",
+      "page_layouts": {
+        "home": "fitness-home-default",
+        "classes": "fitness-classes-default",
+        "schedule": "fitness-schedule-default",
+        "instructors": "fitness-instructors-default",
+        "pricing": "fitness-pricing-default",
+        "about": "healer-about-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout"
+    },
+    {
+      "id": "salon-spa",
+      "name": "Salon / Spa",
+      "description": "Hair, nails, esthetics, massage. Service menu with prices + stylist bios + portfolio gallery + booking inquiry.",
+      "default_pages": [
+        "home",
+        "services",
+        "team",
+        "gallery",
+        "about",
+        "reviews",
+        "contact"
+      ],
+      "default_data_models": [
+        {
+          "name": "Service",
+          "plural": "services"
+        },
+        {
+          "name": "StaffMember",
+          "plural": "staff"
+        },
+        {
+          "name": "Photo",
+          "plural": "photos"
+        },
+        {
+          "name": "Review",
+          "plural": "reviews"
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "blush-bronze",
+        "soft-rose",
+        "deep-plum",
+        "terracotta-sage"
+      ],
+      "default_font_pair_suggestions": [
+        "playfair-source-sans",
+        "lora-inter",
+        "rubik-nunito",
+        "cormorant-lato"
+      ],
+      "copy_tone": "polished, confident, inviting",
+      "page_layouts": {
+        "home": "salon-home-default",
+        "services": "salon-services-default",
+        "team": "salon-team-default",
+        "gallery": "healer-gallery-default",
+        "about": "healer-about-default",
+        "reviews": "shared-reviews-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout"
+    },
+    {
+      "id": "restaurant-cafe",
+      "name": "Restaurant / Cafe / Bakery",
+      "description": "Independent restaurants, cafes, bakeries, coffee shops. Menu + hours + location + reservations inquiry.",
+      "default_pages": [
+        "home",
+        "menu",
+        "about",
+        "gallery",
+        "visit",
+        "contact"
+      ],
+      "default_data_models": [
+        {
+          "name": "MenuItem",
+          "plural": "menu-items"
+        },
+        {
+          "name": "Photo",
+          "plural": "photos"
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        },
+        {
+          "name": "NewsletterSubscriber",
+          "plural": "newsletter-subscribers",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "cream-espresso",
+        "warm-earth",
+        "slate-gold",
+        "terracotta-sage"
+      ],
+      "default_font_pair_suggestions": [
+        "playfair-source-sans",
+        "lora-inter",
+        "cormorant-lato",
+        "instrument-serif-inter"
+      ],
+      "copy_tone": "warm, sensory, place-rooted",
+      "page_layouts": {
+        "home": "restaurant-home-default",
+        "menu": "restaurant-menu-default",
+        "about": "healer-about-default",
+        "gallery": "healer-gallery-default",
+        "visit": "restaurant-visit-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout"
+    },
+    {
+      "id": "tradesperson-contractor",
+      "name": "Tradesperson / Contractor",
+      "description": "Plumber, electrician, HVAC, handyman, roofer. Trust signals + service areas + fast-quote inquiry.",
+      "default_pages": [
+        "home",
+        "services",
+        "service-areas",
+        "reviews",
+        "about",
+        "contact"
+      ],
+      "default_data_models": [
+        {
+          "name": "Service",
+          "plural": "services"
+        },
+        {
+          "name": "ServiceArea",
+          "plural": "service-areas"
+        },
+        {
+          "name": "Review",
+          "plural": "reviews"
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "navy-clean",
+        "forest-emerald",
+        "warm-earth"
+      ],
+      "default_font_pair_suggestions": [
+        "inter-inter",
+        "rubik-nunito",
+        "archivo-dm-sans",
+        "karla-karla",
+        "newsreader-publicsans"
+      ],
+      "copy_tone": "direct, trustworthy, local-proud",
+      "page_layouts": {
+        "home": "tradesperson-home-default",
+        "services": "tradesperson-services-default",
+        "service-areas": "tradesperson-areas-default",
+        "reviews": "shared-reviews-default",
+        "about": "local-service-about-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout"
+    },
+    {
+      "id": "event-producer",
+      "name": "Event Producer / Curator",
+      "description": "Art show producers, concert promoters, performance curators, festival organizers, art walks. Events are the product. Core flow: announce upcoming events, build email list, sell tickets or take inquiries, showcase past work.",
+      "default_pages": [
+        "home",
+        "events",
+        "about",
+        "contact"
+      ],
+      "default_data_models": [
+        {
+          "name": "Event",
+          "plural": "events"
+        },
+        {
+          "name": "Photo",
+          "plural": "photos",
+          "public_listing_path": null
+        },
+        {
+          "name": "Testimonial",
+          "plural": "testimonials",
+          "public_listing_path": null
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        },
+        {
+          "name": "NewsletterSubscriber",
+          "plural": "newsletter-subscribers",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "deep-plum",
+        "slate-gold",
+        "cream-espresso",
+        "warm-earth"
+      ],
+      "default_font_pair_suggestions": [
+        "playfair-source-sans",
+        "lora-inter",
+        "cormorant-lato"
+      ],
+      "copy_tone": "curated, confident, editorial, atmospheric",
+      "page_layouts": {
+        "home": "event-producer-home-default",
+        "events": "event-producer-events-default",
+        "about": "healer-about-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout"
+    },
+    {
+      "id": "author",
+      "name": "Fiction Author / Novelist",
+      "description": "Independent novelists, fiction writers, and authors with a backlist they manage themselves. Core flow: feature the book inventory, route readers to retailers (Amazon, a local bookstore, Barnes & Noble, Goodreads, Audible, NetGalley), surface upcoming readings/events, and capture newsletter signups for new releases.",
+      "default_pages": [
+        "home",
+        "books",
+        "about",
+        "blog",
+        "events",
+        "contact"
+      ],
+      "default_data_models": [
+        {
+          "name": "Book",
+          "plural": "books"
+        },
+        {
+          "name": "BlogPost",
+          "plural": "blog-posts"
+        },
+        {
+          "name": "Event",
+          "plural": "events"
+        },
+        {
+          "name": "Testimonial",
+          "plural": "testimonials",
+          "public_listing_path": null,
+          "belongs_to": "Book"
+        },
+        {
+          "name": "ContactInquiry",
+          "plural": "contact-inquiries",
+          "public_listing_path": null
+        },
+        {
+          "name": "NewsletterSubscriber",
+          "plural": "newsletter-subscribers",
+          "public_listing_path": null
+        }
+      ],
+      "default_palette_suggestions": [
+        "cream-espresso",
+        "warm-earth",
+        "deep-plum",
+        "slate-gold"
+      ],
+      "default_font_pair_suggestions": [
+        "crimson-pro-jost",
+        "playfair-source-sans",
+        "cormorant-lato",
+        "lora-inter",
+        "newsreader-publicsans"
+      ],
+      "copy_tone": "literary, considered, place-rooted, voice-forward",
+      "page_layouts": {
+        "home": "author-home-spotlight",
+        "books": "author-books-default",
+        "about": "healer-about-default",
+        "blog": "coach-blog-default",
+        "events": "healer-events-default",
+        "contact": "form-contact-default"
+      },
+      "admin_navigation_pattern": "two-layout",
+      "owner_is_person": true
+    }
+  ]
+}

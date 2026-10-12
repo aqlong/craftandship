@@ -1,0 +1,70 @@
+<!-- compose:widget hero/nameplate-shelf - photo-free home hero.
+     Centered nameplate (symmetric hairline eyebrow, big name with
+     {accent} support, welcome line, up to two CTAs) anchored by a
+     "shelf" of the owner's primary entities (book covers) that each
+     link to their detail page. Why a shelf:
+     a purely-typographic hero reads as empty at desktop
+     widths; the entity shelf fills it on-brand without needing a
+     portrait.
+     Include args:
+       - heading (required): the owner's name / brand line
+       - eyebrow (optional): small caps line above, hairline-flanked
+       - description (optional): one welcome sentence
+       - cta_primary / cta_secondary (optional): {text, href}
+       - items (optional): rows with cover_image_url + detail_href; the
+         shelf renders only when 2+ covers are present -->
+<%
+function _npAccent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); }
+var _npHeading = (typeof heading !== 'undefined' && heading) ? heading : '';
+var _npEyebrow = (typeof eyebrow !== 'undefined' && eyebrow) ? eyebrow : '';
+var _npDescription = (typeof description !== 'undefined' && description) ? description : '';
+var _npCtaP = (typeof cta_primary !== 'undefined' && cta_primary && cta_primary.text) ? cta_primary : null;
+var _npCtaS = (typeof cta_secondary !== 'undefined' && cta_secondary && cta_secondary.text) ? cta_secondary : null;
+var _npItems = (typeof items !== 'undefined' && Array.isArray(items)) ? items : [];
+_npItems = _npItems.filter(function(b){
+  if (b == null || !(b.cover_image_url || b.image_url)) return false;
+  if (Object.prototype.hasOwnProperty.call(b, 'published')) {
+    return b.published === true || b.published === 't' || b.published === 1;
+  }
+  return true;
+}).slice(0, 6);
+%>
+<section class="py-14 md:py-20" style="background-color: var(--color-background);">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+    <% if (_npEyebrow) { %>
+      <div class="flex items-center justify-center gap-4 mb-6">
+        <span aria-hidden="true" style="display: block; width: 48px; height: 1px; background-color: var(--color-border);"></span>
+        <span class="font-body text-xs font-bold uppercase" style="color: var(--color-foreground-muted); letter-spacing: 0.18em;"><%= _npEyebrow %></span>
+        <span aria-hidden="true" style="display: block; width: 48px; height: 1px; background-color: var(--color-border);"></span>
+      </div>
+    <% } %>
+    <% if (_npHeading) { %>
+      <h1 class="font-display font-bold tracking-tight mb-5" style="color: var(--color-foreground); font-size: clamp(2.5rem, 6vw, 4.25rem); line-height: 1.05; letter-spacing: -0.02em;"><%- _npAccent(_npHeading) %></h1>
+    <% } %>
+    <% if (_npDescription) { %>
+      <p class="font-body text-lg md:text-xl leading-relaxed mx-auto mb-8" style="color: var(--color-foreground-muted); max-width: 38rem;"><%= _npDescription %></p>
+    <% } %>
+    <% if (_npCtaP || _npCtaS) { %>
+      <div class="flex flex-wrap items-center justify-center gap-4 mb-4">
+        <% if (_npCtaP) { %>
+          <a href="<%= _npCtaP.href || '#' %>" class="inline-flex items-center justify-center font-body text-base font-semibold rounded-md px-6 py-3 transition-opacity hover:opacity-90" style="background-color: var(--color-primary); color: var(--color-on-primary); text-decoration: none;"><%= _npCtaP.text %></a>
+        <% } %>
+        <% if (_npCtaS) { %>
+          <a href="<%= _npCtaS.href || '#' %>" class="inline-flex items-center justify-center font-body text-base font-semibold rounded-md px-6 py-3 border transition-opacity hover:opacity-80" style="border-color: var(--color-border); color: var(--color-primary); text-decoration: none;"><%= _npCtaS.text %></a>
+        <% } %>
+      </div>
+    <% } %>
+    <% if (_npItems.length >= 2) { %>
+      <div class="flex flex-wrap items-end justify-center gap-4 md:gap-6 mt-10">
+        <% _npItems.forEach(function(b) {
+             var _cu = b.cover_image_url || b.image_url;
+             var _ca = b.cover_image_alt || ((b.title || 'Book') + ' cover');
+        %>
+          <% if (b.detail_href) { %><a href="<%= b.detail_href %>" class="transition-transform hover:-translate-y-1" style="display: block;"><% } %>
+            <img loading="eager" src="<%= _cu %>" alt="<%= _ca %>" style="height: 150px; width: auto; border-radius: 4px; box-shadow: var(--cas-shadow-whisper, 0 2px 8px rgba(0,0,0,0.08));" />
+          <% if (b.detail_href) { %></a><% } %>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>

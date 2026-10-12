@@ -1,0 +1,107 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Total Customers</div>
+      <div class="text-2xl font-bold text-gray-200"><%= totalCount %></div>
+    </div>
+  </div>
+
+  <div class="bg-surface-3 rounded-[10px] p-3 sm:p-4 mb-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end flex-wrap">
+    <div class="flex-1 min-w-[200px]">
+      <label class="text-muted text-xs block mb-1">Search</label>
+      <input type="text" id="filter-q" value="<%= qFilter %>" placeholder="Name or email..." class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full" />
+    </div>
+    <div>
+      <button id="apply-filters" class="btn btn-primary btn-sm w-full sm:w-auto">Search</button>
+    </div>
+  </div>
+
+  <!-- Desktop table -->
+  <div class="hidden lg:block bg-surface-3 rounded-[10px]">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Name</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Email</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Builds</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Live</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Failed</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Signed Up</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (customers.length === 0) { %>
+          <tr><td colspan="6" class="text-center text-subtle py-8">No customers found.</td></tr>
+        <% } %>
+        <% customers.forEach(function(c) { %>
+          <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+            <td class="px-4 py-2.5 text-gray-300"><%= c.name %></td>
+            <td class="px-4 py-2.5 text-gray-300"><%= c.email %></td>
+            <td class="px-4 py-2.5 text-gray-300"><%= c.build_count %></td>
+            <td class="px-4 py-2.5 <%= parseInt(c.live_count) > 0 ? 'text-brand font-semibold' : 'text-subtle' %>"><%= c.live_count %></td>
+            <td class="px-4 py-2.5 <%= parseInt(c.failed_count) > 0 ? 'text-red-400 font-semibold' : 'text-subtle' %>"><%= c.failed_count %></td>
+            <td class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><span data-ts="<%= new Date(c.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(c.created_at).toISOString().slice(0, 10) %></span></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile card view -->
+  <div class="lg:hidden space-y-3">
+    <% if (customers.length === 0) { %>
+      <div class="text-center text-subtle py-8">No customers found.</div>
+    <% } %>
+    <% customers.forEach(function(c) { %>
+      <div class="bg-surface rounded-lg p-4">
+        <div class="text-gray-200 font-semibold text-sm mb-1"><%= c.name %></div>
+        <div class="text-muted text-xs mb-2"><%= c.email %></div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Builds</span>
+          <span class="text-gray-300"><%= c.build_count %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Live</span>
+          <span class="<%= parseInt(c.live_count) > 0 ? 'text-brand font-semibold' : 'text-subtle' %>"><%= c.live_count %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Failed</span>
+          <span class="<%= parseInt(c.failed_count) > 0 ? 'text-red-400 font-semibold' : 'text-subtle' %>"><%= c.failed_count %></span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-subtle">Signed Up</span>
+          <span class="text-muted"><span data-ts="<%= new Date(c.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(c.created_at).toISOString().slice(0, 10) %></span></span>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+
+  <% if (totalPages > 1) { %>
+    <div class="flex justify-center items-center gap-3 mt-6 text-sm">
+      <% if (page > 1) { %>
+        <a href="/admin/customers?page=<%= page - 1 %><%= qFilter ? '&q=' + encodeURIComponent(qFilter) : '' %>" class="btn btn-ghost btn-sm">Prev</a>
+      <% } %>
+      <span class="text-muted">Page <%= page %> of <%= totalPages %></span>
+      <% if (page < totalPages) { %>
+        <a href="/admin/customers?page=<%= page + 1 %><%= qFilter ? '&q=' + encodeURIComponent(qFilter) : '' %>" class="btn btn-ghost btn-sm">Next</a>
+      <% } %>
+    </div>
+  <% } %>
+</section>
+
+<script nonce="<%= cspNonce %>">
+(function() {
+  var applyBtn = document.getElementById('apply-filters');
+  var qInput = document.getElementById('filter-q');
+  function applySearch() {
+    var params = new URLSearchParams();
+    var q = qInput ? qInput.value.trim() : '';
+    if (q) params.set('q', q);
+    window.location = '/admin/customers' + (params.toString() ? '?' + params.toString() : '');
+  }
+  if (applyBtn) applyBtn.addEventListener('click', applySearch);
+  if (qInput) qInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') applySearch(); });
+})();
+</script>

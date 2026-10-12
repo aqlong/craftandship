@@ -1,0 +1,142 @@
+#!/bin/bash
+# CAS Roadmap Executor convenience CLI (macOS: drives the launchd agent and
+# reads/writes scripts/cas-executor-config.json). See scripts/cas-roadmap-loop.sh.
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+CONFIG="$PROJECT_DIR/scripts/cas-executor-config.json"
+PLIST="$HOME/Library/LaunchAgents/com.cas.roadmap-executor.plist"
+
+case "${1:-}" in
+  start)
+    if [ ! -f "$PLIST" ]; then
+      echo "No launchd plist at $PLIST."
+      echo "Install it first: see scripts/com.cas.roadmap-executor.plist.template"
+      exit 1
+    fi
+    launchctl load "$PLIST" 2>/dev/null
+    echo "Executor started" ;;
+  stop)
+    launchctl unload "$PLIST" 2>/dev/null
+    echo "Executor stopped" ;;
+  fast)
+    python3 -c "import json; c=json.load(open('$CONFIG')); c['interval_minutes']=10; json.dump(c,open('$CONFIG','w'),indent=2)"
+    echo "Interval: 10 min" ;;
+  slow)
+    python3 -c "import json; c=json.load(open('$CONFIG')); c['interval_minutes']=60; json.dump(c,open('$CONFIG','w'),indent=2)"
+    echo "Interval: 60 min" ;;
+  normal)
+    python3 -c "import json; c=json.load(open('$CONFIG')); c['interval_minutes']=20; json.dump(c,open('$CONFIG','w'),indent=2)"
+    echo "Interval: 20 min" ;;
+  parallel)
+    N="${2:-2}"
+    case "$N" in
+      ''|*[!0-9]*) echo "usage: cas-exec parallel <N>   (N must be a whole number)" >&2; exit 2 ;;
+    esac
+    python3 -c "import json; c=json.load(open('$CONFIG')); c['max_parallel']=$N; json.dump(c,open('$CONFIG','w'),indent=2)"
+    echo "Max parallel: $N" ;;
+  pause)
+    python3 -c "import json; c=json.load(open('$CONFIG')); c['enabled']=False; json.dump(c,open('$CONFIG','w'),indent=2)"
+    echo "Paused" ;;
+  resume)
+    python3 -c "import json; c=json.load(open('$CONFIG')); c['enabled']=True; c['pause_until']=None; json.dump(c,open('$CONFIG','w'),indent=2)"
+    echo "Resumed" ;;
+  pause-until)
+    [ -n "${2:-}" ] || { echo "usage: cas-exec pause-until <ISO-8601 timestamp, e.g. 2026-01-31T09:00:00+00:00>" >&2; exit 2; }
+    python3 -c "import json, sys; c=json.load(open(sys.argv[1])); c['pause_until']=sys.argv[2]; json.dump(c,open(sys.argv[1],'w'),indent=2)" "$CONFIG" "$2"
+    echo "Paused until $2" ;;
+  status)
+    # "Enabled" is what the loop and the watchdog will read (the picker's
+    # --enabled: only a JSON true), not whatever the key happens to hold.
+    if python3 "$PROJECT_DIR/scripts/cas-pick-item.py" --enabled 2>/dev/null; then
+      echo "Enabled:   True"
+    else
+      echo "Enabled:   False"
+    fi
+    python3 -c "
+import json
+c = json.load(open('$CONFIG'))
+print(f'Interval:  {c[\"interval_minutes\"]} min')
+print(f'Parallel:  {c.get(\"max_parallel\", 1)}')
+print(f'Max/day:   {c[\"max_items_per_day\"]}')
+print(f'Budget:    \${c[\"max_budget_per_item_usd\"]}/item, \${c[\"daily_spend_ceiling_usd\"]}/day ceiling')
+print(f'Pause:     {c.get(\"pause_until\") or \"none\"}')"
+    pgrep -f cas-roadmap-loop > /dev/null 2>&1 && echo "Loop:      RUNNING" || echo "Loop:      STOPPED"
+    # Show active worktrees
+    local_wts=$(ls -d "$PROJECT_DIR/.worktrees/auto-"* 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$local_wts" -gt 0 ]; then
+      echo "Worktrees: $local_wts active"
+      for wt in "$PROJECT_DIR/.worktrees/auto-"*; do
+        [ -d "$wt" ] || continue
+        echo "  - $(basename "$wt")"
+      done
+    fi ;;
+  run-once)
+    RUN_ONCE=1 "$PROJECT_DIR/scripts/cas-roadmap-loop.sh" ;;
+  logs)
+    ITEM="${2:-}"
+    if [ -n "$ITEM" ]; then
+      LOG_FILE="$PROJECT_DIR/logs/executor/latest-$ITEM.log"
+    else
+      LOG_FILE="$PROJECT_DIR/logs/executor/latest.log"
+    fi
+    if [ ! -f "$LOG_FILE" ]; then
+      LOG_FILE=$(ls -t "$PROJECT_DIR/logs/executor/"2*.log 2>/dev/null | head -1)
+    fi
+    if [ -n "$LOG_FILE" ] && [ -f "$LOG_FILE" ]; then
+      tail -f "$LOG_FILE"
+    else
+      echo "No logs yet"
+    fi ;;
+  queue)
+    python3 "$PROJECT_DIR/scripts/cas-pick-item.py" --list ;;
+  failures)
+    STATE_DIR="${CAS_EXECUTOR_STATE_DIR:-${TMPDIR:-/tmp}}"
+    TRACKER="${STATE_DIR%/}/cas-executor-failures"
+    if [ ! -f "$TRACKER" ]; then
+      echo "No failures recorded"
+    else
+      echo "=== Failure Tracker ==="
+      # Group by item, show counts
+      awk '{items[$2]++; dates[$2]=$1} END {for (i in items) printf "  %-40s %d failures (last: %s)\n", i, items[i], dates[i]}' "$TRACKER" | sort -t'(' -k2 -rn
+      echo ""
+      echo "Total entries: $(wc -l < "$TRACKER" | tr -d ' ')"
+    fi ;;
+  deferred)
+    python3 -c "
+import json
+data = json.load(open('$PROJECT_DIR/coordinator/roadmap.json'))
+deferred = [i for i in data['items'] if i.get('status') == 'deferred']
+if not deferred:
+    print('No deferred items')
+else:
+    print(f'=== {len(deferred)} Deferred Items ===')
+    for item in deferred:
+        reason = item.get('deferred_reason', 'no reason recorded')
+        print(f\"  {item['id']}: {item.get('title', '?')[:50]}\")
+        print(f\"    Reason: {reason}\")
+" ;;
+  config)
+    python3 -m json.tool "$CONFIG" ;;
+  *)
+    echo "CAS Roadmap Executor"
+    echo ""
+    echo "Usage: cas-exec <command>"
+    echo ""
+    echo "Commands:"
+    echo "  start            Start the executor loop (via launchd)"
+    echo "  stop             Stop the executor loop"
+    echo "  fast             Set interval to 10 min"
+    echo "  slow             Set interval to 60 min"
+    echo "  normal           Set interval to 20 min"
+    echo "  parallel [N]     Set max parallel items (N defaults to 2; the shipped config uses 1)"
+    echo "  pause            Pause execution"
+    echo "  resume           Resume execution"
+    echo "  pause-until T    Pause until ISO timestamp"
+    echo "  status           Show config, loop status, active worktrees"
+    echo "  run-once         Execute one cycle now, then exit"
+    echo "  logs [item-id]   Tail execution log (optionally for specific item)"
+    echo "  queue            Show eligible roadmap items"
+    echo "  failures         Show failure tracker with counts"
+    echo "  deferred         Show deferred items with reasons"
+    echo "  config           Print current configuration"
+    echo "" ;;
+esac

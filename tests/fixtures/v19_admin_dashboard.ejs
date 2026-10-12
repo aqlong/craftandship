@@ -1,0 +1,87 @@
+<%# Fixture source: builds/medicine-waves-v18-4a9e3e83/views/admin/dashboard.ejs %>
+<%# Represents v18/v19-era inline-settings-on-dashboard regression pattern. %>
+<%# Used by: tests/test_contracts_framework.py, tests/test_contracts_admin_dashboard.py, %>
+<%#          tests/test_safety_net_catches_known_past_regressions.py %>
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <h1 class="font-display text-3xl font-bold text-white mb-8">Admin Dashboard</h1>
+
+  <% if (query && query.success) { %>
+    <div class="bg-green-500/20 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg mb-6"><%= query.success %></div>
+  <% } %>
+  <% if (query && query.error) { %>
+    <div class="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mb-6"><%= query.error %></div>
+  <% } %>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-secondary/50 rounded-xl p-5 border border-white/10">
+      <p class="text-slate-400 text-sm mb-1">Events</p>
+      <p class="text-2xl font-bold text-white"><%= stats.events %></p>
+    </div>
+    <div class="bg-secondary/50 rounded-xl p-5 border border-white/10">
+      <p class="text-slate-400 text-sm mb-1">Photos</p>
+      <p class="text-2xl font-bold text-white"><%= stats.photos %></p>
+    </div>
+    <div class="bg-secondary/50 rounded-xl p-5 border border-white/10">
+      <p class="text-slate-400 text-sm mb-1">Videos</p>
+      <p class="text-2xl font-bold text-white"><%= stats.videos %></p>
+    </div>
+    <div class="bg-secondary/50 rounded-xl p-5 border border-white/10">
+      <p class="text-slate-400 text-sm mb-1">Messages</p>
+      <p class="text-2xl font-bold text-white"><%= stats.messages %></p>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <a href="/events" class="bg-accent/20 border border-accent/30 rounded-xl p-5 text-center hover:bg-accent/30 transition-colors">
+      <p class="text-accent font-semibold">Manage Events</p>
+    </a>
+    <a href="/photos" class="bg-accent/20 border border-accent/30 rounded-xl p-5 text-center hover:bg-accent/30 transition-colors">
+      <p class="text-accent font-semibold">Manage Photos</p>
+    </a>
+    <a href="/videos" class="bg-accent/20 border border-accent/30 rounded-xl p-5 text-center hover:bg-accent/30 transition-colors">
+      <p class="text-accent font-semibold">Manage Videos</p>
+    </a>
+    <a href="/contact-messages" class="bg-accent/20 border border-accent/30 rounded-xl p-5 text-center hover:bg-accent/30 transition-colors">
+      <p class="text-accent font-semibold">View Messages</p>
+    </a>
+  </div>
+
+  <!-- Recent Messages -->
+  <div class="bg-secondary/50 rounded-xl border border-white/10 overflow-hidden mb-8">
+    <div class="px-5 py-4 border-b border-white/10">
+      <h2 class="font-display text-xl font-bold text-white">Recent Messages</h2>
+    </div>
+    <% if (recentMessages && recentMessages.length > 0) { %>
+      <div class="divide-y divide-white/5">
+        <% recentMessages.forEach(function(msg) { %>
+          <div class="px-5 py-4">
+            <div class="flex items-center justify-between mb-1">
+              <p class="text-white font-medium text-sm"><%= msg.name %></p>
+              <p class="text-slate-500 text-xs"><%= new Date(msg.created_at).toLocaleDateString() %></p>
+            </div>
+            <p class="text-slate-400 text-sm"><%= msg.email %></p>
+            <p class="text-slate-300 text-sm mt-1 line-clamp-2"><%= msg.message %></p>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="px-5 py-8 text-center text-slate-500">No messages yet.</div>
+    <% } %>
+  </div>
+
+  <!-- Site Settings -->
+  <div class="bg-secondary/50 rounded-xl border border-white/10 overflow-hidden">
+    <div class="px-5 py-4 border-b border-white/10">
+      <h2 class="font-display text-xl font-bold text-white">Site Settings</h2>
+    </div>
+    <div class="p-5">
+      <!-- v17 FIX L: inline settings form replaced with canonical CTA -->
+<a href="/admin/settings" class="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold transition-colors" style="background:var(--color-accent,#5a80c0)">
+  Manage Site Settings
+  <svg style="width:1rem;height:1rem" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+</a>
+    </div>
+  </div>
+</div>

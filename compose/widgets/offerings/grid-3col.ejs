@@ -1,0 +1,51 @@
+<!-- compose:widget offerings/grid-3col -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<% var _items = (typeof items !== 'undefined' && items) ? items : []; %>
+<% if (_items.length > 0) { %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="text-center mb-10">
+      <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+        <div class="font-body text-xs font-bold uppercase mb-3" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;"><%= eyebrow %></div>
+      <% } %>
+      <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground); letter-spacing: -0.02em;"><%- _accent(heading) %></h2>
+    </div>
+    <div class="cas-card-grid-3">
+      <% _items.forEach(function(item, idx) { %>
+        <div class="rounded-xl border overflow-hidden transition-all hover:shadow-md flex flex-col" style="background-color: var(--color-surface); border-color: var(--color-border);">
+          <% var _itemImg = item.image_url || item.photo_url || item.cover_url || ''; %>
+          <%# Image aspect/fit: book covers + headshots are
+             often portrait (2:3) but the default 16:9 cover-fit clips
+             them. Customer-supplied item.image_aspect = 'portrait' |
+             'landscape' | 'square' picks the AR; image_fit = 'cover' |
+             'contain' picks fill behavior. portrait+contain auto-adds a
+             neutral pad-background so unfilled space looks intentional. %>
+          <% var _imgAspect = item.image_aspect === 'portrait' ? 'aspect-[2/3]' : (item.image_aspect === 'square' ? 'aspect-square' : 'aspect-[16/9]'); %>
+          <% var _imgFit = (item.image_fit === 'contain' || (!item.image_fit && item.image_aspect === 'portrait')) ? 'object-contain' : 'object-cover'; %>
+          <% var _padPortrait = (item.image_aspect === 'portrait' && _imgFit === 'object-contain'); %>
+          <% if (_itemImg) { %>
+            <img loading="lazy" src="<%= _itemImg %>" alt="<%= item.image_alt || item.title || '' %>" class="w-full <%= _imgAspect %> <%= _imgFit %>"<% if (_padPortrait) { %> style="background-color: var(--color-secondary); padding: 1.25rem;"<% } %> />
+          <% } %>
+          <div class="p-6 flex flex-col flex-1">
+          <% if (item.label) { %>
+            <div class="font-body text-xs font-bold uppercase mb-3" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;"><%= item.label %></div>
+          <% } %>
+          <h3 class="font-display text-xl font-bold mb-3" style="color: var(--color-foreground); letter-spacing: -0.01em;"><%= item.title %></h3>
+          <p class="font-body text-sm leading-relaxed mb-5 flex-1" style="color: var(--color-foreground-muted);"><%= item.description %></p>
+          <% if (item.price_display && item.price_display !== item.cta_text) { %>
+            <div class="font-display text-xl font-bold mb-4 price" style="color: var(--color-primary); font-style: italic; letter-spacing: -0.01em;"><%= item.price_display %></div>
+          <% } %>
+          <% if (item.cta_href && item.cta_text) { %>
+            <% var _itemExternal = /^https?:\/\//i.test(String(item.cta_href)); %>
+            <a href="<%= item.cta_href %>"<% if (_itemExternal) { %> target="_blank" rel="noopener"<% } %> class="inline-flex items-center font-body text-sm font-semibold transition-opacity hover:opacity-70" style="color: var(--color-primary); gap: 6px; text-decoration: none;">
+              <span><%= item.cta_text %></span>
+              <%- include('../utility/icon.ejs', { name: 'arrow-right', size: 14, stroke_width: 2 }) %>
+            </a>
+          <% } %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>

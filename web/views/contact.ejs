@@ -1,0 +1,112 @@
+<%
+  var formValues = typeof formValues !== 'undefined' ? formValues : null;
+  var successMessage = typeof successMessage !== 'undefined' ? successMessage : null;
+  var contactError = typeof error !== 'undefined' ? error : null;
+  var loggedEmail = typeof customerEmail !== 'undefined' ? customerEmail : '';
+  var loggedName = typeof customerName !== 'undefined' ? customerName : '';
+%>
+
+<section style="padding:80px 0 32px;">
+  <div class="max-site" style="max-width:680px;">
+    <span class="eyebrow" style="font-size:19px; display:block; margin-bottom:14px;">Reach Ocean,</span>
+    <h1 class="display contact-title">Write us a note.</h1>
+    <p style="font-size:21px; color:var(--color-ink-soft); line-height:1.55; margin:24px 0 0;">
+      Questions about the work, larger projects, partnership, press. Ocean reads every message.
+    </p>
+  </div>
+</section>
+
+<section style="padding:32px 0 120px;">
+  <div class="max-site" style="max-width:680px;">
+    <% if (successMessage) { %>
+      <div class="contact-success">
+        <span class="hand" style="font-size:26px; color:var(--color-ink-pencil); display:block; margin-bottom:8px;">Note received.</span>
+        <p style="font-family:var(--font-display); font-style:italic; font-size:19px; color:var(--color-ink); line-height:1.5; margin:0;">
+          <%= successMessage %>
+        </p>
+      </div>
+    <% } %>
+
+    <% if (contactError) { %>
+      <div class="contact-error" role="alert">
+        <%= contactError %>
+      </div>
+    <% } %>
+
+    <form class="contact-form" method="POST" action="/contact">
+      <%- include('_csrf-field') %>
+
+      <label class="contact-form__field">
+        <span class="contact-form__label">Your name</span>
+        <input type="text" name="name" autocomplete="name" required value="<%= formValues ? (formValues.name || '') : loggedName %>" />
+      </label>
+
+      <label class="contact-form__field">
+        <span class="contact-form__label">Your email</span>
+        <input type="email" name="email" autocomplete="email" required value="<%= formValues ? (formValues.email || '') : loggedEmail %>" />
+      </label>
+
+      <label class="contact-form__field">
+        <span class="contact-form__label">What's this about?</span>
+        <select name="subject">
+          <option value="general"<%= formValues && formValues.subject === 'general' ? ' selected' : '' %>>A general question</option>
+          <option value="project"<%= formValues && formValues.subject === 'project' ? ' selected' : '' %>>A project that doesn't fit the standard offer</option>
+          <option value="partnership"<%= formValues && formValues.subject === 'partnership' ? ' selected' : '' %>>Partnership or collaboration</option>
+          <option value="press"<%= formValues && formValues.subject === 'press' ? ' selected' : '' %>>Press or interview</option>
+          <option value="grant"<%= formValues && formValues.subject === 'grant' ? ' selected' : '' %>>Asking about the grant program</option>
+          <option value="other"<%= formValues && formValues.subject === 'other' ? ' selected' : '' %>>Something else</option>
+        </select>
+      </label>
+
+      <label class="contact-form__field">
+        <span class="contact-form__label">Your message</span>
+        <textarea name="message" rows="7" required placeholder="Take your time."><%= formValues ? (formValues.message || '') : '' %></textarea>
+      </label>
+
+      <div class="contact-form__submit-row">
+        <button type="submit" class="btn btn-primary">Send the note &rarr;</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+  .contact-title { font-size:64px; line-height:1.04; margin:0; letter-spacing:-0.018em; }
+  @media (max-width: 900px) { .contact-title { font-size:44px; } }
+
+  .contact-success {
+    padding:28px 32px; margin-bottom:32px;
+    background:var(--color-companion-paper);
+    box-shadow:var(--shadow-slip); border-radius: 5px;
+    border-left:3px solid var(--color-lantern);
+  }
+  .contact-error {
+    padding:14px 18px; margin-bottom:24px;
+    background:#FBE7DC; border:1px solid var(--color-clay); border-radius: 5px;
+    font-family:var(--font-display); font-style:italic; color:var(--color-ink); font-size:17px;
+  }
+  .contact-form { display:flex; flex-direction:column; gap:24px; }
+  .contact-form__field { display:flex; flex-direction:column; gap:8px; }
+  .contact-form__label {
+    font-family:var(--font-display); font-style:italic; font-size:18px; color:var(--color-clay);
+  }
+  .contact-form input,
+  .contact-form select,
+  .contact-form textarea {
+    font-family:var(--font-body); font-size:18px; color:var(--color-ink);
+    padding:14px 16px; border:1px solid var(--color-rule);
+    background:var(--color-vellum);
+    border-radius: 5px; outline:none;
+    transition:border-color .15s ease;
+  }
+  .contact-form input:focus,
+  .contact-form select:focus,
+  .contact-form textarea:focus { border-color:var(--color-ink); }
+  .contact-form textarea { resize:vertical; line-height:1.55; }
+  .contact-form__submit-row {
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-top:8px;
+  }
+  .contact-form__assurance {
+    font-family:var(--font-display); font-style:italic; font-size:15px; color:var(--color-ink-faded);
+  }
+</style>

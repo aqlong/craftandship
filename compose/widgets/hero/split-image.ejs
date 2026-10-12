@@ -1,0 +1,37 @@
+<!-- compose:widget hero/split-image -->
+<% var _siteNameUpper = (settings && settings.site_name || '').toUpperCase(); %>
+<% var _eyebrowRaw = (typeof eyebrow !== 'undefined' && eyebrow) ? String(eyebrow).trim() : ''; %>
+<% var _showEyebrow = _eyebrowRaw && _eyebrowRaw.toUpperCase() !== _siteNameUpper; %>
+<% var _raw = (typeof heading !== 'undefined' && heading !== null) ? String(heading) : ''; %>
+<% // Escape the heading before splicing the static {word} accent. Running
+   // the replace on the unescaped value and emitting through the raw output
+   // tag would leak a crafted heading into the page. Mirrors hero/centered.ejs.
+   function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); } %>
+<% var _rendered = /\{[^}]+\}/.test(_raw)
+     ? _esc(_raw).replace(/\{([^}]+)\}/g, function(_m, inner){ return '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">' + inner + '</em>'; })
+     : _esc(_raw); %>
+<% var _dropCap = (typeof drop_cap !== 'undefined' && drop_cap) ? ' cas-drop-cap' : ''; %>
+<section class="py-12 md:py-20" style="background-color: var(--color-secondary); border-bottom: 1px solid var(--color-border);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
+    <% if (typeof image_url !== 'undefined' && image_url) { %>
+      <div class="order-2 md:order-1">
+        <img loading="eager" fetchpriority="high" src="<%= image_url %>" alt="<%= (typeof image_alt !== 'undefined' ? image_alt : '') %>" class="w-full h-auto rounded-2xl" style="box-shadow: 0 12px 40px rgba(0,0,0,0.08);" />
+      </div>
+    <% } %>
+    <div class="order-1 md:order-2">
+      <% if (_showEyebrow) { %>
+        <div class="font-body text-xs font-bold uppercase mb-4" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;"><%= _eyebrowRaw %></div>
+      <% } %>
+      <h1 class="font-display text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight mb-5" style="color: var(--color-foreground); letter-spacing: -0.02em;"><%- _rendered %></h1>
+      <% if (typeof description !== 'undefined' && description) { %>
+        <p class="font-body text-base md:text-lg leading-relaxed mb-7<%= _dropCap %>" style="color: var(--color-foreground-muted); max-width: 520px;"><%= description %></p>
+      <% } %>
+      <% if (typeof cta_primary !== 'undefined' && cta_primary) { %>
+        <a href="<%= cta_primary.href %>" class="inline-flex items-center justify-center font-body font-medium px-6 py-3 rounded-md transition-all hover:opacity-90 min-h-[44px]" style="background-color: var(--color-primary); color: var(--color-on-primary); gap: 8px; text-decoration: none;">
+          <span><%= cta_primary.text %></span>
+          <%- include('../utility/icon.ejs', { name: 'arrow-right', size: 16 }) %>
+        </a>
+      <% } %>
+    </div>
+  </div>
+</section>

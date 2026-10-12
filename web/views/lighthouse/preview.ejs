@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title><%= title %></title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    /* Phase 1 of /lighthouse/preview UI. Visual language matches the
+       Harbor / lighthouse aesthetic: warm-paper bg, ink type, soft
+       cards. Each family card is a clickable form that POSTs the
+       choice; no client JS required (works without JS for visitors
+       on slow connections). When JS IS available, we intercept the
+       click + use fetch + swap the page state. */
+    body { background: #f6f1e8; color: #1a1714; font-family: 'Cormorant Garamond', Georgia, serif; margin: 0; padding: 0; min-height: 100vh; }
+    .preview-page { max-width: 1100px; margin: 0 auto; padding: 64px 24px 96px; }
+    .preview-header { margin-bottom: 48px; }
+    .preview-header h1 { font-size: 2.5rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 12px; }
+    .preview-header p { font-family: 'Inter', system-ui, sans-serif; font-size: 0.9375rem; line-height: 1.6; color: #5a534a; max-width: 640px; margin: 0; }
+    .preview-grid { display: grid; gap: 24px; grid-template-columns: 1fr; }
+    @media (min-width: 768px) { .preview-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .preview-grid { grid-template-columns: repeat(3, 1fr); } }
+    .family-card { background: #fffaf2; border: 1px solid #d4cab8; border-radius: 8px; padding: 0; overflow: hidden; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .family-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .family-card .preview-thumb { background: #2a2620; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+    .family-card .preview-thumb img { display: block; width: 100%; height: auto; object-fit: cover; max-height: 220px; }
+    .family-card .preview-thumb-extras { display: flex; gap: 1px; background: rgba(0,0,0,0.2); }
+    .family-card .preview-thumb-extras img { max-height: 90px; flex: 1; min-width: 0; }
+    .family-card .preview-mock { height: 180px; background: #2a2620; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+    .family-card .preview-mock-nav { padding: 12px 16px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+    .family-card .preview-mock-nav .mock-wordmark { color: #f6f1e8; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+    .family-card .preview-mock-nav .mock-links { display: flex; gap: 8px; }
+    .family-card .preview-mock-nav .mock-link { width: 24px; height: 6px; background: rgba(246,241,232,0.5); border-radius: 1px; }
+    .family-card .preview-mock-body { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+    .family-card .preview-mock-body .mock-h1 { background: #f6f1e8; height: 16px; border-radius: 2px; }
+    .family-card .preview-mock-body .mock-line { background: rgba(246,241,232,0.5); height: 4px; border-radius: 1px; }
+    .family-card .card-body { padding: 20px 22px 22px; }
+    .family-card h2 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 8px; }
+    .family-card .summary { font-family: 'Inter', system-ui, sans-serif; font-size: 0.8125rem; line-height: 1.5; color: #5a534a; margin: 0 0 14px; }
+    .family-card .specs { font-family: 'Inter', system-ui, sans-serif; font-size: 0.6875rem; color: #5a534a; line-height: 1.7; margin: 0 0 16px; padding: 0; list-style: none; }
+    .family-card .specs li { display: flex; gap: 6px; }
+    .family-card .specs li strong { color: #1a1714; font-weight: 600; min-width: 80px; }
+    .family-card form { margin: 0; }
+    .family-card button { width: 100%; padding: 11px 14px; background: #1a1714; color: #fffaf2; border: 0; border-radius: 4px; font-family: 'Inter', system-ui, sans-serif; font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; min-height: 44px; }
+    .family-card button:hover { background: #2a2620; }
+    .family-card .pinned-badge { display: inline-block; padding: 2px 8px; background: #d4cab8; color: #1a1714; border-radius: 999px; font-family: 'Inter', system-ui, sans-serif; font-size: 0.625rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-left: 8px; vertical-align: middle; }
+    .preview-footer { margin-top: 48px; font-family: 'Inter', system-ui, sans-serif; font-size: 0.875rem; color: #5a534a; text-align: center; }
+    .preview-footer a { color: #1a1714; }
+    .empty-state { text-align: center; padding: 64px 32px; color: #5a534a; font-family: 'Inter', system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <%- include('../partials/_harbor-skip-link') %>
+  <main id="main" class="preview-page">
+    <header class="preview-header">
+      <h1>How would you like your site to look?</h1>
+      <p>
+        These are five different ways the same site can be put together: different navigation,
+        different headlines, different rhythm. Pick the one that feels closest;
+        <%= companionName %> will adjust the details from there. You can change your mind any
+        time before we build.
+      </p>
+    </header>
+
+    <% if (!families || families.length === 0) { %>
+      <div class="empty-state">
+        <p>No template families available right now. Try again in a minute, or
+        <a href="/lighthouse/table<%= devTrialQuery %>">go back to the table</a>.</p>
+      </div>
+    <% } else { %>
+      <div class="preview-grid">
+        <% families.forEach(function(scored, idx) {
+             var f = scored.family;
+             var ts = f.typography_scale || {};
+             var navDescription = describeShellNav(f.shell_nav_id);
+             var footerDescription = describeShellFooter(f.shell_footer_id);
+        %>
+          <div class="family-card" data-family-id="<%= f.id %>">
+            <% var thumbs = (typeof thumbnails !== 'undefined' && thumbnails[f.id]) ? thumbnails[f.id] : {}; %>
+            <% if (thumbs.home) { %>
+              <div class="preview-thumb">
+                <img src="<%= thumbs.home %>" alt="<%= thumbAlt(f, 'home', ts, navDescription) %>" loading="lazy" />
+                <% if (thumbs.about || thumbs.services) { %>
+                  <div class="preview-thumb-extras">
+                    <% if (thumbs.about) { %><img src="<%= thumbs.about %>" alt="<%= thumbAlt(f, 'about', ts, navDescription) %>" loading="lazy" /><% } %>
+                    <% if (thumbs.services) { %><img src="<%= thumbs.services %>" alt="<%= thumbAlt(f, 'services', ts, navDescription) %>" loading="lazy" /><% } %>
+                  </div>
+                <% } %>
+              </div>
+            <% } else { %>
+              <%# Decorative miniature of the template family. The family name,
+                  summary, and specs all render as real text in .card-body below,
+                  so the mock is presentational only. aria-hidden keeps it out of
+                  the a11y tree (screen-reader users get the heading + summary,
+                  not the tiny wordmark) and resolves the WCAG 1.4.3 contrast
+                  flag on light-themed family mocks (wordmark on near-same-tone
+                  nav = ~1.1:1). Caught by tests/ui/lighthouse-a11y.spec.ts. %>
+              <div class="preview-mock" style="background: <%= mockNavBg(f) %>;" aria-hidden="true">
+                <div class="preview-mock-nav" style="<%- mockNavStyle(f) %>">
+                  <span class="mock-wordmark" style="color: <%= mockInk(f) %>;"><%= f.name %></span>
+                  <span class="mock-links"><span class="mock-link"></span><span class="mock-link"></span><span class="mock-link"></span></span>
+                </div>
+                <div class="preview-mock-body">
+                  <div class="mock-h1" style="height: <%= mockH1Height(ts.h1_rem) %>; width: 60%;"></div>
+                  <div class="mock-line" style="width: 80%;"></div>
+                  <div class="mock-line" style="width: 70%;"></div>
+                  <div class="mock-line" style="width: 75%;"></div>
+                </div>
+              </div>
+            <% } %>
+            <div class="card-body">
+              <h2>
+                <%= f.name %>
+                <% if (idx === 0 && scored.score > 0) { %><span class="pinned-badge">Recommended</span><% } %>
+              </h2>
+              <p class="summary"><%= f.summary %></p>
+              <ul class="specs">
+                <li><strong>Nav:</strong> <%= navDescription %></li>
+                <li><strong>Footer:</strong> <%= footerDescription %></li>
+                <li><strong>Headlines:</strong> <%= ts.h1_rem ? ts.h1_rem + 'rem' : '-' %> (h1)</li>
+                <li><strong>Rhythm:</strong> <%= f.complexity_band || '-' %> &middot; <%= f.accent_density || '-' %> accents</li>
+              </ul>
+              <form action="/lighthouse/preview/choose<%= devTrialQuery %>" method="POST" class="js-choose-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="template_family_id" value="<%= f.id %>">
+                <button type="submit" aria-label="Choose <%= f.name %>">Choose this</button>
+              </form>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <p class="preview-footer">
+      Not sure? <a href="/lighthouse/table<%= devTrialQuery %>"><%= companionName %> can keep helping you decide</a>.
+    </p>
+  </main>
+
+  <script nonce="<%= cspNonce %>">
+    // Progressive enhancement: fetch the chosen family + redirect.
+    // Falls back to the form's native POST when JS is disabled.
+    document.querySelectorAll('.js-choose-form').forEach(function(form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var btn = form.querySelector('button');
+        var original = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+        var familyId = form.querySelector('[name="template_family_id"]').value;
+        var csrf = form.querySelector('[name="_csrf"]').value;
+        fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-csrf-token': csrf,
+          },
+          body: JSON.stringify({ template_family_id: familyId, _csrf: csrf }),
+          credentials: 'same-origin',
+        }).then(function(r) {
+          return r.json().catch(function() { return {}; });
+        }).then(function(data) {
+          if (data && data.redirect) {
+            window.location.href = data.redirect;
+          } else {
+            // Fall back to native submit on failure
+            if (btn) { btn.disabled = false; btn.textContent = original; }
+            form.submit();
+          }
+        }).catch(function() {
+          if (btn) { btn.disabled = false; btn.textContent = original; }
+          form.submit();
+        });
+      });
+    });
+  </script>
+</body>
+</html>
+<%
+function describeShellNav(navId) {
+  switch (navId) {
+    case 'shell-nav-public':         return 'Top bar with logo + login button';
+    case 'shell-nav-thin-statement': return 'Thin minimal bar, wordmark only';
+    case 'shell-nav-side-rail':      return 'Persistent left sidebar (240px on lg+)';
+    case 'shell-nav-centered-minimal': return 'Three centered links, no logo';
+    case 'shell-nav-image-banner':   return 'Full-width image strip with nav overlaid';
+    default: return navId;
+  }
+}
+function describeShellFooter(footerId) {
+  switch (footerId) {
+    case 'shell-footer':                 return 'Three-column with quick links';
+    case 'shell-footer-minimal-line':    return 'Single rule, centered wordmark';
+    case 'shell-footer-grid-five-col':   return 'Full sitemap (5 columns, dark)';
+    case 'shell-footer-single-line':     return 'One centered line';
+    default: return footerId;
+  }
+}
+function mockNavBg(f) {
+  // Simulate the family's nav background tone in the thumbnail.
+  switch (f.shell_nav_id) {
+    case 'shell-nav-public':           return '#1a3a5a';
+    case 'shell-nav-thin-statement':   return '#f6f1e8';
+    case 'shell-nav-side-rail':        return '#2a2620';
+    case 'shell-nav-centered-minimal': return '#fffaf2';
+    case 'shell-nav-image-banner':     return '#3a3530';
+    default: return '#2a2620';
+  }
+}
+function mockNavStyle(f) {
+  // Inline overrides for thumbnail variants whose mock contrasts the
+  // dark default body. For thin-statement + centered-minimal the nav is
+  // a light background; tweak text + line colors so the mock reads.
+  if (f.shell_nav_id === 'shell-nav-thin-statement' || f.shell_nav_id === 'shell-nav-centered-minimal') {
+    return 'background: rgba(0,0,0,0.04); color: #1a1714;';
+  }
+  return '';
+}
+function mockInk(f) {
+  // Wordmark text color for the decorative mock. The .mock-wordmark CSS rule
+  // hardcodes a near-white (#f6f1e8) which works on dark navs but renders at
+  // ~1.1:1 on the light-nav families (thin-statement / centered-minimal),
+  // failing WCAG 1.4.3. mockNavStyle's inherited `color` can't win against the
+  // more-specific .mock-wordmark rule, so we set an inline color (inline beats
+  // the class rule) here: dark ink on light navs, the near-white otherwise.
+  if (f.shell_nav_id === 'shell-nav-thin-statement' || f.shell_nav_id === 'shell-nav-centered-minimal') {
+    return '#1a1714';
+  }
+  return '#f6f1e8';
+}
+function mockH1Height(h1rem) {
+  // Map h1 rem to a thumbnail bar height so visual feel of headline
+  // size flows into the mock. 6rem -> 26px, 5rem -> 22px, 3rem -> 16px,
+  // 2.25rem -> 12px.
+  if (!h1rem) return '16px';
+  if (h1rem >= 5.5) return '26px';
+  if (h1rem >= 4.5) return '22px';
+  if (h1rem >= 3.5) return '20px';
+  if (h1rem >= 2.5) return '16px';
+  return '12px';
+}
+function thumbAlt(f, route, ts, navDescription) {
+  // Descriptive alt for screen-reader users. Combines the family's
+  // pre-authored thumbnail_alt_summary (one sentence per family in
+  // compose/data/templates.json) with the structural decision aids
+  // sighted users see in the specs list: h1_rem + nav style.
+  var summary = (f && typeof f.thumbnail_alt_summary === 'string') ? f.thumbnail_alt_summary.trim() : '';
+  var h1 = (ts && ts.h1_rem) ? (ts.h1_rem + 'rem display headlines') : '';
+  var nav = (typeof navDescription === 'string' && navDescription.trim()) ? ('Nav: ' + navDescription.trim()) : '';
+  var parts = [f.name + ' ' + route + ' page preview'];
+  if (summary) parts.push(summary.replace(/\.$/, ''));
+  if (h1) parts.push(h1);
+  if (nav) parts.push(nav);
+  return parts.join('. ') + '.';
+}
+%>

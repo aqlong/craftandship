@@ -1,0 +1,55 @@
+<!-- compose:widget offerings/pricing-tier-table -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-10">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= eyebrow %></div>
+        <% } %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+        <% if (typeof description !== 'undefined' && description) { %>
+          <p class="font-body text-base md:text-lg max-w-2xl mx-auto" style="color: var(--color-foreground-muted);"><%= description %></p>
+        <% } %>
+      </div>
+    <% } %>
+    <% var _items = (typeof items !== 'undefined' && items) ? items : (typeof rows !== 'undefined' ? rows : []); %>
+    <% if (_items.length === 0) { %>
+      <p class="font-body text-center" style="color: var(--color-foreground-muted);">No pricing plans yet.</p>
+    <% } else { %>
+      <div class="grid grid-cols-1 md:grid-cols-<%= Math.min(_items.length, 3) %> gap-6">
+        <% _items.forEach(function(tier) { %>
+          <% var _feats = tier.features; if (typeof _feats === 'string') { try { _feats = JSON.parse(_feats); } catch(e) { _feats = _feats.split(/\r?\n/); } } _feats = _feats || []; %>
+          <article class="p-6 md:p-8 rounded-xl border flex flex-col" style="background: white; border-color: <%= tier.featured ? 'var(--color-primary)' : 'var(--color-border)' %>; <% if (tier.featured) { %>box-shadow: 0 8px 24px rgba(0,0,0,0.08);<% } %>">
+            <% if (tier.featured) { %>
+              <div class="font-display text-sm italic mb-2" style="color: var(--color-primary);">Most popular</div>
+            <% } %>
+            <h3 class="font-display text-xl font-bold mb-2" style="color: var(--color-foreground);"><%= tier.name %></h3>
+            <% if (tier.description) { %>
+              <p class="font-body text-sm mb-4" style="color: var(--color-foreground-muted);"><%= tier.description %></p>
+            <% } %>
+            <div class="mb-5">
+              <span class="font-display text-4xl font-bold price" style="color: var(--color-foreground);"><%= tier.price_display || (tier.price ? ('$' + tier.price) : 'Inquire') %></span>
+              <% if (tier.billing_period && tier.price_display) { %><span class="font-body text-sm ml-1" style="color: var(--color-foreground-muted);">/ <%= tier.billing_period %></span><% } %>
+            </div>
+            <% if (_feats.length > 0) { %>
+              <ul class="space-y-3 mb-6 flex-1">
+                <% _feats.forEach(function(feat) { %>
+                  <li class="font-body text-sm flex items-start" style="color: var(--color-foreground); gap: 10px;">
+                    <span style="color: var(--color-primary); flex-shrink: 0; margin-top: 3px;">
+                      <%- include('../utility/icon.ejs', { name: 'check', size: 16, stroke_width: 2.25 }) %>
+                    </span>
+                    <span style="line-height: 1.5;"><%= feat %></span>
+                  </li>
+                <% }); %>
+              </ul>
+            <% } %>
+            <% if (tier.cta_href) { %>
+              <a href="<%= tier.cta_href %>" class="inline-flex items-center justify-center font-body font-medium px-5 py-3 rounded-md transition-opacity hover:opacity-90 min-h-[44px] no-underline" style="background-color: <%= tier.featured ? 'var(--color-primary)' : 'transparent' %>; color: <%= tier.featured ? 'var(--color-on-primary)' : 'var(--color-primary)' %>; <% if (!tier.featured) { %>border: 1px solid var(--color-primary);<% } %> text-decoration: none;"><%= tier.cta_text || 'Get started' %></a>
+            <% } %>
+          </article>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>

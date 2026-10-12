@@ -1,0 +1,184 @@
+{
+  "app_name": "sample-fitness",
+  "archetype": "fitness-studio",
+  "palette": "sage-clay",
+  "font_pair": "archivo-dm-sans",
+  "admin_email": "admin@sample-fitness.example",
+  "settings": {
+    "site_name": "Clearwater Yoga",
+    "site_description": "Intimate community yoga and pilates studio. Drop-ins welcome.",
+    "hero_tagline": "Move · Breathe · Belong",
+    "hero_description": "Intimate yoga and pilates studio. Fifteen instructors, forty weekly classes, one community.",
+    "hero_image_url": "https://picsum.photos/seed/fit-hero/1200/900",
+    "nav_logo_url": "",
+    "about_title": "About Clearwater",
+    "about_body": "Clearwater Yoga is a community studio dedicated to accessible, intelligent movement. We welcome every body, every level, every day.",
+    "about_photo_url": "https://picsum.photos/seed/fit-about/800/1000",
+    "contact_email": "hello@clearwateryoga.example",
+    "contact_phone": "(555) 555-0144",
+    "contact_address": "100 Example St, Sample City, ST",
+    "business_name": "Clearwater Yoga LLC",
+    "support_email": "hello@clearwateryoga.example",
+    "instagram_url": "https://instagram.example/clearwateryoga",
+    "facebook_url": "", "twitter_url": "", "linkedin_url": "", "youtube_url": "", "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "CLEARWATER YOGA",
+        "heading": "Move · Breathe · Belong",
+        "description": "Intimate yoga and pilates studio. Drop-ins welcome.",
+        "cta_primary": {"text": "See schedule", "href": "/schedule"},
+        "cta_secondary": {"text": "View pricing", "href": "/pricing"}
+      },
+      "offerings": {
+        "eyebrow": "CLASSES",
+        "heading": "Find Your Practice",
+        "items": [
+          {"label": "YOGA", "title": "Vinyasa Flow", "description": "Heat-building, breath-linked movement. All levels welcome.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "PILATES", "title": "Mat Pilates", "description": "Core strength, stability, control. Small-group attention.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "RESTORE", "title": "Yin & Restorative", "description": "Long holds, deep rest, nervous-system reset.", "cta_text": "See schedule", "cta_href": "/schedule"}
+        ]
+      },
+      "instructors": {
+        "eyebrow": "OUR TEAM",
+        "heading": "Meet Your Instructors",
+        "items": [
+          {"name": "Juniper Walsh", "role": "LEAD", "photo_url": "https://picsum.photos/seed/instr-juniper/800/800", "specialties": ["Vinyasa", "Yin"]},
+          {"name": "Marco Reyes", "role": "INSTRUCTOR", "photo_url": "https://picsum.photos/seed/instr-marco/800/800", "specialties": ["Pilates", "Strength"]},
+          {"name": "Tamsin Locke", "role": "INSTRUCTOR", "photo_url": "https://picsum.photos/seed/instr-tamsin/800/800", "specialties": ["Restorative", "Meditation"]},
+          {"name": "Noor Patel", "role": "INSTRUCTOR", "photo_url": "https://picsum.photos/seed/instr-noor/800/800", "specialties": ["Power Yoga", "Prenatal"]}
+        ]
+      },
+      "testimonials": {
+        "eyebrow": "VOICES",
+        "heading": "What Members Say",
+        "items": [
+          {"quote": "Walked in for one drop-in, stayed for three years. This community is special.", "author_name": "Harper L.", "service": "Member"},
+          {"quote": "The instructors actually see you. They remember your name, your injuries, your goals.", "author_name": "Devon R.", "service": "Member"}
+        ]
+      },
+      "newsletter": {
+        "heading": "Stay in the loop",
+        "description": "Weekly schedule updates, workshops, and community news. One email a week.",
+        "placeholder": "Your email",
+        "button_text": "Subscribe"
+      }
+    },
+    "classes": {
+      "hero": {"eyebrow": "CLASSES", "heading": "All Classes", "description": "Eleven class types across yoga, pilates, and restorative practice."},
+      "items": {
+        "heading": "Class Types",
+        "items": [
+          {"label": "YOGA", "title": "Vinyasa Flow", "description": "Heat-building, breath-linked movement. 60 min. All levels.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "YOGA", "title": "Power Yoga", "description": "Strength-focused, athletic practice. 60 min. Intermediate+.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "PILATES", "title": "Mat Pilates", "description": "Core + stability + control. 50 min. All levels.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "RESTORE", "title": "Yin & Restorative", "description": "Long holds. Deep rest. 75 min. All levels.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "PRENATAL", "title": "Prenatal Yoga", "description": "Supportive practice for every trimester. 60 min.", "cta_text": "See schedule", "cta_href": "/schedule"},
+          {"label": "MEDITATION", "title": "Guided Meditation", "description": "Silent and guided sits. 30 min. No experience needed.", "cta_text": "See schedule", "cta_href": "/schedule"}
+        ]
+      }
+    },
+    "schedule": {
+      "hero": {"eyebrow": "SCHEDULE", "heading": "Weekly Schedule", "description": "Forty classes each week. Drop-ins welcome."},
+      "slots": {
+        "heading": "This Week",
+        "items": [
+          {"class_name": "Vinyasa Flow", "instructor_name": "Juniper", "day_of_week": "Monday", "start_time": "07:00", "end_time": "08:00", "room": "Studio A"},
+          {"class_name": "Power Yoga", "instructor_name": "Marco", "day_of_week": "Monday", "start_time": "17:30", "end_time": "18:30", "room": "Studio A"},
+          {"class_name": "Mat Pilates", "instructor_name": "Marco", "day_of_week": "Tuesday", "start_time": "06:30", "end_time": "07:20", "room": "Studio B"},
+          {"class_name": "Yin & Restorative", "instructor_name": "Tamsin", "day_of_week": "Tuesday", "start_time": "19:00", "end_time": "20:15", "room": "Studio A"},
+          {"class_name": "Vinyasa Flow", "instructor_name": "Juniper", "day_of_week": "Wednesday", "start_time": "07:00", "end_time": "08:00", "room": "Studio A"},
+          {"class_name": "Prenatal Yoga", "instructor_name": "Noor", "day_of_week": "Wednesday", "start_time": "10:00", "end_time": "11:00", "room": "Studio B"},
+          {"class_name": "Power Yoga", "instructor_name": "Marco", "day_of_week": "Thursday", "start_time": "17:30", "end_time": "18:30", "room": "Studio A"},
+          {"class_name": "Mat Pilates", "instructor_name": "Marco", "day_of_week": "Friday", "start_time": "06:30", "end_time": "07:20", "room": "Studio B"},
+          {"class_name": "Vinyasa Flow", "instructor_name": "Juniper", "day_of_week": "Saturday", "start_time": "09:00", "end_time": "10:00", "room": "Studio A"},
+          {"class_name": "Guided Meditation", "instructor_name": "Tamsin", "day_of_week": "Sunday", "start_time": "08:00", "end_time": "08:30", "room": "Studio B"}
+        ]
+      }
+    },
+    "instructors": {
+      "hero": {"eyebrow": "OUR TEAM", "heading": "Instructors"},
+      "items": {
+        "heading": "Meet the Team",
+        "items": [
+          {"name": "Juniper Walsh", "role": "LEAD INSTRUCTOR", "photo_url": "https://picsum.photos/seed/instr-juniper/800/800", "specialties": ["Vinyasa", "Yin", "Meditation"]},
+          {"name": "Marco Reyes", "role": "INSTRUCTOR", "photo_url": "https://picsum.photos/seed/instr-marco/800/800", "specialties": ["Pilates", "Power", "Strength"]},
+          {"name": "Tamsin Locke", "role": "INSTRUCTOR", "photo_url": "https://picsum.photos/seed/instr-tamsin/800/800", "specialties": ["Restorative", "Yin", "Meditation"]},
+          {"name": "Noor Patel", "role": "INSTRUCTOR", "photo_url": "https://picsum.photos/seed/instr-noor/800/800", "specialties": ["Prenatal", "Vinyasa"]}
+        ]
+      }
+    },
+    "pricing": {
+      "hero": {"eyebrow": "MEMBERSHIP", "heading": "Pricing", "description": "Pick the rhythm that fits your practice."},
+      "plans": {
+        "heading": "Membership Plans",
+        "items": [
+          {"name": "Drop-In", "price_display": "$22", "billing_period": "class", "features": ["Single class", "Any class, any time", "Great for visitors"], "cta_text": "Book a class", "cta_href": "/schedule"},
+          {"name": "Unlimited Monthly", "price_display": "$149", "billing_period": "month", "features": ["Unlimited classes", "Members-only workshops", "10% off retail", "Guest passes (2/month)"], "cta_text": "Become a member", "cta_href": "/contact", "featured": true},
+          {"name": "Class Pack (10)", "price_display": "$180", "billing_period": "pack", "features": ["10 classes", "6-month expiry", "Shareable with household"], "cta_text": "Buy pack", "cta_href": "/contact"}
+        ]
+      },
+      "faq": {
+        "heading": "Pricing FAQ",
+        "items": [
+          {"question": "Can I try before I commit?", "answer": "First class is $5 for new members. Just show up 10 minutes early to check in."},
+          {"question": "Do memberships auto-renew?", "answer": "Yes, but you can pause or cancel any time through your account."}
+        ]
+      }
+    },
+    "about": {
+      "hero": {"eyebrow": "ABOUT", "heading": "About Clearwater", "description": "Founded by Juniper Walsh. A community studio built on accessible, intelligent movement.", "image_url": "https://picsum.photos/seed/fit-about/800/1000", "image_alt": "Studio interior"},
+      "cta": {"heading": "Come practice with us", "description": "Your first class is $5.", "cta_text": "See schedule", "cta_href": "/schedule"}
+    },
+    "contact": {
+      "hero": {"eyebrow": "REACH OUT", "heading": "Get in Touch"},
+      "form": {
+        "heading": "Send a Message",
+        "service_options": ["Drop-In", "Membership", "Private lessons", "Workshop inquiry", "Other"]
+      }
+    }
+  },
+  "seed_content": {
+    "testimonials": [
+      {"author_name": "Harper L.", "quote": "Walked in for one drop-in, stayed for three years. This community is special.", "service": "Member", "published": true},
+      {"author_name": "Devon R.", "quote": "The instructors actually see you. They remember your name, your injuries, your goals.", "service": "Member", "published": true},
+      {"author_name": "Priya S.", "quote": "Best prenatal yoga around, hands down. Noor is a gift.", "service": "Prenatal", "published": true}
+    ],
+    "class_types": [
+      {"name": "Vinyasa Flow", "description": "Heat-building, breath-linked movement.", "duration_min": 60, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-vinyasa/800/600"},
+      {"name": "Power Yoga", "description": "Strength-focused, athletic practice.", "duration_min": 60, "difficulty": "intermediate", "image_url": "https://picsum.photos/seed/class-power/800/600"},
+      {"name": "Mat Pilates", "description": "Core + stability + control.", "duration_min": 50, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-pilates/800/600"},
+      {"name": "Yin & Restorative", "description": "Long holds. Deep rest.", "duration_min": 75, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-yin/800/600"},
+      {"name": "Prenatal Yoga", "description": "Supportive practice for every trimester.", "duration_min": 60, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-prenatal/800/600"},
+      {"name": "Guided Meditation", "description": "Silent and guided sits.", "duration_min": 30, "difficulty": "all-levels", "image_url": "https://picsum.photos/seed/class-meditation/800/600"}
+    ],
+    "instructors": [
+      {"name": "Juniper Walsh", "role": "Lead Instructor", "bio": "Owner and lead instructor. 500-hr trained.", "photo_url": "https://picsum.photos/seed/instr-juniper/800/800", "specialties": "Vinyasa, Yin, Meditation", "is_lead": true},
+      {"name": "Marco Reyes", "role": "Instructor", "bio": "Former dancer turned pilates + power yoga teacher.", "photo_url": "https://picsum.photos/seed/instr-marco/800/800", "specialties": "Pilates, Power, Strength", "is_lead": false},
+      {"name": "Tamsin Locke", "role": "Instructor", "bio": "Specializes in restorative and yin. Meditation teacher.", "photo_url": "https://picsum.photos/seed/instr-tamsin/800/800", "specialties": "Restorative, Yin, Meditation", "is_lead": false},
+      {"name": "Noor Patel", "role": "Instructor", "bio": "Prenatal + postnatal specialist. Mother of two.", "photo_url": "https://picsum.photos/seed/instr-noor/800/800", "specialties": "Prenatal, Vinyasa", "is_lead": false}
+    ],
+    "schedule_slots": [
+      {"class_name": "Vinyasa Flow", "instructor_name": "Juniper", "day_of_week": "Monday", "start_time": "07:00", "end_time": "08:00", "room": "Studio A"},
+      {"class_name": "Power Yoga", "instructor_name": "Marco", "day_of_week": "Monday", "start_time": "17:30", "end_time": "18:30", "room": "Studio A"},
+      {"class_name": "Mat Pilates", "instructor_name": "Marco", "day_of_week": "Tuesday", "start_time": "06:30", "end_time": "07:20", "room": "Studio B"},
+      {"class_name": "Yin & Restorative", "instructor_name": "Tamsin", "day_of_week": "Tuesday", "start_time": "19:00", "end_time": "20:15", "room": "Studio A"},
+      {"class_name": "Vinyasa Flow", "instructor_name": "Juniper", "day_of_week": "Wednesday", "start_time": "07:00", "end_time": "08:00", "room": "Studio A"},
+      {"class_name": "Prenatal Yoga", "instructor_name": "Noor", "day_of_week": "Wednesday", "start_time": "10:00", "end_time": "11:00", "room": "Studio B"},
+      {"class_name": "Power Yoga", "instructor_name": "Marco", "day_of_week": "Thursday", "start_time": "17:30", "end_time": "18:30", "room": "Studio A"},
+      {"class_name": "Mat Pilates", "instructor_name": "Marco", "day_of_week": "Friday", "start_time": "06:30", "end_time": "07:20", "room": "Studio B"},
+      {"class_name": "Vinyasa Flow", "instructor_name": "Juniper", "day_of_week": "Saturday", "start_time": "09:00", "end_time": "10:00", "room": "Studio A"},
+      {"class_name": "Guided Meditation", "instructor_name": "Tamsin", "day_of_week": "Sunday", "start_time": "08:00", "end_time": "08:30", "room": "Studio B"}
+    ],
+    "pricing_plans": [
+      {"name": "Drop-In", "price_display": "$22", "billing_period": "class", "features": "Single class\nAny class, any time\nGreat for visitors", "cta_text": "Book a class", "cta_href": "/schedule", "featured": false, "sort_order": 1},
+      {"name": "Unlimited Monthly", "price_display": "$149", "billing_period": "month", "features": "Unlimited classes\nMembers-only workshops\n10% off retail\nGuest passes (2/month)", "cta_text": "Become a member", "cta_href": "/contact", "featured": true, "sort_order": 2},
+      {"name": "Class Pack (10)", "price_display": "$180", "billing_period": "pack", "features": "10 classes\n6-month expiry\nShareable with household", "cta_text": "Buy pack", "cta_href": "/contact", "featured": false, "sort_order": 3}
+    ],
+    "contact_inquiries": [
+      {"name": "Rowan Ash", "email": "rowan.ash@example.com", "service_interest": "Membership", "message": "Thinking of committing to unlimited monthly. Can I try a week first?"}
+    ],
+    "newsletter_subscribers": [{"email": "member1@example.com"}, {"email": "member2@example.com"}]
+  }
+}

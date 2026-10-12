@@ -1,0 +1,308 @@
+{
+  "app_name": "sample-coach",
+  "archetype": "coach-consultant",
+  "palette": "slate-gold",
+  "font_pair": "lora-inter",
+  "admin_email": "admin@miralenoxcoaching.example",
+  "settings": {
+    "site_name": "Mira Lenox Coaching",
+    "site_description": "Executive coaching for operators leading through hard quarters.",
+    "hero_tagline": "Clarity Under Pressure",
+    "hero_description": "Twelve-week executive coaching containers for operators leading through fast-moving quarters. Experienced operator and long-time coach.",
+    "hero_image_url": "https://picsum.photos/seed/sample-coach-hero/1600/900",
+    "nav_logo_url": "",
+    "about_title": "About Mira Lenox",
+    "about_body": "Former operator, now executive coach. Fifteen years inside operating roles, twenty years as a coach. I work with founders, C-suite operators, and senior functional leaders, people who already know how to run hard quarters but want sharper decisions, quieter minds, and truer leadership. My approach draws from Acceptance & Commitment Therapy, Polyvagal theory, and lived operating experience.",
+    "about_photo_url": "https://picsum.photos/seed/sample-coach-about/800/1000",
+    "contact_email": "hello@miralenoxcoaching.example",
+    "contact_phone": "(555) 555-0120",
+    "contact_address": "Sample City, ST",
+    "business_name": "Mira Lenox Coaching",
+    "support_email": "hello@miralenoxcoaching.example",
+    "instagram_url": "https://instagram.example/miralenoxcoaching",
+    "facebook_url": "",
+    "twitter_url": "",
+    "linkedin_url": "https://linkedin.example/in/miralenox",
+    "youtube_url": "",
+    "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "MIRA LENOX COACHING",
+        "heading": "Clarity Under Pressure",
+        "description": "Twelve-week executive coaching containers for operators leading through fast-moving quarters. Experienced operator and long-time coach.",
+        "image_url": "https://picsum.photos/seed/sample-coach-hero/1600/900",
+        "image_alt": "Mira Lenox Coaching photo",
+        "cta_primary": {
+          "text": "Get in touch",
+          "href": "/contact"
+        },
+        "cta_secondary": {
+          "text": "Learn more",
+          "href": "/about"
+        }
+      },
+      "offerings": {
+        "eyebrow": "OFFERINGS",
+        "heading": "What I Offer",
+        "services": [
+          {
+            "label": "INDIVIDUAL",
+            "title": "1:1 Executive Coaching",
+            "description": "12-week coaching container focused on leadership identity, decision-making, and presence.",
+            "price_display": "$4,800",
+            "cta_text": "Apply",
+            "cta_href": "/contact?service=1%3A1+Coaching"
+          },
+          {
+            "label": "TEAM",
+            "title": "Leadership Intensives",
+            "description": "Half-day + full-day offsites for leadership teams. Alignment, strategy, hard conversations.",
+            "price_display": "From $8,500",
+            "cta_text": "Inquire",
+            "cta_href": "/contact?service=Team+Intensive"
+          },
+          {
+            "label": "KEYNOTE",
+            "title": "Speaking & Workshops",
+            "description": "Keynote talks and workshops on high-stakes leadership, drawn from 20 years of C-suite practice.",
+            "price_display": "Inquire",
+            "cta_text": "Book",
+            "cta_href": "/contact?service=Keynote"
+          }
+        ],
+        "items": [
+          {
+            "label": "INDIVIDUAL",
+            "title": "1:1 Executive Coaching",
+            "description": "12-week coaching container focused on leadership identity, decision-making, and presence.",
+            "price_display": "$4,800",
+            "cta_text": "Apply",
+            "cta_href": "/contact?service=1%3A1+Coaching"
+          },
+          {
+            "label": "TEAM",
+            "title": "Leadership Intensives",
+            "description": "Half-day + full-day offsites for leadership teams. Alignment, strategy, hard conversations.",
+            "price_display": "From $8,500",
+            "cta_text": "Inquire",
+            "cta_href": "/contact?service=Team+Intensive"
+          },
+          {
+            "label": "KEYNOTE",
+            "title": "Speaking & Workshops",
+            "description": "Keynote talks and workshops on high-stakes leadership, drawn from 20 years of C-suite practice.",
+            "price_display": "Inquire",
+            "cta_text": "Book",
+            "cta_href": "/contact?service=Keynote"
+          }
+        ]
+      },
+      "testimonials": {
+        "eyebrow": "VOICES",
+        "heading": "What Clients Say",
+        "items": [
+          {
+            "quote": "Working with Mira Lenox Coaching genuinely changed how I show up. Worth every dollar.",
+            "author_name": "Anonymous client",
+            "service": "Coaching"
+          },
+          {
+            "quote": "The clarity and confidence I gained carried into every meeting. Best investment I've made.",
+            "author_name": "Anonymous client",
+            "service": "Coaching"
+          },
+          {
+            "quote": "I recommend freely to every peer who asks for a coach. Rare depth.",
+            "author_name": "Anonymous client",
+            "service": "Coaching"
+          }
+        ]
+      },
+      "cta": {
+        "heading": "Ready to begin?",
+        "description": "Reach out to start the conversation.",
+        "cta_text": "Get in touch",
+        "cta_href": "/contact"
+      },
+      "newsletter": {
+        "heading": "Stay in touch",
+        "description": "Occasional dispatches, one email every few weeks.",
+        "placeholder": "Your email",
+        "button_text": "Subscribe"
+      },
+      "reviews": [
+        {
+          "quote": "Working with Mira Lenox Coaching genuinely changed how I show up. Worth every dollar.",
+          "author_name": "Anonymous client",
+          "service": "Coaching"
+        },
+        {
+          "quote": "The clarity and confidence I gained carried into every meeting. Best investment I've made.",
+          "author_name": "Anonymous client",
+          "service": "Coaching"
+        },
+        {
+          "quote": "I recommend freely to every peer who asks for a coach. Rare depth.",
+          "author_name": "Anonymous client",
+          "service": "Coaching"
+        }
+      ]
+    },
+    "services": {
+      "hero": {
+        "eyebrow": "OFFERINGS",
+        "heading": "Services",
+        "description": "Every engagement is designed around what will actually move the needle."
+      },
+      "offerings": {
+        "heading": "Ways to Work Together",
+        "items": [
+          {
+            "label": "INDIVIDUAL",
+            "title": "1:1 Executive Coaching",
+            "description": "12-week coaching container focused on leadership identity, decision-making, and presence.",
+            "price_display": "$4,800",
+            "cta_text": "Apply",
+            "cta_href": "/contact?service=1%3A1+Coaching"
+          },
+          {
+            "label": "TEAM",
+            "title": "Leadership Intensives",
+            "description": "Half-day + full-day offsites for leadership teams. Alignment, strategy, hard conversations.",
+            "price_display": "From $8,500",
+            "cta_text": "Inquire",
+            "cta_href": "/contact?service=Team+Intensive"
+          },
+          {
+            "label": "KEYNOTE",
+            "title": "Speaking & Workshops",
+            "description": "Keynote talks and workshops on high-stakes leadership, drawn from 20 years of C-suite practice.",
+            "price_display": "Inquire",
+            "cta_text": "Book",
+            "cta_href": "/contact?service=Keynote"
+          }
+        ]
+      },
+      "cta": {
+        "heading": "Questions?",
+        "description": "Let's talk.",
+        "cta_text": "Contact",
+        "cta_href": "/contact"
+      },
+      "services": {
+        "heading": "Services",
+        "items": [
+          {
+            "label": "INDIVIDUAL",
+            "title": "1:1 Executive Coaching",
+            "description": "12-week coaching container focused on leadership identity, decision-making, and presence.",
+            "price_display": "$4,800",
+            "cta_text": "Apply",
+            "cta_href": "/contact?service=1%3A1+Coaching"
+          },
+          {
+            "label": "TEAM",
+            "title": "Leadership Intensives",
+            "description": "Half-day + full-day offsites for leadership teams. Alignment, strategy, hard conversations.",
+            "price_display": "From $8,500",
+            "cta_text": "Inquire",
+            "cta_href": "/contact?service=Team+Intensive"
+          },
+          {
+            "label": "KEYNOTE",
+            "title": "Speaking & Workshops",
+            "description": "Keynote talks and workshops on high-stakes leadership, drawn from 20 years of C-suite practice.",
+            "price_display": "Inquire",
+            "cta_text": "Book",
+            "cta_href": "/contact?service=Keynote"
+          }
+        ]
+      }
+    },
+    "about": {
+      "hero": {
+        "eyebrow": "ABOUT",
+        "heading": "About Mira Lenox",
+        "description": "Former operator, now executive coach. Fifteen years inside operating roles, twenty years as a coach. I work with founders, C-suite operators, and senior functional leaders, people who already know how to run hard quarters but want sharper decisions, quieter minds, and truer leadership. My approach draws from Acceptance & Commitment Therapy, Polyvagal theory, and lived operating experience.",
+        "image_url": "https://picsum.photos/seed/sample-coach-about/800/1000",
+        "image_alt": "Portrait of Mira Lenox Coaching"
+      },
+      "cta": {
+        "heading": "Ready to work together?",
+        "description": "Reach out for an intro conversation.",
+        "cta_text": "Get in touch",
+        "cta_href": "/contact"
+      }
+    },
+    "blog": {
+      "hero": {
+        "eyebrow": "THINKING",
+        "heading": "Blog",
+        "description": "Ideas, reflections, field notes."
+      }
+    },
+    "case-studies": {
+      "hero": {
+        "eyebrow": "PROOF",
+        "heading": "Case Studies",
+        "description": "Real engagements, real outcomes."
+      }
+    },
+    "contact": {
+      "hero": {
+        "eyebrow": "REACH OUT",
+        "heading": "Get in Touch",
+        "description": "I'd love to hear from you."
+      },
+      "form": {
+        "heading": "Send a Message",
+        "service_options": [
+          "1:1 Executive Coaching",
+          "Leadership Intensives",
+          "Speaking & Workshops",
+          "General Inquiry"
+        ]
+      }
+    }
+  },
+  "seed_content": {
+    "testimonials": [
+      {
+        "author_name": "Anonymous client",
+        "quote": "Working with Mira Lenox Coaching genuinely changed how I show up. Worth every dollar.",
+        "service": "Coaching",
+        "published": true
+      },
+      {
+        "author_name": "Anonymous client",
+        "quote": "The clarity and confidence I gained carried into every meeting. Best investment I've made.",
+        "service": "Coaching",
+        "published": true
+      },
+      {
+        "author_name": "Anonymous client",
+        "quote": "I recommend freely to every peer who asks for a coach. Rare depth.",
+        "service": "Coaching",
+        "published": true
+      }
+    ],
+    "contact_inquiries": [
+      {
+        "name": "Sample Lead",
+        "email": "sample@example.com",
+        "service_interest": "1:1 Executive Coaching",
+        "message": "Just exploring: is this available in Q2?"
+      }
+    ],
+    "newsletter_subscribers": [
+      {
+        "email": "early.reader@example.com"
+      },
+      {
+        "email": "new.friend@example.com"
+      }
+    ]
+  }
+}

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Your lamp</title>
+  <link rel="icon" type="image/png" href="/brand-harbor/harbor-tab-icon.png">
+  <style>
+    :root {
+      --color-oat:           #e8e0cd;
+      --color-clay:          #b89683;
+      --color-sage:          #7d8b6e;
+      --color-dusk-rose:     #c89595;
+      --color-ink-brown:     #3a2f24;
+      --color-lantern-amber: #f4d29a;
+      --color-slate-blue:    #5e7187;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--color-oat);
+      color: var(--color-ink-brown);
+      font-family: 'Tiempos Text', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    main { max-width: 720px; margin: 0 auto; padding: 64px 28px 96px; }
+    h1 { font-size: 32px; margin: 0 0 16px; font-weight: 600; line-height: 1.25; }
+    h2 { font-size: 22px; margin: 28px 0 12px; font-weight: 600; }
+    p { line-height: 1.65; margin: 0 0 18px; }
+    a { color: var(--color-slate-blue); }
+    .eyebrow {
+      text-transform: uppercase; letter-spacing: 0.12em; font-size: 12px;
+      color: var(--color-ink-brown); margin-bottom: 8px; font-weight: 600;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid rgba(184, 150, 131, 0.35);
+      border-radius: 8px;
+      padding: 28px 30px;
+      box-shadow: 0 2px 10px rgba(58, 47, 36, 0.06);
+      margin-top: 18px;
+    }
+    .url-line {
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      font-size: 14px;
+      color: var(--color-ink-brown);
+      word-break: break-all;
+      margin-top: 6px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background: var(--color-ink-brown);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-family: inherit;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .btn:hover { background: #2a2017; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--color-ink-brown);
+      border: 1px solid rgba(58, 47, 36, 0.35);
+    }
+    .btn-secondary:hover { background: rgba(58, 47, 36, 0.05); }
+    .small { font-size: 15px; color: #5e4f3a; }
+    nav.breadcrumb { font-size: 15px; color: #5e4f3a; margin-bottom: 24px; }
+    nav.breadcrumb a { color: #5e4f3a; text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+    p { font-size: 17px; }
+  </style>
+</head>
+<body>
+<%- include('../partials/_harbor-skip-link') %>
+<main id="main">
+  <nav class="breadcrumb"><a href="/lighthouse/table">&larr; back to your conversation with Haven</a></nav>
+
+  <% if (build.status === 'queued' || build.status === 'building') { %>
+    <p class="eyebrow">Shaping the lamp</p>
+    <h1><%= build.app_name || 'Your website' %></h1>
+    <div class="card">
+      <p>Your website is being put together right now. This usually takes a little while.</p>
+      <p class="small">When it is ready, we will email you its preview address.</p>
+    </div>
+
+  <% } else if (build.status === 'preview' && build.review_status !== 'approved' && build.review_status !== 'changes_requested') { %>
+    <p class="eyebrow">Your draft is in review</p>
+    <h1><%= build.app_name || 'Your website' %></h1>
+    <div class="card">
+      <p>Your website is built and needs a recorded review approval before it goes live. Its preview address was sent to your email when the build finished.</p>
+    </div>
+
+  <% } else if (build.status === 'preview' && build.review_status === 'changes_requested') { %>
+    <p class="eyebrow">A few notes from the review</p>
+    <h1><%= build.app_name || 'Your website' %></h1>
+    <div class="card">
+      <p>The review left a few small notes. Once those are addressed, your website is ready to make public.</p>
+      <% if (build.review_notes) { %>
+        <h2>Notes</h2>
+        <p style="white-space:pre-wrap;"><%= build.review_notes %></p>
+      <% } %>
+      <p class="small">Talk with Haven about what you would like to do next in <a href="/lighthouse/table">your conversation</a>.</p>
+    </div>
+
+  <% } else if (build.status === 'preview' && build.review_status === 'approved') { %>
+    <p class="eyebrow">Your preview is ready</p>
+    <h1><%= build.app_name || 'Your website' %></h1>
+    <div class="card">
+      <p>It has been built and reviewed. Walk around in it.</p>
+      <% if (build.preview_url) { %>
+        <p style="margin-top:18px;">
+          <a class="btn btn-secondary" href="<%= httpUrl(build.preview_url) %>" target="_blank" rel="noopener noreferrer">Open the preview</a>
+        </p>
+        <div class="url-line"><%= build.preview_url %></div>
+      <% } %>
+      <p class="small" style="margin-top:24px;">Anyone who has this address can open the preview.</p>
+    </div>
+
+    <% if (canMakePublic) { %>
+    <div class="card" style="background:#fbf6e8;border-color:rgba(244, 210, 154, 0.6);">
+      <p class="eyebrow" style="color:var(--color-ink-brown);">When you are ready</p>
+      <h2 style="margin-top:4px;">Make this public.</h2>
+      <p>Anyone you share the URL with can read your website now. When you are ready to put your website on the open web, the subscription begins.</p>
+      <p>Choose any amount from $39 down to $19 a month, whatever fits your practice. Your website stays up either way; the subscription supports continued hosting, unlimited revisions and rebuilds, and a recorded review approval for every website before it goes live.</p>
+      <p>
+        <a class="btn" href="/lighthouse/lamp/<%= build.id %>/make-public">Make it public</a>
+      </p>
+    </div>
+    <% } %>
+
+  <% } else if (build.status === 'live') { %>
+    <p class="eyebrow">Your website is public</p>
+    <h1><%= build.app_name || 'Your website' %></h1>
+    <div class="card">
+      <p>Your website is public.</p>
+      <% if (build.live_url) { %>
+        <p style="margin-top:18px;">
+          <a class="btn" href="<%= httpUrl(build.live_url) %>" target="_blank" rel="noopener noreferrer">Visit your website</a>
+        </p>
+        <div class="url-line"><%= build.live_url %></div>
+      <% } %>
+      <p class="small" style="margin-top:24px;">Haven left you a small note. You'll see it next time you open <a href="/lighthouse/table">your conversation</a>.</p>
+    </div>
+
+    <%#
+      keepers.subscription_status holds Stripe's word for the subscription's
+      state (services/keeper_promotion.ts). In force: the price card and the
+      cancel link apply. Anything else gets a notice of its own below.
+    %>
+    <% const subscriptionStatus = subscriptionState ? subscriptionState.status : null; %>
+    <% const subscriptionInForce = ['active', 'trialing', 'past_due'].includes(subscriptionStatus); %>
+    <% const subscriptionNotices = {
+      past_due: {
+        eyebrow: 'A small thing',
+        text: 'Stripe was not able to charge the card on your last invoice. Your website is still up. When you have a moment, update your card and the next charge will go through.',
+      },
+      unpaid: {
+        eyebrow: 'Your subscription',
+        text: 'Stripe has marked your subscription as unpaid because the card could not be charged. Your website is still up. Changes you request later can go live once the subscription is active again.',
+      },
+      paused: {
+        eyebrow: 'Your subscription',
+        text: 'Your subscription is paused, so nothing is being billed. Your website is still up. Changes you request later can go live once the subscription is active again.',
+      },
+      incomplete: {
+        eyebrow: 'Your subscription',
+        text: 'Your first payment has not been confirmed yet, so the subscription has not started. Your website is still up. If this does not change soon, let us know.',
+      },
+      incomplete_expired: {
+        eyebrow: 'Your subscription',
+        text: 'Your first payment was not confirmed in time, so Stripe closed that subscription before it started. Your website is still up. Changes you request later can go live once a subscription is active.',
+      },
+      canceled: {
+        eyebrow: 'Your subscription',
+        text: 'Your subscription has ended. Your website is still up. Changes you request later can go live once a subscription is active again.',
+      },
+    }; %>
+    <% const subscriptionNotice = Object.prototype.hasOwnProperty.call(subscriptionNotices, subscriptionStatus) ? subscriptionNotices[subscriptionStatus] : null; %>
+
+    <% if (subscriptionInForce && subscriptionState.slidingScaleAmountCents) { %>
+      <div class="card" style="background:transparent;border:1px dashed rgba(184, 150, 131, 0.45);box-shadow:none;">
+        <p class="eyebrow" style="color:var(--color-ink-brown);">Your subscription</p>
+        <p style="margin:0;font-size:18px;"><strong>$<%= (subscriptionState.slidingScaleAmountCents / 100).toFixed(0) %> a month.</strong> Includes hosting, unlimited revisions and rebuilds, and a recorded review approval for every website before it goes live.</p>
+      </div>
+    <% } %>
+
+    <% if (subscriptionNotice) { %>
+      <div class="card" style="background:#fdf2e8;border-color:rgba(184, 109, 89, 0.4);">
+        <p class="eyebrow" style="color:#9a5a42;"><%= subscriptionNotice.eyebrow %></p>
+        <p><%= subscriptionNotice.text %> Write to <a href="mailto:support@craftandship.io">support@craftandship.io</a> and we will help from there.</p>
+      </div>
+    <% } %>
+
+    <% if (subscriptionStatus === 'active' && !subscriptionState.cancelAtPeriodEnd) { %>
+      <p class="small" style="margin-top:32px;">
+        <%# No onsubmit= attribute: the Content-Security-Policy blocks inline event
+            handlers, which silently removed this confirmation. The nonced script
+            below attaches it instead. %>
+        <form id="cancel-subscription-form" method="POST" action="/lighthouse/lamp/<%= build.id %>/cancel-subscription" style="display:inline;" data-confirm="Cancel the subscription? Your website stays up; billing stops at the end of the current period.">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" style="background:none;border:none;color:var(--color-ink-brown);text-decoration:underline;cursor:pointer;font-family:inherit;font-size:15px;padding:0;">Cancel subscription</button>
+        </form>
+      </p>
+      <script nonce="<%= cspNonce %>">
+        (function () {
+          var form = document.getElementById('cancel-subscription-form');
+          if (!form) return;
+          form.addEventListener('submit', function (ev) {
+            if (!window.confirm(form.getAttribute('data-confirm'))) ev.preventDefault();
+          });
+        })();
+      </script>
+    <% } else if (subscriptionInForce && subscriptionState.cancelAtPeriodEnd) { %>
+      <p class="small" style="margin-top:24px;color:var(--color-ink-brown);">Subscription will end at the close of the current period; your website will stay up.</p>
+    <% } %>
+
+    <% if (ownerKind === 'keeper' && locals.signedInToAccount === false) { %>
+      <p class="small" style="margin-top:24px;color:var(--color-ink-brown);">This page opens from the browser you paid in for 30 days after your payment. To manage your website from any device, <a href="/forgot-password">choose a password</a> for the account under your email address.</p>
+    <% } %>
+
+  <% } else if (build.status === 'failed') { %>
+    <p class="eyebrow">Something went wrong with the shaping</p>
+    <h1><%= build.app_name || 'Your website' %></h1>
+    <div class="card">
+      <p>Haven knows. Talk with Haven in <a href="/lighthouse/table">your conversation</a> about what happened and what to try next.</p>
+    </div>
+
+  <% } else { %>
+    <h1><%= build.app_name || 'Your website' %></h1>
+    <div class="card">
+      <p>Status: <%= build.status %></p>
+      <p class="small"><a href="/lighthouse/table">Back to your conversation with Haven</a></p>
+    </div>
+  <% } %>
+</main>
+</body>
+</html>

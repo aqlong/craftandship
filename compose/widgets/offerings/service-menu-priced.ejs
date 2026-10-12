@@ -1,0 +1,53 @@
+<!-- compose:widget offerings/service-menu-priced -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-10">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= eyebrow %></div>
+        <% } %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+      </div>
+    <% } %>
+    <% var _services = (typeof items !== 'undefined' && items) ? items : (typeof rows !== 'undefined' ? rows : []); %>
+    <% var _grouped = Object.create(null); /* keyed by admin-typed text: no inherited keys */ _services.forEach(function(s){ var k=s.category||'Services'; if(!_grouped[k])_grouped[k]=[]; _grouped[k].push(s); }); %>
+    <% var _keys = Object.keys(_grouped); %>
+    <% if (_keys.length === 0) { %>
+      <p class="font-body text-center" style="color: var(--color-foreground-muted);">Services coming soon.</p>
+    <% } else { %>
+      <div class="space-y-10">
+        <% _keys.forEach(function(cat) { %>
+          <div>
+            <% if (_keys.length > 1 || cat !== 'Services') { %>
+              <h3 class="font-display text-xl md:text-2xl font-bold mb-5" style="color: var(--color-foreground);"><%= cat %></h3>
+            <% } %>
+            <div class="rounded-xl border overflow-hidden" style="background-color: var(--color-surface); border-color: var(--color-border);">
+              <% _grouped[cat].forEach(function(svc, i) { %>
+                <div class="px-5 py-4 <%= i < _grouped[cat].length - 1 ? 'border-b' : '' %>" style="border-color: var(--color-border);">
+                  <div class="flex items-baseline justify-between gap-4">
+                    <div class="flex-1">
+                      <h4 class="font-body font-semibold text-base" style="color: var(--color-foreground);"><%= svc.title || svc.name %></h4>
+                      <% if (svc.description) { %>
+                        <p class="font-body text-sm mt-1" style="color: var(--color-foreground-muted);"><%= svc.description %></p>
+                      <% } %>
+                      <% if (svc.duration_min) { %>
+                        <div class="font-body text-xs mt-1" style="color: var(--color-foreground-muted);"><%= svc.duration_min %> min</div>
+                      <% } %>
+                    </div>
+                    <div class="font-body font-semibold text-base whitespace-nowrap" style="color: var(--color-primary);">
+                      <%= svc.price_display || (svc.price_from ? ('from $' + svc.price_from) : (svc.price ? ('$' + svc.price) : '')) %>
+                    </div>
+                  </div>
+                  <% if (svc.booking_url) { %>
+                    <a href="<%= svc.booking_url %>" class="inline-block mt-2 font-body text-sm font-medium transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">Book →</a>
+                  <% } %>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>

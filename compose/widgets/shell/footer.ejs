@@ -1,0 +1,60 @@
+<!-- compose:widget shell/footer -->
+<footer class="border-t mt-auto" style="background-color: var(--color-surface); border-color: var(--color-border); color: var(--color-foreground);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div>
+        <div class="font-display text-lg font-bold mb-3" style="color: var(--color-primary); letter-spacing: -0.01em;"><%= settings.site_name %></div>
+        <% if (typeof settings !== 'undefined' && settings.site_description) { %>
+          <%
+             var _ft = settings.footer_tagline || settings.site_description || '';
+             if (_ft.length > 140) { _ft = _ft.substring(0, 137).replace(/\s+\S*$/, '') + '…'; }
+          %>
+          <div class="font-body text-sm leading-relaxed mb-4" style="color: var(--color-foreground-muted);"><%= _ft %></div>
+        <% } %>
+        <% if (settings.contact_address) { %>
+          <div class="font-body text-xs flex items-start gap-2" style="color: var(--color-foreground-muted);">
+            <span style="margin-top: 2px;"><%- include('../utility/icon.ejs', { name: 'map-pin', size: 14 }) %></span>
+            <span><%= settings.contact_address %></span>
+          </div>
+        <% } %>
+      </div>
+      <div>
+        <div class="font-body text-xs font-bold uppercase mb-4" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;">Quick Links</div>
+        <ul class="space-y-2">
+          <% (typeof nav_items !== 'undefined' ? nav_items : []).forEach(function(item) { %>
+            <li><a href="<%= item.href %>" class="font-body text-sm transition-opacity hover:opacity-70" style="color: var(--color-foreground); text-decoration: none;"><%= item.label %></a></li>
+          <% }); %>
+        </ul>
+      </div>
+      <div>
+        <div class="font-body text-xs font-bold uppercase mb-4" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;">Connect</div>
+        <% if (settings.contact_email) { %>
+          <a href="mailto:<%= settings.contact_email %>" class="font-body text-sm flex items-center gap-2 mb-2 transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">
+            <%- include('../utility/icon.ejs', { name: 'mail', size: 14 }) %>
+            <span class="cas-wrap-anywhere"><%= settings.contact_email %></span>
+          </a>
+        <% } %>
+        <% if (settings.contact_phone) { %>
+          <a href="tel:<%= settings.contact_phone.replace(/[^0-9+]/g, '') %>" class="font-body text-sm flex items-center gap-2 mb-3 transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">
+            <%- include('../utility/icon.ejs', { name: 'phone', size: 14 }) %>
+            <span><%= settings.contact_phone %></span>
+          </a>
+        <% } %>
+        <% if (settings.instagram_url || settings.facebook_url || settings.twitter_url || settings.linkedin_url) { %>
+          <div class="flex items-center gap-3 mt-3">
+            <% if (settings.instagram_url) { %><a href="<%= settings.instagram_url %>" target="_blank" rel="noopener" aria-label="Instagram" class="transition-opacity hover:opacity-70" style="color: var(--color-foreground-muted);"><%- include('../utility/icon.ejs', { name: 'instagram', size: 18 }) %></a><% } %>
+            <% if (settings.facebook_url) { %><a href="<%= settings.facebook_url %>" target="_blank" rel="noopener" aria-label="Facebook" class="transition-opacity hover:opacity-70" style="color: var(--color-foreground-muted);"><%- include('../utility/icon.ejs', { name: 'facebook', size: 18 }) %></a><% } %>
+            <% if (settings.twitter_url) { %><a href="<%= settings.twitter_url %>" target="_blank" rel="noopener" aria-label="Twitter" class="transition-opacity hover:opacity-70" style="color: var(--color-foreground-muted);"><%- include('../utility/icon.ejs', { name: 'twitter', size: 18 }) %></a><% } %>
+            <% if (settings.linkedin_url) { %><a href="<%= settings.linkedin_url %>" target="_blank" rel="noopener" aria-label="LinkedIn" class="transition-opacity hover:opacity-70" style="color: var(--color-foreground-muted);"><%- include('../utility/icon.ejs', { name: 'linkedin', size: 18 }) %></a><% } %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+    <div class="pt-6 border-t" style="border-color: var(--color-border);">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+        <p class="font-body text-xs" style="color: var(--color-foreground-muted);">&copy; <%= new Date().getFullYear() %> <%= settings.site_name %>. All rights reserved.</p>
+        <%- include('./cas-attribution.ejs', { settings: settings }) %>
+      </div>
+    </div>
+  </div>
+</footer>

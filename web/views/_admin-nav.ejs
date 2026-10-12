@@ -1,0 +1,191 @@
+<style>
+  /* ── Admin legibility + clickability fixes ── */
+
+  /* Brighter primary table cell text */
+  section table td { color: #C8C6C0; }
+  section table td:first-child { color: #E8E6E0; font-weight: 500; }
+  section table th { color: #9A9898 !important; }
+
+  /* Timestamp / metadata text - slightly brighter than 'subtle' */
+  section table td.text-subtle,
+  section table .text-subtle { color: #6E6E76; }
+
+  /* Clickable stat cards: visible border on hover + cursor */
+  a.bg-surface-3 {
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+  a.bg-surface-3:hover {
+    border-color: rgba(1,135,160,0.35) !important;
+    background-color: rgba(255,255,255,0.04) !important;
+  }
+
+  /* Table rows - cursor pointer + left accent on hover for clickable rows */
+  section table tbody tr { transition: background 0.1s; }
+  section table tbody tr[onclick] { cursor: pointer; }
+  section table tbody tr:hover td { background: rgba(255,255,255,0.025); }
+  section table tbody tr[onclick]:hover { outline: none; }
+  section table tbody tr[onclick]:hover td:first-child {
+    border-left: 2px solid rgba(1,135,160,0.5);
+    padding-left: calc(1rem - 2px);
+  }
+
+  /* Action links (View / Detail / Visit) - visible pill appearance */
+  section a[href].no-underline.bg-surface-2 {
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #D8D6D0 !important;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  section a[href].no-underline.bg-surface-2:hover {
+    background: rgba(255,255,255,0.13) !important;
+    border-color: rgba(255,255,255,0.18);
+    color: #FBF1DC !important;
+  }
+
+  /* Del danger button - add subtle red border so it reads as a button */
+  section button.text-red-400.btn-ghost,
+  section .btn-ghost.text-red-400 {
+    border: 1px solid rgba(239,68,68,0.25);
+    color: #f87171;
+  }
+  section button.text-red-400.btn-ghost:hover,
+  section .btn-ghost.text-red-400:hover {
+    background: rgba(239,68,68,0.08) !important;
+    border-color: rgba(239,68,68,0.4);
+  }
+
+  /* Filter panel - slightly brighter labels */
+  section label.text-muted { color: #9A9898; }
+
+  /* Stat card labels - brighter */
+  .bg-surface-3 .text-subtle,
+  .bg-surface-3 .text-xs.text-subtle { color: #888890 !important; }
+
+  /* ── Mobile tap targets + table-to-card transform for review flow ──
+     Ocean reviews builds primarily from his phone; tap targets must be
+     >= 44px and table rows that exceed viewport width should reflow as
+     stacked cards on screens narrower than 640px. */
+  @media (max-width: 640px) {
+    /* Bigger tap targets on action buttons inside admin pages */
+    section .btn,
+    section .btn-sm,
+    section table a.btn,
+    section a.btn {
+      min-height: 44px;
+      padding-top: 12px;
+      padding-bottom: 12px;
+      font-size: 14px;
+    }
+    /* Tab buttons (build detail) */
+    section .tab-btn {
+      min-height: 40px;
+      padding: 9px 14px;
+      font-size: 13px;
+    }
+    /* 16px font on mobile inputs prevents iOS Safari from auto-zooming
+       on focus, which used to bounce the layout when typing review notes */
+    section textarea[name="review_notes"],
+    section textarea[name="rebuild_request"] {
+      min-height: 160px;
+      font-size: 16px;
+    }
+    /* Convert tables tagged .cas-mobile-cards into stacked cards.
+       Each <td> needs data-label="..." so the screen-reader hint
+       and the visible label match the original column header. */
+    section table.cas-mobile-cards,
+    section table.cas-mobile-cards thead,
+    section table.cas-mobile-cards tbody,
+    section table.cas-mobile-cards tr,
+    section table.cas-mobile-cards td,
+    section table.cas-mobile-cards th { display: block; width: 100%; }
+    section table.cas-mobile-cards thead { display: none; }
+    section table.cas-mobile-cards tbody tr {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      margin: 0 0 10px 0;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.02);
+    }
+    section table.cas-mobile-cards tbody tr:hover td:first-child {
+      border-left: none;
+      padding-left: 0;
+    }
+    section table.cas-mobile-cards td {
+      border: none !important;
+      padding: 6px 0 !important;
+      text-align: left;
+      white-space: normal !important;
+    }
+    section table.cas-mobile-cards td::before {
+      content: attr(data-label);
+      display: inline-block;
+      color: #888890;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-right: 8px;
+      min-width: 88px;
+    }
+    section table.cas-mobile-cards td[data-label="Action"]::before { display: none; }
+    section table.cas-mobile-cards td[data-label="Action"] a.btn,
+    section table.cas-mobile-cards td[data-label="Action"] button {
+      display: inline-flex;
+      width: 100%;
+      margin-top: 4px;
+    }
+    /* Empty-state colspan rows shouldn't card-stack */
+    section table.cas-mobile-cards tbody tr td[colspan] {
+      text-align: center !important;
+    }
+    section table.cas-mobile-cards tbody tr td[colspan]::before { display: none; }
+  }
+</style>
+
+<div class="flex items-center gap-4 mb-4 lg:mb-6">
+  <h1 class="text-xl lg:text-2xl font-bold text-gray-100">Admin</h1>
+</div>
+
+<% var adminPages = [
+  { href: '/admin/builds', label: 'Builds', icon: '&#9881;' },
+  { href: '/admin/reviews', label: 'Reviews', icon: '&#128269;' },
+  { href: '/admin/harbor', label: 'Harbor', icon: '&#9875;', requiresHarbor: true },
+  { href: '/admin/customers', label: 'Customers', icon: '&#128101;' },
+  { href: '/admin/emails', label: 'Emails', icon: '&#9993;' },
+  { href: '/admin/feedback', label: 'Feedback', icon: '&#128172;' },
+  { href: '/admin/costs', label: 'Costs', icon: '&#128176;' },
+  { href: '/admin/coordinator', label: 'Coordinator', icon: '&#9878;' },
+  { href: '/admin/findings', label: 'Findings', icon: '&#128270;' },
+  { href: '/admin/approvals', label: 'Approvals', icon: '&#10003;' },
+  { href: '/admin/executor', label: 'Executor', icon: '&#9889;' },
+  { href: '/admin/settings', label: 'Settings', icon: '&#128295;' }
+].filter(function(p) {
+  if (p.requiresHarbor) {
+    return typeof harborEnabled !== 'undefined' && harborEnabled === true;
+  }
+  return true;
+}); %>
+
+<!-- Mobile/Tablet: 4-column icon grid -->
+<nav class="grid grid-cols-4 gap-1.5 mb-4 lg:hidden">
+  <% adminPages.forEach(function(p) { %>
+    <a href="<%= p.href %>"
+       class="flex flex-col items-center gap-0.5 px-1 py-2 rounded-lg text-center no-underline transition-colors relative
+         <%= (typeof activeTab !== 'undefined' && activeTab === p.label.toLowerCase()) ? 'text-gray-100' : 'text-muted hover:bg-surface-2 hover:text-gray-100' %>"
+       style="<%= (typeof activeTab !== 'undefined' && activeTab === p.label.toLowerCase()) ? 'background:rgba(1,135,160,0.15);box-shadow:inset 0 0 0 1px rgba(1,135,160,0.3);' : '' %>"
+    ><span class="text-base"><%- p.icon %></span><span class="text-[10px] font-semibold leading-tight"><%= p.label %></span><% if (p.label === 'Approvals' && typeof pendingApprovalCount !== 'undefined' && pendingApprovalCount > 0) { %><span class="absolute top-0 right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5"><%= pendingApprovalCount %></span><% } %><% if (p.label === 'Reviews' && typeof pendingReviewCount !== 'undefined' && pendingReviewCount > 0) { %><span class="absolute top-0 right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5" data-review-badge><%= pendingReviewCount %></span><% } %></a>
+  <% }); %>
+</nav>
+
+<!-- Desktop: horizontal pill tabs -->
+<nav class="hidden lg:flex gap-2 mb-6 overflow-x-auto flex-nowrap pb-2 -mx-1 px-1 scrollbar-none" style="-webkit-overflow-scrolling: touch">
+  <% adminPages.forEach(function(p) { %>
+    <a href="<%= p.href %>"
+       class="px-4 py-1.5 rounded-md text-sm font-semibold no-underline whitespace-nowrap shrink-0 transition-colors relative
+         <%= (typeof activeTab !== 'undefined' && activeTab === p.label.toLowerCase()) ? 'text-gray-100' : 'text-muted hover:bg-surface-2 hover:text-gray-100' %>"
+       style="<%= (typeof activeTab !== 'undefined' && activeTab === p.label.toLowerCase()) ? 'background:rgba(1,135,160,0.15);box-shadow:inset 0 0 0 1px rgba(1,135,160,0.3);' : '' %>"
+    ><%= p.label %><% if (p.label === 'Approvals' && typeof pendingApprovalCount !== 'undefined' && pendingApprovalCount > 0) { %><span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"><%= pendingApprovalCount %></span><% } %><% if (p.label === 'Reviews' && typeof pendingReviewCount !== 'undefined' && pendingReviewCount > 0) { %><span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1" data-review-badge><%= pendingReviewCount %></span><% } %></a>
+  <% }); %>
+</nav>

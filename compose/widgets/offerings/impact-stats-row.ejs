@@ -1,0 +1,34 @@
+<!-- compose:widget offerings/impact-stats-row -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<% var _stats = (typeof items !== 'undefined' && items) ? items : (typeof stats !== 'undefined' ? stats : []); %>
+<%
+  // Content-integrity rule: render nothing when there are no real impact
+  // stats. Prior version rendered the outer <section> chrome (background
+  // color, padding) even when _stats was empty, leaving a visible blank
+  // band on home pages. Stats here read as customer-attributable claims
+  // ("500+ clients served"); shipping fabricated stats violates content-
+  // integrity rules, so default to nothing rendered until the customer
+  // populates real numbers via spec or admin settings.
+%>
+<% if (_stats.length > 0) { %>
+<section class="py-10 md:py-14" style="background-color: var(--color-secondary);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-8">
+        <h2 class="font-display text-2xl md:text-3xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+      </div>
+    <% } %>
+      <div class="grid grid-cols-2 md:grid-cols-<%= Math.min(_stats.length, 4) %> gap-4 md:gap-8">
+        <% _stats.forEach(function(s) { %>
+          <div class="text-center">
+            <div class="font-display text-3xl md:text-5xl font-bold mb-1" style="color: var(--color-primary);"><%= s.value || s.number %></div>
+            <div class="font-body text-sm md:text-base font-medium" style="color: var(--color-foreground);"><%= s.label %></div>
+            <% if (s.sub) { %>
+              <div class="font-body text-xs mt-1" style="color: var(--color-foreground-muted);"><%= s.sub %></div>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+  </div>
+</section>
+<% } %>

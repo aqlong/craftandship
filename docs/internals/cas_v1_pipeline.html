@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CAS v1 build pipeline</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #fafaf7;
+    color: #1f2937;
+    padding: 48px;
+    width: 1800px;
+  }
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #6b1519;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    color: #6b7280;
+    font-size: 15px;
+    margin-bottom: 36px;
+  }
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 36px;
+    padding: 16px 20px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-box {
+    width: 16px; height: 16px; border-radius: 4px;
+  }
+  .stage-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: stretch;
+  }
+  .stage {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 18px;
+    flex: 1;
+    min-width: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .stage-header {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 10px;
+  }
+  .stage-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #111827;
+  }
+  .component {
+    background: #f3f4f6;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-bottom: 6px;
+    border-left: 3px solid #9ca3af;
+  }
+  .component-claude {
+    background: #fff7ed;
+    border-left-color: #f97316;
+    color: #7c2d12;
+  }
+  .component-static {
+    background: #eff6ff;
+    border-left-color: #3b82f6;
+    color: #1e40af;
+  }
+  .component-loop {
+    background: #fef2f2;
+    border-left-color: #ef4444;
+    color: #7f1d1d;
+  }
+  .component-human {
+    background: #f0fdf4;
+    border-left-color: #10b981;
+    color: #065f46;
+  }
+  .component small {
+    display: block;
+    font-size: 10.5px;
+    opacity: 0.85;
+    margin-top: 2px;
+    font-weight: 400;
+  }
+  .arrow-row {
+    display: flex;
+    justify-content: center;
+    margin: -6px 0;
+  }
+  .arrow-row svg { color: #9ca3af; }
+  .group-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6b1519;
+    margin: 32px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #6b1519;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .mini-panel {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .mini-panel-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+  .mini-list {
+    list-style: none;
+    font-size: 11px;
+    color: #4b5563;
+    line-height: 1.6;
+  }
+  .mini-list li { padding-left: 12px; position: relative; }
+  .mini-list li::before { content: "•"; position: absolute; left: 0; color: #9ca3af; }
+  .footer-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 40px;
+    padding: 24px;
+    background: #6b1519;
+    color: white;
+    border-radius: 12px;
+  }
+  .stat-label {
+    font-size: 11px;
+    opacity: 0.75;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .stat-detail {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+  .loop-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    background: #fef2f2;
+    color: #991b1b;
+    border-radius: 9999px;
+    margin-left: 8px;
+  }
+  .loop-arrow {
+    position: relative;
+    padding: 12px;
+    text-align: center;
+    font-size: 11px;
+    color: #991b1b;
+    font-weight: 600;
+    background: #fef2f2;
+    border: 2px dashed #fca5a5;
+    border-radius: 8px;
+    margin: 8px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>CAS v1 build pipeline</h1>
+<div class="subtitle">
+  Current-state architecture, frozen 2026-04-21 as <code>v1-beta-frozen</code>.
+  Every Claude call + every fix loop maps to a source of regression +
+  cost that v2 will eliminate.
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-box" style="background:#fff7ed;border-left:3px solid #f97316"></div>Claude API call ($)</div>
+  <div class="legend-item"><div class="legend-box" style="background:#eff6ff;border-left:3px solid #3b82f6"></div>Static / deterministic</div>
+  <div class="legend-item"><div class="legend-box" style="background:#fef2f2;border-left:3px solid #ef4444"></div>Fix loop (iterative)</div>
+  <div class="legend-item"><div class="legend-box" style="background:#f0fdf4;border-left:3px solid #10b981"></div>Human in the loop</div>
+</div>
+
+<div class="group-label">Phase A: Intake &amp; spec</div>
+
+<div class="stage-row">
+  <div class="stage">
+    <div class="stage-header">Customer</div>
+    <div class="stage-title">Describe app</div>
+    <div class="component component-human">craftandship.io /try
+      <small>Free-form business description</small>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">Web (web/)</div>
+    <div class="stage-title">Chat intake</div>
+    <div class="component component-claude">Claude Opus (5-20 turns)
+      <small>$0.10-0.50 each</small>
+    </div>
+    <div class="component component-static">Anon draft + signup + email verify</div>
+    <div class="component component-static">Stripe checkout (or BYPASS)</div>
+    <div class="component component-static">Spec saved to DB (builds.spec JSONB)</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">Queue (queue/worker_pg.py)</div>
+    <div class="stage-title">Dispatch to build_app</div>
+    <div class="component component-static">SELECT ... FOR UPDATE SKIP LOCKED</div>
+    <div class="component component-static">MAX_CONCURRENT_BUILDS gate</div>
+    <div class="component component-static">DAILY_API_SPEND_CAP gate ($50)</div>
+  </div>
+</div>
+
+<div class="group-label">Phase B: Generate (cli/build.py)</div>
+
+<div class="stage-row">
+  <div class="stage">
+    <div class="stage-header">1. Validate spec</div>
+    <div class="component component-static">load_and_validate</div>
+    <div class="component component-claude">Validator auto-fix (~1 call)
+      <small>$0.05</small>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">2. Generate app code</div>
+    <div class="component component-claude">Claude Opus single-pass OR multi-pass
+      <small>$2-4 per build; this is the variance source</small>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">3. Post-processors run (DAG-ordered)</div>
+    <div class="component component-static">117 processors</div>
+    <div class="component component-static">Many exist to patch Claude's variance</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">4. Write to disk</div>
+    <div class="component component-static">builds/&lt;app_name&gt;/</div>
+  </div>
+</div>
+
+<div class="group-label">Phase C: The 117 post-processors (grouped)</div>
+
+<div class="grid-6">
+  <div class="mini-panel">
+    <div class="mini-panel-title">Validation + schema</div>
+    <ul class="mini-list">
+      <li>_validate_spec_shape</li>
+      <li>_normalize_password_column</li>
+      <li>_verify_schema_column_references</li>
+      <li>_scrub_bcrypt_from_seed (SEC-1)</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Deps + security</div>
+    <ul class="mini-list">
+      <li>_ensure_package_deps</li>
+      <li>FORCE_UPGRADE_DEPS (multer, bcrypt, sharp)</li>
+      <li>_ensure_railwayignore</li>
+      <li>_ensure_resilient_migrate</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Layout + design shell</div>
+    <ul class="mini-list">
+      <li>_ensure_layout_html_skeleton</li>
+      <li>_ensure_color_consistency</li>
+      <li>_ensure_nav_brand_element</li>
+      <li>_fix_nav_brand_contrast_and_dedupe</li>
+      <li>_align_secondary_palette_to_spec</li>
+      <li>Google Fonts + glass nav</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Admin console + CRUD</div>
+    <ul class="mini-list">
+      <li>_ensure_admin_slug_mount</li>
+      <li>_ensure_admin_model_handlers</li>
+      <li>_enforce_admin_view_path_convention</li>
+      <li>_fix_admin_crud_link_prefix</li>
+      <li>_fix_admin_layout_nav_prefix</li>
+      <li>_unify_admin_dashboard_handler</li>
+      <li>_ensure_site_settings (23 keys)</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Widgets (B+C phase 1)</div>
+    <ul class="mini-list">
+      <li>_emit_widgets</li>
+      <li>_ensure_crud_forms_complete</li>
+      <li>_ensure_upload_form_ui</li>
+      <li>WIDGET_ADMIN_MARKER carve-outs</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Seeds + content binding</div>
+    <ul class="mini-list">
+      <li>_ensure_minimum_seed_rows</li>
+      <li>_ensure_settings_in_views</li>
+      <li>_ensure_hero_settings_binding</li>
+      <li>_ensure_contact_email</li>
+    </ul>
+  </div>
+</div>
+
+<div class="grid-6">
+  <div class="mini-panel">
+    <div class="mini-panel-title">Auth + middleware</div>
+    <ul class="mini-list">
+      <li>_ensure_magic_link_auth</li>
+      <li>_ensure_magic_link_hash</li>
+      <li>_ensure_csrf_import</li>
+      <li>_ensure_settings_middleware_contract</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">UX / polish</div>
+    <ul class="mini-list">
+      <li>_fix_delete_button_styling</li>
+      <li>_ensure_button_design_system</li>
+      <li>_ensure_mobile_menu_close</li>
+      <li>_ensure_skip_to_content</li>
+      <li>_scrub_em_dashes_in_ejs</li>
+      <li>_strip_dead_signup_links</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Performance + PWA</div>
+    <ul class="mini-list">
+      <li>_ensure_compression</li>
+      <li>_ensure_static_caching</li>
+      <li>_ensure_lazy_loading</li>
+      <li>_ensure_dynamic_canonical</li>
+      <li>sitemap.xml + service worker</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Media + uploads</div>
+    <ul class="mini-list">
+      <li>_ensure_upload_route</li>
+      <li>_convert_raw_file_inputs_to_upload_zones</li>
+      <li>_strip_redundant_image_upload_forms</li>
+      <li>Stock photo bundling</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Bug-recurrence prevention</div>
+    <ul class="mini-list">
+      <li>_ensure_tz_aware_datetime_schema</li>
+      <li>_verify_template_middleware_contract</li>
+      <li>_enforce_admin_view_path_convention</li>
+      <li>6 RCA-driven guards (MW v16)</li>
+    </ul>
+  </div>
+  <div class="mini-panel">
+    <div class="mini-panel-title">Contract verification (LAST)</div>
+    <ul class="mini-list">
+      <li>contracts/admin_crud.py</li>
+      <li>contracts/layout.py</li>
+      <li>Fails pre-deploy if violated</li>
+    </ul>
+  </div>
+</div>
+
+<div class="group-label">Phase D: QA + Design fix loops <span class="loop-badge">CYCLICAL</span></div>
+
+<div class="stage-row">
+  <div class="stage">
+    <div class="stage-header">QA loop (iterative)</div>
+    <div class="component component-static">test.py: Playwright E2E</div>
+    <div class="component component-claude">qa_fix.py: Claude patches failures
+      <small>$0.50-2 per iteration, up to FixLoopBudget</small>
+    </div>
+    <div class="loop-arrow">⟲ reapply_post_processors → re-run tests</div>
+    <div class="component component-static">BLOCK_ON_QA_FIX_BUDGET (prod)</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">Design review loop</div>
+    <div class="component component-claude">design_review.py: Claude visual QA
+      <small>$0.50-1</small>
+    </div>
+    <div class="component component-claude">design_fix.py: Claude CSS patches
+      <small>$0.50-1, up to MAX_DESIGN_FIXES=3-6</small>
+    </div>
+    <div class="loop-arrow">⟲ DESIGN_QG_RETRY1 gate</div>
+    <div class="component component-static">BLOCKING_DESIGN_REVIEW (prod)</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">Advisor tool (opt-in)</div>
+    <div class="component component-claude">USE_ADVISOR_QA_FIX / _DESIGN_FIX
+      <small>$0.10-0.30 overhead</small>
+    </div>
+    <div class="component component-static">Plans strategy before patch</div>
+    <div class="component component-static">20-26% cost reduction on loops</div>
+  </div>
+</div>
+
+<div class="group-label">Phase E: Deploy + review</div>
+
+<div class="stage-row">
+  <div class="stage">
+    <div class="stage-header">deploy.py</div>
+    <div class="component component-static">Railway API: projectCreate + serviceCreate</div>
+    <div class="component component-static">git push to Railway remote</div>
+    <div class="component component-static">Health check wait (WATCHDOG)</div>
+    <div class="component component-static">preview_url → builds row</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">SE Review Gate (non-negotiable)</div>
+    <div class="component component-static">builds.status = preview</div>
+    <div class="component component-static">send_review_pending email → admin</div>
+    <div class="component component-human">Founder visits /admin/reviews</div>
+    <div class="component component-human">Approve → status = approved</div>
+    <div class="component component-human">send_review_ready email → customer</div>
+    <div class="component component-static">Promote to live via atomic update</div>
+  </div>
+  <div class="stage">
+    <div class="stage-header">Parallel systems (continuous)</div>
+    <div class="component component-static">monitor/: health + backups + diagnosis</div>
+    <div class="component component-claude">coordinator/ (analysis only, dry run by default)
+      <small>Budget-gated, permission-gated</small>
+    </div>
+    <div class="component component-static">Roadmap executor (ships disabled)</div>
+    <div class="component component-static">Sentry error tracking</div>
+  </div>
+</div>
+
+<div class="footer-stats">
+  <div>
+    <div class="stat-label">Claude API spend</div>
+    <div class="stat-value">Variable</div>
+    <div class="stat-detail">Per-build cost varied widely; the fix loops were the main source of variance.</div>
+  </div>
+  <div>
+    <div class="stat-label">Wall time</div>
+    <div class="stat-value">12 – 15 min</div>
+    <div class="stat-detail">Generate + fix loops + deploy.</div>
+  </div>
+  <div>
+    <div class="stat-label">Regressions per build</div>
+    <div class="stat-value">3 – 8</div>
+    <div class="stat-detail">Emission variance produces new defects each build.</div>
+  </div>
+  <div>
+    <div class="stat-label">Post-processors</div>
+    <div class="stat-value">117</div>
+    <div class="stat-detail">Registered in <code>cli/build.py</code>; each one patches up a specific Claude variance pattern.</div>
+  </div>
+</div>
+
+</body>
+</html>

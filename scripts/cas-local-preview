@@ -1,0 +1,444 @@
+#!/usr/bin/env python3
+"""scripts/cas-local-preview: one-shot local preview workflow for v2 builds.
+
+Wraps the compose-build -> create-db -> migrate -> seed -> launch.json-append
+sequence into a single command so partner builds can be reviewed locally
+without paying the Railway deploy cost.
+
+USAGE
+    scripts/cas-local-preview <spec.json>
+    scripts/cas-local-preview <spec.json> --port 4710 --launch-name sample-irrigation
+
+OPTIONS
+    --output-dir       Where to write the composed app (default: builds/<app>-local)
+    --db-name          Local Postgres DB name (default: <app>_local, dashes -> underscores)
+    --port             Port for `node server.js` (default: 4606)
+    --launch-name      Name in .claude/launch.json (default: <app>-local)
+    --launch-json      Path to launch.json (default: <repo>/.claude/launch.json)
+    --no-install       Skip `npm install` (assume node_modules already present)
+    --no-migrate       Skip `node db_migrate.js`
+    --no-launch-json   Skip writing the launch.json entry
+    --recreate-db      Drop the DB before creating (destructive; default off)
+    --quiet            Suppress non-error output
+
+EXIT CODES
+    0   success; preview_start instructions printed
+    1   prereq missing (psql / createdb / node / npm) or compose error
+    2   DB provisioning failure
+    3   db_migrate.js failure
+
+The script assumes the same local-Postgres-trusted-connection model as
+tests/test_v2_local_e2e.py: the shell $USER can createdb / connect without
+a password.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from typing import Optional
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+
+REQUIRED_CMDS = ("createdb", "dropdb", "psql", "node", "npm")
+
+# Homebrew formulae that carry the PostgreSQL client programs. A versioned
+# formula is keg-only: its programs are not linked into Homebrew's bin
+# directory, so they are on PATH only if the user put them there.
+POSTGRES_FORMULAE = ("postgresql", "postgresql@17", "postgresql@16", "postgresql@15", "postgresql@14")
+
+
+def postgres_bin_dir() -> Optional[Path]:
+    """The directory that holds this machine's PostgreSQL client programs,
+    found now, at run time: where `psql` or `pg_ctl` is on PATH, else the
+    bin directory of a Homebrew PostgreSQL formula that has a psql in it
+    (`brew --prefix <formula>`). None when neither finds one."""
+    for program in ("psql", "pg_ctl"):
+        found = shutil.which(program)
+        if found:
+            return Path(found).parent
+    brew = shutil.which("brew")
+    if brew is None:
+        return None
+    for formula in POSTGRES_FORMULAE:
+        try:
+            result = subprocess.run([brew, "--prefix", formula], capture_output=True, text=True, timeout=15)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        candidate = Path(result.stdout.strip() or "/nonexistent") / "bin"
+        if result.returncode == 0 and (candidate / "psql").is_file():
+            return candidate
+    return None
+
+
+def launch_path_dirs() -> list[str]:
+    """The directories the launch command puts first on PATH: where node is
+    and where the PostgreSQL programs are, as found by this run. The process
+    that starts a launch.json entry may have a shorter PATH than this shell."""
+    dirs: list[str] = []
+    node = shutil.which("node")
+    for found in (Path(node).parent if node else None, postgres_bin_dir()):
+        if found is not None and str(found) not in dirs:
+            dirs.append(str(found))
+    return dirs
+
+
+def check_prereqs() -> list[str]:
+    """Return a list of missing commands; empty list = all present."""
+    return [c for c in REQUIRED_CMDS if shutil.which(c) is None]
+
+
+def derive_db_name(app_name: str) -> str:
+    """`sample-irrigation` -> `sample_irrigation_local`. Postgres
+    identifiers can't contain dashes without quoting; underscores are the
+    convention used by other CAS local-preview entries in launch.json."""
+    safe = re.sub(r"[^a-z0-9_]", "_", app_name.lower())
+    safe = re.sub(r"_+", "_", safe).strip("_")
+    return f"{safe}_local"
+
+
+def derive_session_secret(app_name: str) -> str:
+    """Stable per-app session secret so cookies survive restarts."""
+    safe = re.sub(r"[^a-z0-9_]", "_", app_name.lower())
+    return f"local_{safe}_secret"
+
+
+def pg_user() -> str:
+    return os.environ.get("USER") or os.environ.get("PGUSER") or "postgres"
+
+
+def compose_build(spec_path: Path, output_dir: Path, quiet: bool) -> Path:
+    """Invoke compose.build.build_app in-process. Raises on failure."""
+    from compose.build import build_app  # type: ignore
+
+    if not quiet:
+        print(f"[compose] {spec_path} -> {output_dir}")
+    return build_app(str(spec_path), output_dir=str(output_dir))
+
+
+def db_exists(db_name: str) -> bool:
+    """Use `psql -l -t` to list DBs; ANY non-zero exit means we can't tell,
+    so be conservative and treat it as missing (the createdb call below
+    will fail loud if it actually existed)."""
+    r = subprocess.run(
+        ["psql", "-lqt"],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    if r.returncode != 0:
+        return False
+    for line in r.stdout.splitlines():
+        name = line.split("|", 1)[0].strip()
+        if name == db_name:
+            return True
+    return False
+
+
+def drop_db(db_name: str, quiet: bool) -> None:
+    if not quiet:
+        print(f"[db] dropping {db_name}")
+    subprocess.run(
+        ["dropdb", "--if-exists", db_name],
+        check=False,
+        capture_output=True,
+        timeout=15,
+    )
+
+
+def create_db(db_name: str, quiet: bool) -> None:
+    if not quiet:
+        print(f"[db] creating {db_name}")
+    r = subprocess.run(
+        ["createdb", db_name],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    if r.returncode != 0:
+        # createdb is idempotent-ish: existing DB returns non-zero with a
+        # specific message. Treat that as "already exists, fine."
+        if "already exists" in (r.stderr or "").lower():
+            if not quiet:
+                print(f"[db] {db_name} already exists; reusing")
+            return
+        raise RuntimeError(f"createdb failed: {r.stderr.strip()}")
+
+
+def npm_install(build_dir: Path, quiet: bool) -> None:
+    if not quiet:
+        print(f"[npm] install in {build_dir}")
+    r = subprocess.run(
+        ["npm", "install", "--silent", "--no-audit", "--no-fund"],
+        cwd=build_dir,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"npm install failed: {r.stderr[:2000]}")
+
+
+def run_migrate(build_dir: Path, env: dict[str, str], quiet: bool) -> None:
+    if not quiet:
+        print(f"[node] db_migrate.js")
+    r = subprocess.run(
+        ["node", "db_migrate.js"],
+        cwd=build_dir,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(
+            f"db_migrate.js failed (rc={r.returncode}):\n"
+            f"stdout: {r.stdout[:1500]}\n"
+            f"stderr: {r.stderr[:1500]}"
+        )
+
+
+def build_launch_command(
+    build_dir: Path,
+    db_url: str,
+    session_secret: str,
+    port: int,
+    path_dirs: Optional[list[str]] = None,
+) -> list[str]:
+    """The shell -c command preview_start runs. Same shape as a
+    manually-authored entry in .claude/launch.json, so the user experience
+    is identical. path_dirs go first on PATH (default: launch_path_dirs(),
+    looked up now). Every value is quoted for the shell."""
+    dirs = launch_path_dirs() if path_dirs is None else path_dirs
+    path = "".join(f"{shlex.quote(d)}:" for d in dirs)
+    inner = (
+        f"export PATH={path}$PATH "
+        f"&& cd {shlex.quote(str(build_dir))} "
+        f"&& DATABASE_URL={shlex.quote(db_url)} "
+        f"SESSION_SECRET={shlex.quote(session_secret)} "
+        f"PORT={int(port)} "
+        f"NODE_ENV=development "
+        f"node server.js"
+    )
+    return ["/bin/bash", "-c", inner]
+
+
+def upsert_launch_entry(
+    launch_json: Path,
+    name: str,
+    build_dir: Path,
+    db_url: str,
+    session_secret: str,
+    port: int,
+    quiet: bool,
+) -> None:
+    """Append (or replace if same name) a configuration in launch.json.
+
+    Preserves all other entries verbatim: never rewrites unrelated keys.
+    Creates the file with a minimal scaffold if missing."""
+    if launch_json.exists():
+        with launch_json.open() as f:
+            doc = json.load(f)
+    else:
+        launch_json.parent.mkdir(parents=True, exist_ok=True)
+        doc = {"version": "0.0.1", "configurations": []}
+
+    if not isinstance(doc, dict) or not isinstance(doc.get("configurations"), list):
+        raise RuntimeError(
+            f"launch.json at {launch_json} is malformed (no 'configurations' list)"
+        )
+
+    cmd = build_launch_command(build_dir, db_url, session_secret, port)
+    entry = {
+        "name": name,
+        "runtimeExecutable": cmd[0],
+        "runtimeArgs": [cmd[1], cmd[2]],
+        "port": port,
+        "autoPort": True,
+    }
+
+    configs: list[dict] = doc["configurations"]
+    replaced = False
+    for i, existing in enumerate(configs):
+        if isinstance(existing, dict) and existing.get("name") == name:
+            configs[i] = entry
+            replaced = True
+            break
+    if not replaced:
+        configs.append(entry)
+
+    with launch_json.open("w") as f:
+        json.dump(doc, f, indent=2)
+        f.write("\n")
+
+    if not quiet:
+        verb = "updated" if replaced else "added"
+        print(f"[launch.json] {verb} entry '{name}' in {launch_json}")
+
+
+def find_default_launch_json() -> Path:
+    """Default to <project_root>/.claude/launch.json. The script lives at
+    <root>/scripts/cas-local-preview, so ROOT is reliable."""
+    return ROOT / ".claude" / "launch.json"
+
+
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        description="Local-only preview workflow for CAS v2 builds.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "After running, start the preview via your CC preview_start tool\n"
+            "with the launch-name printed at the end."
+        ),
+    )
+    p.add_argument("spec", help="Path to a v2 spec JSON file")
+    p.add_argument("--output-dir", default=None, help="Compose output directory")
+    p.add_argument("--db-name", default=None, help="Local Postgres DB name")
+    p.add_argument("--port", type=int, default=4606, help="Port for node server.js")
+    p.add_argument("--launch-name", default=None, help="Name in .claude/launch.json")
+    p.add_argument("--launch-json", default=None, help="Path to .claude/launch.json")
+    p.add_argument("--no-install", action="store_true", help="Skip npm install")
+    p.add_argument("--no-migrate", action="store_true", help="Skip db_migrate.js")
+    p.add_argument(
+        "--no-launch-json",
+        action="store_true",
+        help="Skip writing the launch.json entry",
+    )
+    p.add_argument(
+        "--recreate-db",
+        action="store_true",
+        help="Drop the DB before creating (destructive)",
+    )
+    p.add_argument("--quiet", action="store_true")
+    return p.parse_args(argv)
+
+
+def run(args: argparse.Namespace) -> int:
+    spec_path = Path(args.spec).resolve()
+    if not spec_path.is_file():
+        print(f"error: spec not found: {spec_path}", file=sys.stderr)
+        return 1
+
+    # A keg-only PostgreSQL is found through Homebrew and put on PATH for the
+    # createdb / dropdb / psql calls below.
+    pg_bin = postgres_bin_dir()
+    if pg_bin is not None and str(pg_bin) not in os.environ.get("PATH", "").split(os.pathsep):
+        os.environ["PATH"] = f"{pg_bin}{os.pathsep}{os.environ.get('PATH', '')}"
+
+    missing = check_prereqs()
+    if missing:
+        print(
+            f"error: missing required commands on PATH: {missing}\n"
+            f"install via: brew install postgresql@15 node",
+            file=sys.stderr,
+        )
+        return 1
+
+    with spec_path.open() as f:
+        spec = json.load(f)
+    app_name = spec.get("app_name")
+    if not app_name:
+        print(f"error: spec at {spec_path} has no `app_name`", file=sys.stderr)
+        return 1
+
+    output_dir = Path(args.output_dir) if args.output_dir else ROOT / "builds" / f"{app_name}-local"
+    output_dir = output_dir.resolve()
+
+    db_name = args.db_name or derive_db_name(app_name)
+    session_secret = derive_session_secret(app_name)
+    db_url = f"postgresql://{pg_user()}@localhost:5432/{db_name}"
+    launch_name = args.launch_name or f"{app_name}-local"
+    launch_json = Path(args.launch_json).resolve() if args.launch_json else find_default_launch_json()
+    quiet = args.quiet
+
+    # 1. Compose
+    try:
+        compose_build(spec_path, output_dir, quiet)
+    except Exception as exc:
+        print(f"error: compose failed: {exc}", file=sys.stderr)
+        return 1
+
+    # 2. DB
+    try:
+        if args.recreate_db:
+            drop_db(db_name, quiet)
+        create_db(db_name, quiet)
+    except Exception as exc:
+        print(f"error: db provisioning failed: {exc}", file=sys.stderr)
+        return 2
+
+    # 3. npm install
+    if not args.no_install:
+        try:
+            npm_install(output_dir, quiet)
+        except Exception as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+
+    # 4. Migrate (which also runs seed.sql when users table is empty)
+    if not args.no_migrate:
+        env = {
+            **os.environ,
+            "DATABASE_URL": db_url,
+            "SESSION_SECRET": session_secret,
+            "NODE_ENV": "development",
+        }
+        try:
+            run_migrate(output_dir, env, quiet)
+        except Exception as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 3
+
+    # 5. launch.json
+    if not args.no_launch_json:
+        try:
+            upsert_launch_entry(
+                launch_json,
+                launch_name,
+                output_dir,
+                db_url,
+                session_secret,
+                args.port,
+                quiet,
+            )
+        except Exception as exc:
+            print(f"warning: launch.json update failed: {exc}", file=sys.stderr)
+            # non-fatal
+
+    if not quiet:
+        print()
+        print(f"Local preview ready for {app_name}.")
+        print(f"  build_dir:   {output_dir}")
+        print(f"  database:    {db_url}")
+        print(f"  port:        {args.port}")
+        print(f"  launch_name: {launch_name}")
+        print()
+        print("Start the preview via your CC preview_start tool, or run directly:")
+        print(
+            f"  cd {output_dir} && DATABASE_URL={db_url} "
+            f"SESSION_SECRET={session_secret} PORT={args.port} "
+            f"NODE_ENV=development node server.js"
+        )
+        print()
+        print(f"Then open http://localhost:{args.port}/")
+
+    return 0
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    args = parse_args(argv)
+    return run(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

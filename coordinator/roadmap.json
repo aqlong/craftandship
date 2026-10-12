@@ -1,0 +1,141 @@
+{
+  "version": 2,
+  "updated_at": "2026-06-10",
+  "items": [
+    {
+      "id": "v2-settings-post-omission-safe",
+      "title": "Admin settings POST must treat an omitted key as 'leave unchanged', not 'set to empty'",
+      "priority": "high",
+      "status": "completed",
+      "agent": "frontend_engineer",
+      "description": "The compose-emitted /admin/settings handler loops over every ALLOWED_KEYS entry and writes `req.body[key] ?? ''`, so any partial or programmatic POST silently blanks every field that is not in the body. Symptom: image URL settings (about photo, hero image) were cleared after a later content sync propagated the blanks. Fix: `if (req.body[key] === undefined) continue;` so an absent key is preserved while an explicit empty-string submit still clears the value on purpose. Same class of bug as the unchecked-checkbox case: omission must never be destructive.",
+      "blocked_by": [],
+      "complexity": "small",
+      "created_at": "2026-06-10",
+      "notes": "Shipped. Regression test lives in compose/tests/test_build_pipeline.py."
+    },
+    {
+      "id": "executor-verify-push-and-pr-before-marking-in-review",
+      "title": "scripts/cas-roadmap-loop.sh: verify git push + gh pr create succeeded before marking in_review",
+      "description": "BUG: the HIGH-risk PR path in scripts/cas-roadmap-loop.sh (and the analogous fast path) uses `|| true` after `git push origin \"$branch\"` and `gh pr create`, which silently swallows failures. The loop then marks the roadmap item `status: in_review` and writes a `review: PR created for manual review` heartbeat regardless. Net effect: items show as in_review with an EMPTY commit_sha and no matching auto/* branch on the remote.\n\nFIX: capture the push and PR exit codes and only mark in_review when both succeed. On failure: (a) revert the roadmap item to status=pending with status_drift_note='push_or_pr_failed at <ts>', (b) emit a `failed` heartbeat with detail='Push or PR creation failed', (c) clean up the local branch and worktree. Also use `CAS_EXECUTOR=1 git push` so auto/* branches bypass the staging-workflow block (the fast path already does this).\n\n**STRICT SCOPE: modify ONLY `scripts/cas-roadmap-loop.sh`. Add ONE test file at `tests/test_executor_push_and_pr_verification.py` asserting the script sources cleanly and that the push/PR call sites use captured exit codes (not `|| true`). Do NOT modify CLAUDE.md, docs, brand voice, web/, compose/, or any other file.**\n\nAcceptance: (1) grep for `git push origin \"$branch\" >> \"$log_file\" 2>&1 || true` in scripts/cas-roadmap-loop.sh returns 0 matches; (2) shellcheck still passes if available; (3) the new test file asserts the captured-exit-code pattern and revert-on-failure.",
+      "priority": "high",
+      "status": "completed",
+      "created_at": "2026-05-26",
+      "complexity": "small",
+      "category": "executor-hardening"
+    },
+    {
+      "id": "v2-validate-url-scheme-in-href-and-img-src-interpolation",
+      "title": "v2: validate http(s): scheme on customer-input URLs before href + src interpolation",
+      "priority": "low",
+      "status": "completed",
+      "created_at": "2026-05-26",
+      "executor_eligible": true,
+      "description": "From an audit of an executor commit. Two new widgets interpolate raw customer-input URLs into HTML attributes without scheme validation: (1) compose/widgets/content/video-embed-nocookie.ejs renders `<a href=\"<%= _raw %>\">` in its fallback branch for unrecognized video URLs; (2) compose/widgets/content/photo-slideshow.ejs renders `<img src=\"<%= p %>\">`. EJS `<%= %>` HTML-escapes but does NOT block `javascript:` scheme URLs. The surface is admin-input only, so the blast radius is small (admins attack themselves), but the safer pattern is a one-line guard such as `if (!/^https?:\\/\\//i.test(url)) { skip-or-default }`. Audit ALL widgets for the same pattern (`grep -rn 'href=\"<%=' compose/widgets/`) and apply the guard consistently.",
+      "blocked_by": [],
+      "notes": "Defense-in-depth security hardening, derived from the same audit."
+    },
+    {
+      "id": "v2-csp-nonce-pattern-for-compose-emitted-inline-scripts",
+      "title": "v2: prepare compose-emitted inline scripts for CSP nonce mode (tracking the web/src/app.ts nonce-only tightening)",
+      "priority": "low",
+      "status": "completed",
+      "created_at": "2026-05-26",
+      "executor_eligible": true,
+      "description": "From an audit of an executor commit. The new compose/widgets/content/photo-slideshow.ejs widget emits an inline `<script>(function() { ... })();</script>` block with NO nonce attribute. Compose-emitted customer apps did not enforce a nonce-based CSP at that point, so it worked, but the CAS public web (web/src/app.ts) has since tightened script-src to nonce-only. If compose-emitted apps adopt the same CSP, every inline script across compose/widgets/ needs a `nonce=\"<%= cspNonce %>\"` attribute, which means the resolver has to thread `cspNonce` through the include locals chain. Needed a decision on (a) whether to adopt the CAS pattern for customer apps and (b) the migration order (audit existing inline scripts; refactor to external files where possible; nonce-stamp the rest).",
+      "blocked_by": [],
+      "notes": "Future-proofing; customer apps were unaffected while their CSP still allowed inline scripts.",
+      "executor_framing_note": "Adopt the CAS-public nonce-based CSP pattern for compose-emitted customer apps. Executor task: (1) audit every inline `<script>` in compose/widgets/ + compose/templates/ and list each one; (2) add a per-request cspNonce middleware to compose/templates/server.js (mirror the web/src/app.ts security-headers middleware); (3) thread `cspNonce` through the EJS include chain so widgets can stamp `nonce=\"<%= cspNonce %>\"`; (4) stamp every inline `<script>` tag; (5) tighten the emitted CSP header to drop `unsafe-inline` from script-src and use `nonce-${cspNonce}` instead. Tests: assert a nonce is present on every inline script and that the CSP header is nonce-only."
+    },
+    {
+      "id": "v2-a11y-newsletter-widget-aria-label",
+      "title": "v2 compose newsletter widget input is missing accessible name (WCAG 1.3.1 / 3.3.2)",
+      "priority": "high",
+      "status": "completed",
+      "created_at": "2026-05-27",
+      "executor_eligible": true,
+      "description": "Spawned by the static a11y audit of the generated-app archetypes (docs/audits/compose-archetype-a11y-2026-05-27.md, Group A). The `<input type=\"email\">` inside compose/widgets/cta/newsletter-inline.ejs has only a placeholder: no `<label>`, no `aria-label`, no `aria-labelledby`. Screen readers announce only `edit email` with no semantic context, and some assistive tech drops placeholder text once the user starts typing. It hits 4 of 9 archetype default home pages (every archetype whose default home includes the newsletter widget); a single widget fix propagates everywhere. Acceptance criteria: (a) add `aria-label=\"Email address\"` AND wrap the input in a `<label class=\"sr-only\">` (defensive: cheap, and lets a future visible-label promotion be a CSS-class swap); (b) re-run `python3 scripts/generated_app_a11y_scan.py` and confirm `input-missing-label` drops to 0/9 archetypes; (c) update tests/test_generated_app_a11y_scan.py if the audit doc's known-bad list shrinks; (d) update the audit doc to mark this entry complete. Scope: single-file widget edit (compose/widgets/cta/newsletter-inline.ejs).",
+      "blocked_by": [],
+      "complexity": "small",
+      "notes": "Cross-archetype finding (4/9). Compose-engine fix."
+    },
+    {
+      "id": "v2-a11y-live-browser-axe-sweep",
+      "title": "Live Playwright + axe-core sweep of all 9 v2 archetype-default apps",
+      "priority": "medium",
+      "status": "pending",
+      "created_at": "2026-05-27",
+      "executor_eligible": false,
+      "executor_skip_reason": "needs_live_infra",
+      "description": "Spawned by the static a11y audit of the generated-app archetypes (docs/audits/compose-archetype-a11y-2026-05-27.md, Live pass, prerequisites). The static pass catches structural and token a11y issues without infra, but cannot see dynamic ARIA-live regions, hover/focus state, composited paper-grain backgrounds, rendered tap-target size, or DOM-runtime Tailwind drift. This item builds the live driver. Prerequisites: (1) a Postgres role with CREATEDB; (2) compose/web/migrate.sql applied per archetype; (3) `node server.js` running per archetype (9 unique ports); (4) `npx playwright install chromium`; (5) `cd web && npm i -D @axe-core/playwright axe-core`. Driver location: web/tests/ui/generated-app-archetype-a11y.spec.ts. Per archetype: visit `/`, `/about`, `/contact`, plus one archetype-flagship route (e.g. `/schedule` for fitness-studio, `/menu` for restaurant-cafe, `/services` for tradesperson-contractor). Inject axe; write raw violations to docs/audits/generated-app-archetype-a11y-<date>-<archetype>.json. Append a 'Live pass, results' section to the audit doc mirroring the static table. Also capture the Lighthouse a11y score in the same pass (one server stand-up covers both). Not executor-eligible: needs a DB, a browser and 9 servers; run it manually or CI-side.",
+      "blocked_by": [],
+      "complexity": "medium",
+      "notes": "Follow-up to the static pass; needs live infra."
+    },
+    {
+      "id": "generated-apps-public-seo-1-meta-title-description",
+      "title": "generated-apps-public-seo Sub-1: per-route <title> + <meta description> emitter",
+      "priority": "medium",
+      "status": "completed",
+      "created_at": "2026-05-27",
+      "executor_eligible": true,
+      "description": "Parent: generated-apps-public-seo (deferred, decomposed). For every public route (auth_required=false) in a v2 compose build, emit a per-route `<title>` (derived from page.title || spec.app_name) and `<meta name=\"description\">` (derived from page.description || spec.description, truncated to ~155 chars). Add to compose/templates/layout-public.ejs as a conditional render based on locals.pageTitle + locals.pageDescription threaded from the route emit. Tests: assert per-route titles differ and meta descriptions are present.",
+      "blocked_by": [],
+      "notes": "Decomposed from parent generated-apps-public-seo. Sub-1 of 4."
+    },
+    {
+      "id": "generated-apps-public-seo-2-open-graph-twitter-cards",
+      "title": "generated-apps-public-seo Sub-2: Open Graph + Twitter Card meta on public pages",
+      "priority": "medium",
+      "status": "pending",
+      "created_at": "2026-05-27",
+      "executor_eligible": true,
+      "description": "Parent: generated-apps-public-seo (deferred, decomposed). On every public-route page in v2 builds, emit `<meta property=\"og:title|description|type|url|image\">` + `<meta name=\"twitter:card|title|description|image\">`. For the og:image fallback when spec.og_image_url is absent: generate a simple OG card via a server-side SVG rendered as PNG using spec.design.primary_color + spec.app_name (no external API call). Tests: assert OG tags are present on every public route and that URLs are absolute.",
+      "blocked_by": [
+        "generated-apps-public-seo-1-meta-title-description"
+      ],
+      "notes": "Decomposed from parent generated-apps-public-seo. Sub-2 of 4."
+    },
+    {
+      "id": "v2-compose-emitted-css-grep-audit-pass",
+      "title": "Emit a build-time grep audit that warns when widget class= references a utility not in CAS_BASE_STYLES",
+      "description": "Once the known missing utilities are added to CAS_BASE_STYLES, add a defensive audit pass to compose/build.py that (1) greps every emitted view file for `class=\"...\"` strings, (2) extracts every utility class token, (3) checks each against the emitted CSS string, and (4) writes a translation warning to compose-manifest.txt for any token missing from the CSS. Bounded scope: pure-Python grep + set diff. No runtime CSS analysis; the audit is a one-pass linter on emitted files only. Acceptance: a test that introduces a deliberate `class=\"px-99\"` reference (not in the CSS) and asserts the warning fires; a second test asserts no false positives on a clean build.",
+      "priority": "low",
+      "status": "completed",
+      "created_at": "2026-05-18",
+      "complexity": "small",
+      "category": "v2-compose-engine",
+      "blocked_by": [],
+      "tags": [
+        "v2",
+        "compose",
+        "audit"
+      ]
+    },
+    {
+      "id": "v2-claude-design-overlay-template-family",
+      "title": "Design-overlay mode: serve an exported static HTML design per page",
+      "description": "A customer who exports a polished design as static HTML should be able to drop the HTML and photos into a build and have CAS serve it per page (real URLs, not hash routing) with the admin, database and contact form still wired. Proposed shape: a v2 template family 'design-overlay' that stores the template at views/design/<slug>-template.html, has route handlers stamp is-active and is-current classes, a CSRF token and a ?service= preselect, and serves photos from public/photos/. The family would automate photo path rewriting (relative to /photos/X), hash-href to real-URL substitution, hash-router JS removal, self-hosted font preloads and CSRF token injection.",
+      "priority": "medium",
+      "status": "proposed",
+      "complexity": "medium",
+      "tags": [
+        "v2",
+        "design",
+        "template-family"
+      ],
+      "created_at": "2026-05-11",
+      "notes": "The import was done by hand, one design at a time; the steps are not kept in this repository, and this item would automate them."
+    }
+  ],
+  "agent_initiatives": {
+    "backend_engineer": "Review generated app code quality, identify common patterns that could be improved in build prompts, fix recurring issues",
+    "security": "Scan live apps for vulnerabilities, review auth patterns, check for XSS/CSRF/injection risks in generated code",
+    "cost_analyst": "Analyze daily API costs, project scaling needs, identify optimization opportunities",
+    "customer_service": "Review feedback patterns, update support KB, identify common customer pain points",
+    "documentation": "Keep docs current, plan marketing content, review user-facing copy",
+    "qa_test": "Review test results, identify regression patterns, improve test coverage",
+    "financial": "Budget monitoring and cost alerts",
+    "infra_engineer": "Infrastructure health checks, deployment optimization, monitoring improvements"
+  }
+}

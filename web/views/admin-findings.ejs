@@ -1,0 +1,255 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Total</div>
+      <div class="text-xl sm:text-2xl font-bold text-gray-200"><%= stats.total %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">New</div>
+      <div class="text-xl sm:text-2xl font-bold text-amber-400"><%= stats.new %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Reviewed</div>
+      <div class="text-xl sm:text-2xl font-bold text-[#A89B7A]"><%= stats.reviewed %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Promoted</div>
+      <div class="text-xl sm:text-2xl font-bold text-[#2ABEAA]"><%= stats.promoted %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Dismissed</div>
+      <div class="text-xl sm:text-2xl font-bold text-subtle"><%= stats.dismissed %></div>
+    </div>
+  </div>
+
+  <div class="bg-surface-3 rounded-[10px] p-3 sm:p-4 mb-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end flex-wrap">
+    <div>
+      <label class="text-muted text-xs block mb-1">Status</label>
+      <select id="filter-status" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full sm:w-auto">
+        <option value="new" <% if (statusFilter === 'new') { %>selected<% } %>>New</option>
+        <option value="reviewed" <% if (statusFilter === 'reviewed') { %>selected<% } %>>Reviewed</option>
+        <option value="promoted" <% if (statusFilter === 'promoted') { %>selected<% } %>>Promoted</option>
+        <option value="dismissed" <% if (statusFilter === 'dismissed') { %>selected<% } %>>Dismissed</option>
+        <option value="all" <% if (statusFilter === 'all') { %>selected<% } %>>All</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-muted text-xs block mb-1">Priority</label>
+      <select id="filter-priority" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full sm:w-auto">
+        <option value="" <% if (!priorityFilter) { %>selected<% } %>>All</option>
+        <option value="high" <% if (priorityFilter === 'high') { %>selected<% } %>>High</option>
+        <option value="medium" <% if (priorityFilter === 'medium') { %>selected<% } %>>Medium</option>
+        <option value="low" <% if (priorityFilter === 'low') { %>selected<% } %>>Low</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-muted text-xs block mb-1">Category</label>
+      <select id="filter-category" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full sm:w-auto">
+        <option value="" <% if (!categoryFilter) { %>selected<% } %>>All</option>
+        <% availableCategories.forEach(function(cat) { %>
+          <option value="<%= cat %>" <% if (categoryFilter === cat) { %>selected<% } %>><%= cat %></option>
+        <% }); %>
+      </select>
+    </div>
+    <div>
+      <button id="apply-filters" class="btn btn-primary btn-sm w-full sm:w-auto">Filter</button>
+    </div>
+  </div>
+
+  <!-- Desktop table -->
+  <div class="hidden lg:block bg-surface-3 rounded-[10px] overflow-x-auto">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Priority</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Agent</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Category</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Title</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Status</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Created</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (items.length === 0) { %>
+          <tr><td colspan="7" class="text-center text-subtle py-8">No findings match these filters.</td></tr>
+        <% } %>
+        <% items.forEach(function(item) { %>
+          <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+            <td class="px-4 py-2.5 whitespace-nowrap">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold
+                <% if (item.priority === 'high') { %>bg-red-900 text-red-300<% } %>
+                <% if (item.priority === 'medium') { %>bg-amber-900 text-amber-300<% } %>
+                <% if (item.priority === 'low') { %>bg-surface-2 text-muted<% } %>
+              "><%= item.priority %></span>
+            </td>
+            <td class="px-4 py-2.5 text-gray-300 whitespace-nowrap text-xs"><%= item.agent %></td>
+            <td class="px-4 py-2.5 text-gray-300 whitespace-nowrap text-xs"><%= item.category %></td>
+            <td class="px-4 py-2.5 text-gray-300 max-w-[400px]">
+              <div class="font-semibold"><%= item.title %></div>
+              <button type="button" class="context-toggle text-xs text-subtle hover:text-gray-300 cursor-pointer bg-transparent border-none underline mt-1" data-target="ctx-<%= item.id %>">details</button>
+              <div id="ctx-<%= item.id %>" class="hidden mt-2 p-2 bg-bg rounded text-xs text-muted overflow-x-auto max-w-full max-h-[40vh] overflow-y-auto"><pre class="whitespace-pre-wrap m-0 break-words"><%= item.description %></pre>
+                <div class="mt-2 text-subtle">key: <code><%= item.finding_key %></code></div>
+                <% if (item.review_notes) { %><div class="mt-1 text-subtle">notes: <%= item.review_notes %></div><% } %>
+                <% if (item.roadmap_item_id) { %><div class="mt-1 text-subtle">roadmap: <code><%= item.roadmap_item_id %></code></div><% } %>
+              </div>
+            </td>
+            <td class="px-4 py-2.5">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold
+                <% if (item.status === 'new') { %>bg-amber-900 text-amber-300<% } %>
+                <% if (item.status === 'reviewed') { %>bg-[rgba(168,155,122,0.2)] text-[#A89B7A]<% } %>
+                <% if (item.status === 'promoted') { %>bg-[rgba(42,190,170,0.15)] text-[#2ABEAA]<% } %>
+                <% if (item.status === 'dismissed') { %>bg-surface-2 text-subtle<% } %>
+              "><%= item.status %></span>
+            </td>
+            <td class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><span data-ts="<%= new Date(item.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(item.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></td>
+            <td class="px-4 py-2.5 whitespace-nowrap">
+              <% if (item.status === 'new' || item.status === 'reviewed') { %>
+                <div class="flex gap-2 flex-wrap">
+                  <% if (item.status === 'new') { %>
+                    <form method="POST" action="/admin/findings/<%= item.id %>/review" class="inline">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <button type="submit" class="btn btn-sm bg-surface-2 text-gray-200 hover:bg-surface">Mark reviewed</button>
+                    </form>
+                  <% } %>
+                  <button type="button" class="btn btn-sm bg-[rgba(42,190,170,0.15)] text-[#2ABEAA] hover:opacity-80 promote-btn" data-finding-id="<%= item.id %>" data-suggested-id="<%= item.finding_key %>">Promote</button>
+                  <form method="POST" action="/admin/findings/<%= item.id %>/dismiss" class="inline" data-confirm="Dismiss this finding? It won't reappear.">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" class="btn btn-sm bg-red-900 text-red-300 hover:bg-red-800">Dismiss</button>
+                  </form>
+                </div>
+              <% } else { %>
+                <span class="text-subtle text-xs"><%= item.reviewed_by ? 'by ' + item.reviewed_by : '' %></span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile card view -->
+  <div class="lg:hidden space-y-3">
+    <% if (items.length === 0) { %>
+      <div class="text-center text-subtle py-8">No findings match these filters.</div>
+    <% } %>
+    <% items.forEach(function(item) { %>
+      <div class="bg-surface rounded-lg p-4">
+        <div class="flex justify-between items-start mb-2 gap-2">
+          <div class="flex gap-2 flex-wrap">
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold
+              <% if (item.priority === 'high') { %>bg-red-900 text-red-300<% } %>
+              <% if (item.priority === 'medium') { %>bg-amber-900 text-amber-300<% } %>
+              <% if (item.priority === 'low') { %>bg-surface-2 text-muted<% } %>
+            "><%= item.priority %></span>
+            <span class="text-gray-300 text-xs"><%= item.category %></span>
+          </div>
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold shrink-0
+            <% if (item.status === 'new') { %>bg-amber-900 text-amber-300<% } %>
+            <% if (item.status === 'reviewed') { %>bg-[rgba(168,155,122,0.2)] text-[#A89B7A]<% } %>
+            <% if (item.status === 'promoted') { %>bg-[rgba(42,190,170,0.15)] text-[#2ABEAA]<% } %>
+            <% if (item.status === 'dismissed') { %>bg-surface-2 text-subtle<% } %>
+          "><%= item.status %></span>
+        </div>
+        <div class="text-gray-200 font-semibold text-sm mb-1"><%= item.title %></div>
+        <button type="button" class="context-toggle text-xs text-subtle hover:text-gray-300 cursor-pointer bg-transparent border-none underline mb-2" data-target="ctx-mobile-<%= item.id %>">details</button>
+        <div id="ctx-mobile-<%= item.id %>" class="hidden mb-2 p-2 bg-bg rounded text-xs text-muted overflow-x-auto max-w-full"><pre class="whitespace-pre-wrap m-0 break-words"><%= item.description %></pre></div>
+        <div class="flex justify-between text-xs mb-2">
+          <span class="text-subtle">Agent</span>
+          <span class="text-muted"><%= item.agent %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-2">
+          <span class="text-subtle">Created</span>
+          <span class="text-muted"><span data-ts="<%= new Date(item.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(item.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></span>
+        </div>
+        <% if (item.status === 'new' || item.status === 'reviewed') { %>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <% if (item.status === 'new') { %>
+              <form method="POST" action="/admin/findings/<%= item.id %>/review" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn btn-sm bg-surface-2 text-gray-200 hover:bg-surface">Mark reviewed</button>
+              </form>
+            <% } %>
+            <button type="button" class="btn btn-sm bg-[rgba(42,190,170,0.15)] text-[#2ABEAA] hover:opacity-80 promote-btn" data-finding-id="<%= item.id %>" data-suggested-id="<%= item.finding_key %>">Promote</button>
+            <form method="POST" action="/admin/findings/<%= item.id %>/dismiss" class="inline" data-confirm="Dismiss this finding? It won't reappear.">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn btn-sm bg-red-900 text-red-300 hover:bg-red-800">Dismiss</button>
+            </form>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+
+  <!-- Promote modal -->
+  <div id="promote-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <form id="promote-form" method="POST" class="bg-surface rounded-lg p-6 max-w-md w-full">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <h3 class="text-gray-100 font-bold text-lg mb-3">Promote finding to roadmap</h3>
+      <p class="text-muted text-sm mb-4">Enter the roadmap item ID that will track this work. The finding will be marked as promoted and linked to that ID. You must still add the item to <code>coordinator/roadmap.json</code> separately.</p>
+      <label class="text-muted text-xs block mb-1">Roadmap item ID</label>
+      <input type="text" name="roadmap_item_id" id="promote-roadmap-id" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full mb-4" required />
+      <label class="text-muted text-xs block mb-1">Notes (optional)</label>
+      <textarea name="notes" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full mb-4" rows="2"></textarea>
+      <div class="flex gap-2 justify-end">
+        <button type="button" id="promote-cancel" class="btn btn-sm bg-surface-2 text-gray-200 hover:bg-surface">Cancel</button>
+        <button type="submit" class="btn btn-sm bg-[rgba(42,190,170,0.15)] text-[#2ABEAA] hover:opacity-80">Promote</button>
+      </div>
+    </form>
+  </div>
+
+  <%- include("partials/_admin-auto-refresh", { intervalSeconds: 60 }) %>
+</section>
+
+<script nonce="<%= cspNonce %>">
+(function() {
+  var applyBtn = document.getElementById('apply-filters');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', function() {
+      var status = document.getElementById('filter-status').value;
+      var priority = document.getElementById('filter-priority').value;
+      var category = document.getElementById('filter-category').value;
+      var params = new URLSearchParams();
+      if (status && status !== 'new') params.set('status', status);
+      if (priority) params.set('priority', priority);
+      if (category) params.set('category', category);
+      window.location = '/admin/findings' + (params.toString() ? '?' + params.toString() : '');
+    });
+  }
+
+  document.querySelectorAll('.context-toggle').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var targetId = btn.getAttribute('data-target');
+      var el = document.getElementById(targetId);
+      if (el) el.classList.toggle('hidden');
+    });
+  });
+
+  var modal = document.getElementById('promote-modal');
+  var promoteForm = document.getElementById('promote-form');
+  var promoteRoadmapId = document.getElementById('promote-roadmap-id');
+  var promoteCancel = document.getElementById('promote-cancel');
+
+  document.querySelectorAll('.promote-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var findingId = btn.getAttribute('data-finding-id');
+      var suggestedId = btn.getAttribute('data-suggested-id');
+      promoteForm.setAttribute('action', '/admin/findings/' + findingId + '/promote');
+      promoteRoadmapId.value = suggestedId || '';
+      modal.classList.remove('hidden');
+      promoteRoadmapId.focus();
+    });
+  });
+  if (promoteCancel) {
+    promoteCancel.addEventListener('click', function() { modal.classList.add('hidden'); });
+  }
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+  }
+})();
+</script>

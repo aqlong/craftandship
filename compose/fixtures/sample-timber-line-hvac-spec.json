@@ -1,0 +1,475 @@
+{
+  "app_name": "timber-line-hvac",
+  "archetype": "tradesperson-contractor",
+  "palette": "navy-clean",
+  "font_pair": "inter-inter",
+  "admin_email": "admin@timberlinehvac.example",
+  "settings": {
+    "site_name": "Timber Line Hvac",
+    "site_description": "Family-run HVAC contractor.",
+    "hero_tagline": "Licensed, insured, {family-run}",
+    "hero_description": "Family-run HVAC contractor.",
+    "hero_image_url": "https://picsum.photos/seed/timber-line-hvac-hero/1600/900",
+    "nav_logo_url": "",
+    "about_title": "About Timber Line Hvac",
+    "about_body": "Timber Line Hvac serves direct, trustworthy, local-proud. Established with care and intention.",
+    "about_photo_url": "https://picsum.photos/seed/timber-line-hvac-about/800/1000",
+    "contact_email": "admin@timberlinehvac.example",
+    "contact_phone": "",
+    "contact_address": "",
+    "business_name": "Timber Line Hvac",
+    "support_email": "admin@timberlinehvac.example",
+    "instagram_url": "",
+    "facebook_url": "",
+    "twitter_url": "",
+    "linkedin_url": "",
+    "youtube_url": "",
+    "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "TIMBER LINE HVAC",
+        "heading": "Licensed, insured, {family-run}",
+        "description": "Family-run HVAC contractor.",
+        "image_url": "https://picsum.photos/seed/timber-line-hvac-hero/1600/900",
+        "image_alt": "Timber Line Hvac photo",
+        "cta_primary": {
+          "text": "Get in touch",
+          "href": "/contact"
+        },
+        "cta_secondary": {
+          "text": "Learn more",
+          "href": "/about"
+        }
+      },
+      "offerings": {
+        "eyebrow": "OFFERINGS",
+        "heading": "What I Offer",
+        "items": [
+          {
+            "label": "REPAIRS",
+            "title": "Repairs & Diagnostics",
+            "description": "Come out, diagnose, quote, fix.",
+            "price_display": "from $149",
+            "cta_text": "Book",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "INSTALL",
+            "title": "Installation & Replacement",
+            "description": "New installs + full replacements.",
+            "price_display": "Inquire",
+            "cta_text": "Quote",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "EMERGENCY",
+            "title": "24/7 Emergency Service",
+            "description": "Same-day response within service area.",
+            "price_display": "from $249",
+            "cta_text": "Call",
+            "cta_href": "/contact"
+          }
+        ]
+      },
+      "services": {
+        "eyebrow": "OFFERINGS",
+        "heading": "What I Offer",
+        "items": [
+          {
+            "label": "REPAIRS",
+            "title": "Repairs & Diagnostics",
+            "description": "Come out, diagnose, quote, fix.",
+            "price_display": "from $149",
+            "cta_text": "Book",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "INSTALL",
+            "title": "Installation & Replacement",
+            "description": "New installs + full replacements.",
+            "price_display": "Inquire",
+            "cta_text": "Quote",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "EMERGENCY",
+            "title": "24/7 Emergency Service",
+            "description": "Same-day response within service area.",
+            "price_display": "from $249",
+            "cta_text": "Call",
+            "cta_href": "/contact"
+          }
+        ]
+      },
+      "testimonials": {
+        "eyebrow": "VOICES",
+        "heading": "What Clients Say",
+        "items": [
+          {
+            "quote": "Working with Timber Line Hvac genuinely changed how I show up. Worth every dollar.",
+            "author_name": "Anonymous client",
+            "service": "Coaching"
+          },
+          {
+            "quote": "The clarity and confidence I gained carried into every meeting. Best investment I've made.",
+            "author_name": "Anonymous client",
+            "service": "Coaching"
+          },
+          {
+            "quote": "I recommend freely to every peer who asks for a coach. Rare depth.",
+            "author_name": "Anonymous client",
+            "service": "Coaching"
+          }
+        ]
+      },
+      "reviews": {
+        "eyebrow": "VOICES",
+        "heading": "What Clients Say",
+        "items": [
+          {
+            "quote": "Working with Timber Line Hvac genuinely changed how I show up. Worth every dollar.",
+            "author_name": "Anonymous client",
+            "service": "Coaching"
+          },
+          {
+            "quote": "The clarity and confidence I gained carried into every meeting. Best investment I've made.",
+            "author_name": "Anonymous client",
+            "service": "Coaching"
+          },
+          {
+            "quote": "I recommend freely to every peer who asks for a coach. Rare depth.",
+            "author_name": "Anonymous client",
+            "service": "Coaching"
+          }
+        ]
+      },
+      "cta": {
+        "heading": "Ready to begin?",
+        "description": "Reach out to start the conversation.",
+        "cta_text": "Get in touch",
+        "cta_href": "/contact"
+      },
+      "newsletter": {
+        "heading": "Stay in touch",
+        "description": "Occasional dispatches, one email every few weeks.",
+        "placeholder": "Your email",
+        "button_text": "Subscribe"
+      },
+      "trust": {
+        "items": [
+          {
+            "number": "Licensed",
+            "label": "& Insured",
+            "sub": "Fully credentialed"
+          },
+          {
+            "number": "5\u2605",
+            "label": "Rating",
+            "sub": "Happy customers"
+          },
+          {
+            "number": "24/7",
+            "label": "Available",
+            "sub": "Emergency service"
+          },
+          {
+            "number": "Local",
+            "label": "Family-Run",
+            "sub": "Your neighbors"
+          }
+        ]
+      },
+      "areas": {
+        "heading": "Service Areas",
+        "items": [
+          {
+            "city": "Your city",
+            "state": ""
+          }
+        ]
+      },
+      "instructors": {
+        "heading": "Meet Your Team",
+        "items": []
+      },
+      "team": {
+        "heading": "Meet Your Team",
+        "items": []
+      },
+      "featured_dishes": {
+        "eyebrow": "OFFERINGS",
+        "heading": "What I Offer",
+        "items": [
+          {
+            "label": "REPAIRS",
+            "title": "Repairs & Diagnostics",
+            "description": "Come out, diagnose, quote, fix.",
+            "price_display": "from $149",
+            "cta_text": "Book",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "INSTALL",
+            "title": "Installation & Replacement",
+            "description": "New installs + full replacements.",
+            "price_display": "Inquire",
+            "cta_text": "Quote",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "EMERGENCY",
+            "title": "24/7 Emergency Service",
+            "description": "Same-day response within service area.",
+            "price_display": "from $249",
+            "cta_text": "Call",
+            "cta_href": "/contact"
+          }
+        ]
+      },
+      "visit": {
+        "heading": "Visit",
+        "hours": [],
+        "address": "",
+        "phone": "",
+        "email": "admin@timberlinehvac.example"
+      }
+    },
+    "services": {
+      "hero": {
+        "eyebrow": "OFFERINGS",
+        "heading": "Services",
+        "description": "Every engagement is designed around what will actually move the needle."
+      },
+      "offerings": {
+        "heading": "Ways to Work Together",
+        "items": [
+          {
+            "label": "REPAIRS",
+            "title": "Repairs & Diagnostics",
+            "description": "Come out, diagnose, quote, fix.",
+            "price_display": "from $149",
+            "cta_text": "Book",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "INSTALL",
+            "title": "Installation & Replacement",
+            "description": "New installs + full replacements.",
+            "price_display": "Inquire",
+            "cta_text": "Quote",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "EMERGENCY",
+            "title": "24/7 Emergency Service",
+            "description": "Same-day response within service area.",
+            "price_display": "from $249",
+            "cta_text": "Call",
+            "cta_href": "/contact"
+          }
+        ]
+      },
+      "cta": {
+        "heading": "Questions?",
+        "description": "Let's talk.",
+        "cta_text": "Contact",
+        "cta_href": "/contact"
+      },
+      "services": {
+        "heading": "Services",
+        "items": [
+          {
+            "label": "REPAIRS",
+            "title": "Repairs & Diagnostics",
+            "description": "Come out, diagnose, quote, fix.",
+            "price_display": "from $149",
+            "cta_text": "Book",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "INSTALL",
+            "title": "Installation & Replacement",
+            "description": "New installs + full replacements.",
+            "price_display": "Inquire",
+            "cta_text": "Quote",
+            "cta_href": "/contact"
+          },
+          {
+            "label": "EMERGENCY",
+            "title": "24/7 Emergency Service",
+            "description": "Same-day response within service area.",
+            "price_display": "from $249",
+            "cta_text": "Call",
+            "cta_href": "/contact"
+          }
+        ]
+      }
+    },
+    "service-areas": {
+      "hero": {
+        "eyebrow": "SERVICE AREAS",
+        "heading": "Service Areas"
+      }
+    },
+    "reviews": {
+      "hero": {
+        "eyebrow": "REVIEWS",
+        "heading": "What Clients Say"
+      },
+      "items": [
+        {
+          "quote": "Working with Timber Line Hvac genuinely changed how I show up. Worth every dollar.",
+          "author_name": "Anonymous client",
+          "service": "Coaching"
+        },
+        {
+          "quote": "The clarity and confidence I gained carried into every meeting. Best investment I've made.",
+          "author_name": "Anonymous client",
+          "service": "Coaching"
+        },
+        {
+          "quote": "I recommend freely to every peer who asks for a coach. Rare depth.",
+          "author_name": "Anonymous client",
+          "service": "Coaching"
+        }
+      ]
+    },
+    "about": {
+      "hero": {
+        "eyebrow": "ABOUT",
+        "heading": "About Timber Line Hvac",
+        "description": "Timber Line Hvac serves direct, trustworthy, local-proud. Established with care and intention.",
+        "image_url": "https://picsum.photos/seed/timber-line-hvac-about/800/1000",
+        "image_alt": "Portrait of Timber Line Hvac"
+      },
+      "cta": {
+        "heading": "Ready to work together?",
+        "description": "Reach out for an intro conversation.",
+        "cta_text": "Get in touch",
+        "cta_href": "/contact"
+      }
+    },
+    "contact": {
+      "hero": {
+        "eyebrow": "REACH OUT",
+        "heading": "Get in Touch",
+        "description": "I'd love to hear from you."
+      },
+      "form": {
+        "heading": "Send a Message",
+        "service_options": [
+          "Repairs & Diagnostics",
+          "Installation & Replacement",
+          "24/7 Emergency Service",
+          "General Inquiry"
+        ]
+      }
+    }
+  },
+  "seed_content": {
+    "contact_inquiries": [
+      {
+        "name": "Sample Lead",
+        "email": "sample@example.com",
+        "service_interest": "Repairs & Diagnostics",
+        "message": "Just exploring: is this available in Q2?"
+      },
+      {
+        "name": "Returning Customer",
+        "email": "return@example.com",
+        "service_interest": "",
+        "message": "Had a great experience last year, reaching out again."
+      },
+      {
+        "name": "New Referral",
+        "email": "friend@example.com",
+        "service_interest": "",
+        "message": "A friend recommended you."
+      }
+    ],
+    "services": [
+      {
+        "title": "Repairs & Diagnostics",
+        "description": "Come out, diagnose, quote, fix.",
+        "price_display": "from $149",
+        "image_url": "https://picsum.photos/seed/timber-line-hvac-0/800/600"
+      },
+      {
+        "title": "Installation & Replacement",
+        "description": "New installs + full replacements.",
+        "price_display": "Inquire",
+        "image_url": "https://picsum.photos/seed/timber-line-hvac-1/800/600"
+      },
+      {
+        "title": "24/7 Emergency Service",
+        "description": "Same-day response within service area.",
+        "price_display": "from $249",
+        "image_url": "https://picsum.photos/seed/timber-line-hvac-2/800/600"
+      }
+    ],
+    "reviews": [
+      {
+        "author_name": "D. Marlow",
+        "rating": 5,
+        "body": "Professional, on-time, and fair pricing. Highly recommend.",
+        "service": "Repairs & Diagnostics"
+      },
+      {
+        "author_name": "Priya S.",
+        "rating": 5,
+        "body": "Best in town. Third time using them.",
+        "service": "Repairs & Diagnostics"
+      },
+      {
+        "author_name": "Omar J.",
+        "rating": 5,
+        "body": "They remember my house, my name, and what I need.",
+        "service": "Repairs"
+      },
+      {
+        "author_name": "Lena K.",
+        "rating": 4,
+        "body": "Fair quote, showed up when they said they would.",
+        "service": "Install"
+      },
+      {
+        "author_name": "Rob C.",
+        "rating": 5,
+        "body": "Fast emergency response. Saved us from a flood.",
+        "service": "Emergency"
+      }
+    ],
+    "service_areas": [
+      {
+        "city": "Main City",
+        "state": "",
+        "zip_codes": "",
+        "description": "Primary service area.",
+        "sort_order": 1
+      },
+      {
+        "city": "Nearby Town",
+        "state": "",
+        "zip_codes": "",
+        "description": "Same-day coverage.",
+        "sort_order": 2
+      },
+      {
+        "city": "North Suburb",
+        "state": "",
+        "zip_codes": "",
+        "description": "Next-day typically.",
+        "sort_order": 3
+      },
+      {
+        "city": "South Suburb",
+        "state": "",
+        "zip_codes": "",
+        "description": "Next-day typically.",
+        "sort_order": 4
+      }
+    ]
+  }
+}

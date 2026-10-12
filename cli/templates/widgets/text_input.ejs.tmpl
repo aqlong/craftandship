@@ -1,0 +1,7 @@
+<%# text_input widget: covers string/email/password/url/integer/float. The
+    input type is supplied by the widget class ({input_type}); value binding
+    flows through {value_expr} so hand-written EJS templates do not need to
+    re-escape. Uses premium-base.css `.input-premium` for dark-theme-safe
+    styling + `w-full` so the input fills its grid cell. %>
+<label for="{field_id}" class="block text-sm font-medium mb-1">{label}</label>
+<input type="{input_type}" id="{field_id}" name="{field_name}" value="<%= {value_expr} %>" class="input-premium w-full"{required_attr}{extra_attrs}>

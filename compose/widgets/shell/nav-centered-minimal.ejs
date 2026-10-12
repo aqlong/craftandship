@@ -1,0 +1,42 @@
+<!-- compose:widget shell/nav-centered-minimal -->
+<%
+   // Simple-statement nav: 3 (or fewer) links rendered as a centered
+   // row in a thin sticky bar with no logo, no monogram, no login pill.
+   // The whole site is meant to feel like one piece of paper; chrome
+   // should disappear.
+   //
+   // Visual contract:
+   //   - Background: page-background; bottom border 1px in border color.
+   //   - Height 64px.
+   //   - Site name centered as small wordmark above the nav links;
+   //     wordmark is a link to /.
+   //   - Nav links centered horizontally below wordmark, all-caps
+   //     tracked-out, separated by a thin vertical rule.
+   //   - Login is in the footer, not the nav.
+   //   - Mobile (sm): wordmark above + horizontal scroll row of nav
+   //     links beneath. No hamburger needed since the nav set is small.
+   //
+   // Same data contract as nav-public.
+   var _cp = (typeof currentPath !== 'undefined' ? currentPath : (typeof locals !== 'undefined' && locals.currentPath) || '/');
+   var _user = (typeof user !== 'undefined' && user) ? user : (typeof locals !== 'undefined' ? locals.user : null);
+   var _isAdmin = !!(_user && _user.role === 'admin');
+%>
+<nav class="cas-nav-centered-minimal" style="background-color: var(--color-background); border-bottom: 1px solid var(--color-border); position: sticky; top: 0; z-index: 50;">
+  <div style="max-width: 56rem; margin: 0 auto; padding: 0.875rem 1rem; text-align: center;">
+    <a href="/" class="font-display" style="display: inline-block; color: var(--color-foreground); text-decoration: none; font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 0.5rem;"><%= settings.site_name %></a>
+    <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0; overflow-x: auto;">
+      <% var _items = (typeof nav_items !== 'undefined' ? nav_items : []); %>
+      <% _items.forEach(function(item, idx) { %>
+        <% var isActive = (item.href === '/' ? _cp === '/' : _cp.indexOf(item.href) === 0); %>
+        <a href="<%= item.href %>" class="font-body" style="display: inline-block; padding: 0 1rem; color: var(--color-foreground); text-decoration: none; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; <% if (isActive) { %>opacity: 1;<% } else { %>opacity: 0.5;<% } %>"><%= item.label %></a>
+        <% if (idx < _items.length - 1) { %>
+          <span aria-hidden="true" style="display: inline-block; width: 1px; height: 12px; background-color: var(--color-foreground); opacity: 0.2;"></span>
+        <% } %>
+      <% }); %>
+      <% if (_isAdmin) { %>
+        <% if (_items.length > 0) { %><span aria-hidden="true" style="display: inline-block; width: 1px; height: 12px; background-color: var(--color-foreground); opacity: 0.2;"></span><% } %>
+        <a href="/admin" class="font-body" style="display: inline-block; padding: 0 1rem; color: var(--color-foreground); text-decoration: none; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.5;">Admin</a>
+      <% } %>
+    </div>
+  </div>
+</nav>

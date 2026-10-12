@@ -1,0 +1,23 @@
+# Local PostgreSQL for development and the README quickstart.
+# Credentials match web/.env.example. Bound to localhost only.
+# If port 5432 is already taken, change the left side of the port mapping
+# and the port in DATABASE_URL (web/.env) to match.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cas
+      POSTGRES_PASSWORD: cas
+      POSTGRES_DB: craftandship_web
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - cas_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cas -d craftandship_web"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  cas_pgdata:

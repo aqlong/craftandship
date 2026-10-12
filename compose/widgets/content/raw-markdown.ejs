@@ -1,0 +1,20 @@
+<!-- compose:widget content/raw-markdown -->
+<%
+  // Faithful-copy widget. Renders the customer's source-imported copy
+  // as bounded HTML produced by compose.markdown_safe.render_markdown_blocks
+  // at compose time. The pre-rendered string lives on
+  // spec.<page>._copy_html (set by compose/build.py emit_page_view when
+  // the page carries _copy_blocks).
+  //
+  // Brand-voice note: this content is verbatim customer text imported
+  // from a source URL the keeper handed us. Em dashes here are
+  // preserved deliberately (carve-out from the no-em-dash rule).
+  var _html = (typeof copy_html !== 'undefined' && copy_html) ? String(copy_html) : '';
+%>
+<% if (_html) { %>
+<section class="cas-copy-faithful" style="padding: 2.5rem 1rem; background-color: var(--color-background); color: var(--color-foreground);">
+  <div class="max-w-3xl mx-auto" style="line-height: 1.7; font-size: 1.05rem;">
+    <%- _html %>
+  </div>
+</section>
+<% } %>

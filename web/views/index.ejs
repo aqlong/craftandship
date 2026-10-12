@@ -1,0 +1,381 @@
+<%
+  // Harbor unified subscription pricing comes from res.locals (web/src/app.ts).
+  var subscription = typeof harborSubscriptionPrice !== 'undefined' ? harborSubscriptionPrice : '$39';
+  var sliding      = typeof harborSlidingScalePrice !== 'undefined' ? harborSlidingScalePrice : '$19';
+%>
+
+<!-- ═══════════════════════════════════════════════════
+     HERO: painting carries the moment; one short overlay line
+     ═══════════════════════════════════════════════════ -->
+<section class="hero-art" aria-labelledby="hero-headline">
+  <img class="hero-art__img"
+       src="/brand-harbor/harbor-hero-wide.webp"
+       alt="A harbor at dusk: a lighthouse stands on the right, lamp lit; smaller lights mark the headlands."
+       loading="eager" fetchpriority="high" />
+  <div class="max-site hero-art__overlay">
+    <p class="hero-art__eyebrow">For healers, therapists, and event producers</p>
+    <h1 id="hero-headline" class="display hero-art__title">
+      Your website.<br/>
+      Your companion.<br/>
+      Made with you.
+    </h1>
+    <p class="hero-art__sub">With Haven, an AI companion who helps you find the words.</p>
+  </div>
+  <span class="hero-art__plate" aria-hidden="true">Plate I &middot; The Lamp at Dusk</span>
+</section>
+
+<section class="hero-copy">
+  <div class="max-site hero-copy__inner">
+    <h2 class="display hero-copy__title">
+      A website that <em style="color:var(--color-clay);">sounds like you.</em>
+    </h2>
+    <p class="hero-copy__body">
+      A custom website, shaped by a conversation with an AI companion who helps you find the words, built from a library of tested building blocks, and needs a recorded review approval before it goes live. Hosting and care included. <strong style="font-style:normal; color:var(--color-ink); font-weight:600;">Choose any amount from <%= subscription %> down to <%= sliding %>, whatever fits your practice.</strong>
+    </p>
+    <div class="hero-copy__ctas">
+      <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+      <a href="/about/ocean" class="btn btn-quiet"><span class="arrow">Who is Ocean?</span></a>
+    </div>
+    <div class="caps hero-copy__fineprint">
+      A conversation first.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     PROOF STRIP
+     ═══════════════════════════════════════════════════ -->
+<section class="proof-strip">
+  <div class="max-site proof-row">
+    <span style="color:var(--color-ink-soft);">
+      <span class="caps" style="margin-right:10px;">Founded by:</span>
+      <strong style="font-weight:600; color:var(--color-ink);">Ocean Longnion,</strong> a Senior Web Craftsman.
+    </span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     WHAT'S INCLUDED: single subscription card
+     ═══════════════════════════════════════════════════ -->
+<section style="padding:96px 0;">
+  <div class="max-site" style="max-width:880px;">
+    <div style="display:flex; align-items:baseline; gap:24px; margin-bottom:14px;">
+      <span class="eyebrow">II &middot; What's included</span>
+      <span style="flex:1; height:1px; background:var(--color-rule);"></span>
+    </div>
+    <h2 class="display included-title" style="margin:0 0 18px; max-width:680px;">
+      One quiet home <em>for the work you do.</em>
+    </h2>
+    <p style="font-size:20px; color:var(--color-ink-soft); line-height:1.55; max-width:620px; margin:0 0 14px;">
+      One subscription. One number. You pick what fits.
+    </p>
+    <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.6; max-width:600px; margin:0 0 48px;">
+      Choose any amount from <%= subscription %> down to <%= sliding %>, whatever fits your practice.
+    </p>
+
+    <div class="included-card ruled-card">
+      <div class="included-card__price-row">
+        <div>
+          <div class="display included-card__price"><%= subscription %></div>
+          <div class="included-card__price-meta">a month, down to <%= sliding %> if that fits better</div>
+        </div>
+        <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+      </div>
+      <ul class="included-card__list">
+        <li><span class="included-card__bullet">&check;</span> A custom website, shaped with you in conversation and built from a library of tested building blocks</li>
+        <li><span class="included-card__bullet">&check;</span> Every website needs a recorded review approval before it goes live</li>
+        <li><span class="included-card__bullet">&check;</span> Hosting and care included, with uptime watched day and night</li>
+        <li><span class="included-card__bullet">&check;</span> Unlimited revisions and rebuilds, kept across the years</li>
+        <li><span class="included-card__bullet">&check;</span> An AI companion who helps you find the words, whenever you need her</li>
+        <li><span class="included-card__bullet">&check;</span> Yours. If you ever leave, we hand the whole site over intact.</li>
+      </ul>
+      <div class="included-card__footnote">
+        A conversation first. When it's right, you begin together.
+      </div>
+      <div style="margin-top:24px; padding-top:18px; border-top:1px dashed var(--color-rule); text-align:center;">
+        <a href="/pricing" class="btn btn-quiet"><span class="arrow">See full pricing</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     HOW IT WORKS: three steps
+     ═══════════════════════════════════════════════════ -->
+<section style="padding:0 0 96px;">
+  <div class="max-site">
+    <div style="display:flex; align-items:baseline; gap:24px; margin-bottom:10px;">
+      <span class="eyebrow">III &middot; How it works</span>
+      <span style="flex:1; height:1px; background:var(--color-rule);"></span>
+    </div>
+    <h2 class="display three-lights-title" style="margin:0 0 56px; max-width:720px;">
+      From plain English to <em>a website you own,</em> in three steps.
+    </h2>
+
+    <div class="three-lights-grid">
+      <div class="light-col">
+        <div class="display" style="font-style:italic; font-size:28px; color:var(--color-clay); margin-bottom:8px;">I</div>
+        <div style="width:32px; height:1px; background:var(--color-rule); margin-bottom:22px;"></div>
+        <h3 class="display" style="font-size:32px; margin:0 0 14px;">You begin a conversation</h3>
+        <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.65; margin:0 0 14px; max-width:320px;">
+          Tell us, in plain English, about the work you do: your offerings, your clients, the rhythm of your week. No jargon, no checkboxes. Talk for as long as it feels right.
+        </p>
+        <span class="hand" style="font-size:22px; color:var(--color-ink-pencil);">No time limit.</span>
+      </div>
+      <div class="light-col">
+        <div class="display" style="font-style:italic; font-size:28px; color:var(--color-clay); margin-bottom:8px;">II</div>
+        <div style="width:32px; height:1px; background:var(--color-rule); margin-bottom:22px;"></div>
+        <h3 class="display" style="font-size:32px; margin:0 0 14px;">We make it together</h3>
+        <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.65; margin:0 0 14px; max-width:320px;">
+          Your site is built from a library of tested building blocks, matched to what you told Haven. Every website needs a recorded review approval before it goes live.
+        </p>
+        <span class="hand" style="font-size:22px; color:var(--color-ink-pencil);">A recorded review approval before it goes live.</span>
+      </div>
+      <div class="light-col">
+        <div class="display" style="font-style:italic; font-size:28px; color:var(--color-clay); margin-bottom:8px;">III</div>
+        <div style="width:32px; height:1px; background:var(--color-rule); margin-bottom:22px;"></div>
+        <h3 class="display" style="font-size:32px; margin:0 0 14px;">It's yours, kept tidy</h3>
+        <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.65; margin:0 0 14px; max-width:320px;">
+          Your website is yours. We host it, watch uptime, and answer when you write. Unlimited revisions and rebuilds across the years.
+        </p>
+        <span class="hand" style="font-size:22px; color:var(--color-ink-pencil);">Yours across the years.</span>
+      </div>
+    </div>
+    <div style="margin-top:48px; text-align:center;">
+      <a href="/how-it-works" class="btn btn-quiet"><span class="arrow">See the full process</span></a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SMALL FAQ
+     ═══════════════════════════════════════════════════ -->
+<section style="padding:80px 0 72px; background:var(--color-paper-soft);">
+  <div class="max-site faq-grid">
+    <div>
+      <span class="eyebrow">IV &middot; Frequently asked</span>
+      <h2 class="display faq-title" style="margin:14px 0 0;">A few <em>small things.</em></h2>
+    </div>
+    <div>
+      <% var faqs = [
+        { q:'What\'s included?',
+          a:'A custom website shaped with you in conversation and built from a library of tested building blocks. Hosting and care. Unlimited revisions and rebuilds across the years. An AI companion who helps you find the words. Choose any amount from ' + subscription + ' down to ' + sliding + ', whatever fits your practice.' },
+        { q:'Who is Ocean?',
+          a:'Ocean Longnion is a Senior Web Craftsman and the founder of Craft & Ship.' },
+        { q:'How is each website made?',
+          a:'With you, in conversation. Haven listens, and your site is built from a library of tested building blocks matched to what you describe. Every website needs a recorded review approval before it goes live.' },
+        { q:'What if there is something the engine cannot build?',
+          a:'We will tell you plainly. Most websites for healers, therapists, and event producers fit the building blocks. If you ask for something the engine does not yet support, we will say so and propose what we can build instead. No surprises and no smoke.' },
+        { q:'What if I want to leave?',
+          a:'Your website is yours. We hand the whole thing over intact: move it to your own hosting, to another developer, or wherever you like.' }
+      ]; %>
+      <% faqs.forEach(function(item, i){ %>
+        <div style="border-top:1px solid var(--color-rule); padding:24px 0;">
+          <div class="display" style="font-size:24px; margin-bottom:8px; display:flex; align-items:baseline; gap:14px;">
+            <span style="color:var(--color-clay); font-style:italic; font-size:18px;"><%= String(i + 1).padStart(2, '0') %></span>
+            <span><%= item.q %></span>
+          </div>
+          <p style="color:var(--color-ink-soft); font-size:18px; line-height:1.7; margin:0 0 0 36px; max-width:640px;"><%= item.a %></p>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FINAL CTA
+     ═══════════════════════════════════════════════════ -->
+<section style="padding:8px 0 72px;">
+  <div class="max-site" style="max-width:920px;">
+    <div class="final-cta">
+      <div style="width:56px; height:1px; background:var(--color-companion-rule); margin-bottom:22px;"></div>
+      <span class="eyebrow" style="font-size:19px;">One more thing, before you go,</span>
+      <h2 class="display final-cta-title" style="margin:14px 0 22px; line-height:0.98; max-width:620px;">
+        Have a website by <em style="color:var(--color-clay);">the end of the week.</em>
+      </h2>
+      <p style="font-size:21px; color:var(--color-ink-soft); line-height:1.55; max-width:580px; margin:0 0 32px;">
+        Tell us about your work. Haven will write back. Talk for as long as it feels right. When it's time, you decide.
+      </p>
+      <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+        <a href="/try" class="btn btn-primary">Begin a conversation &rarr;</a>
+        <a href="/about/ocean" class="btn btn-quiet"><span class="arrow">Read about Ocean first</span></a>
+      </div>
+      <div style="margin-top:38px; padding-top:22px; border-top:1px dashed var(--color-rule); display:flex; justify-content:space-between; align-items:baseline; gap:18px; flex-wrap:wrap;">
+        <span class="hand" style="font-size:24px; color:var(--color-ink-pencil);">
+          Ocean, founder of Craft &amp; Ship
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Hero: painting carries the moment; small headline floats on it; rest below. */
+  .hero-art {
+    position:relative;
+    background:var(--color-paper);
+    border-bottom:1px solid var(--color-rule-soft);
+    overflow:hidden;
+  }
+  .hero-art__img {
+    display:block;
+    width:100%;
+    height:auto;
+    max-height:640px;
+    object-fit:cover;
+    object-position:center 55%;
+  }
+  .hero-art__overlay {
+    position:absolute;
+    left:0; right:0;
+    top:48px;
+    pointer-events:none;
+  }
+  .hero-art__eyebrow {
+    margin:0 0 20px;
+    font-family:var(--font-display);
+    font-style:italic;
+    font-size:28px;
+    font-weight:400;
+    letter-spacing:0.01em;
+    color:rgba(251, 241, 220, 0.82);
+    text-shadow:0 1px 10px rgba(58, 42, 31, 0.7);
+  }
+  .hero-art__title {
+    margin:0;
+    max-width:640px;
+    font-size:72px;
+    line-height:1.04;
+    letter-spacing:-0.01em;
+    color:#FBF1DC;
+    text-shadow:0 2px 24px rgba(58, 42, 31, 0.8), 0 1px 4px rgba(58, 42, 31, 0.65);
+  }
+  .hero-art__sub {
+    margin:22px 0 0;
+    max-width:520px;
+    font-family:var(--font-display);
+    font-style:italic;
+    font-size:26px;
+    font-weight:400;
+    line-height:1.45;
+    color:rgba(251, 241, 220, 0.88);
+    text-shadow:0 1px 12px rgba(58, 42, 31, 0.72);
+  }
+  .hero-art__plate {
+    position:absolute; right:24px; bottom:14px;
+    font-family:var(--font-display); font-style:italic;
+    color:rgba(251, 241, 220, 0.85); font-size:15px;
+    text-shadow:0 1px 6px rgba(58, 42, 31, 0.55);
+    letter-spacing:0.005em;
+  }
+
+  .hero-copy { background:var(--color-paper); padding:64px 0 72px; }
+  .hero-copy__inner { max-width:840px; margin:0 auto; }
+  .hero-copy__title { font-size:60px; line-height:1.04; margin:0 0 24px; letter-spacing:-0.012em; max-width:680px; }
+  .hero-copy__body { font-size:21px; color:var(--color-ink-soft); line-height:1.55; margin:0 0 28px; max-width:680px; }
+  .hero-copy__ctas { display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin-bottom:22px; }
+  .hero-copy__fineprint { color:var(--color-ink-faded); }
+
+  /* Tablet */
+  @media (max-width: 900px) {
+    .hero-art__img { max-height:500px; min-height:400px; }
+    .hero-art__overlay { top:36px; }
+    .hero-art__eyebrow { font-size:24px; margin-bottom:16px; }
+    .hero-art__title { font-size:52px; max-width:420px; }
+    .hero-art__sub { font-size:22px; max-width:380px; margin-top:18px; }
+    .hero-art__plate { font-size:13px; right:14px; bottom:10px; }
+    .hero-copy { padding:48px 0 56px; }
+    .hero-copy__title { font-size:42px; }
+    .hero-copy__body { font-size:19px; }
+  }
+  /* Large phone */
+  @media (max-width: 640px) {
+    .hero-art__img { max-height:480px; min-height:380px; object-position:60% 50%; }
+    .hero-art__overlay { top:28px; }
+    .hero-art__eyebrow { font-size:21px; margin-bottom:14px; }
+    .hero-art__title { font-size:42px; max-width:300px; line-height:1.06; }
+    .hero-art__sub { font-size:19px; max-width:280px; margin-top:14px; }
+    .hero-copy__title { font-size:36px; }
+    .hero-copy__body { font-size:18px; }
+  }
+  /* Small phone */
+  @media (max-width: 420px) {
+    .hero-art__img { max-height:440px; min-height:360px; }
+    .hero-art__overlay { top:22px; }
+    .hero-art__eyebrow { font-size:18px; margin-bottom:12px; }
+    .hero-art__title { font-size:36px; max-width:260px; }
+    .hero-art__sub { font-size:17px; max-width:250px; margin-top:12px; }
+    .hero-copy__title { font-size:32px; }
+  }
+
+  .proof-strip {
+    padding:20px 0;
+    border-top:1px solid var(--color-rule-soft);
+    border-bottom:1px solid var(--color-rule-soft);
+    background:var(--color-vellum);
+  }
+  .proof-row {
+    display:flex; flex-wrap:wrap; gap:32px; align-items:center; justify-content:space-between;
+    font-family:var(--font-display); font-style:italic;
+    color:var(--color-ink-soft); font-size:17px;
+  }
+
+  .included-title { font-size:48px; line-height:1.05; }
+  .included-card { padding:40px 44px 36px; }
+  .included-card__price-row {
+    display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
+    margin-bottom:32px; padding-bottom:22px; border-bottom:1px dashed var(--color-rule);
+  }
+  .included-card__price { font-size:64px; line-height:1; color:var(--color-ink); }
+  .included-card__price-meta {
+    margin-top:6px;
+    font-family:var(--font-display); font-style:italic; color:var(--color-ink-soft); font-size:18px;
+  }
+  .included-card__list {
+    list-style:none; padding:0; margin:0;
+    display:flex; flex-direction:column; gap:14px;
+    font-size:17px; color:var(--color-ink-soft); line-height:1.55;
+  }
+  .included-card__list li { display:flex; gap:12px; align-items:baseline; }
+  .included-card__bullet {
+    color:var(--color-lantern); flex-shrink:0;
+    font-family:var(--font-display); font-style:italic; font-size:18px;
+  }
+  .included-card__footnote {
+    margin-top:28px; padding-top:20px; border-top:1px dashed var(--color-rule);
+    font-family:var(--font-display); font-style:italic; color:var(--color-ink-faded); font-size:16px;
+  }
+  @media (max-width: 600px) {
+    .included-title { font-size:36px; }
+    .included-card { padding:28px 24px; }
+    .included-card__price { font-size:48px; }
+  }
+
+  .three-lights-title { font-size:52px; }
+  .three-lights-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:32px; }
+  .light-col { position:relative; padding-top:36px; }
+  @media (max-width: 900px) {
+    .three-lights-title { font-size:36px; }
+    .three-lights-grid { grid-template-columns:1fr; gap:32px; }
+  }
+
+  .faq-grid { display:grid; grid-template-columns:320px 1fr; gap:80px; align-items:start; max-width:1100px; }
+  .faq-title { font-size:44px; }
+  @media (max-width: 900px) {
+    .faq-grid { grid-template-columns:1fr; gap:32px; }
+    .faq-title { font-size:32px; }
+  }
+
+  .final-cta {
+    background:var(--color-companion-paper);
+    padding:52px 56px 48px;
+    box-shadow:var(--shadow-letter);
+    border-radius: 5px; position:relative;
+  }
+  .final-cta-title { font-size:60px; }
+  @media (max-width: 900px) {
+    .final-cta { padding:40px 32px 32px; }
+    .final-cta-title { font-size:40px; }
+  }
+</style>

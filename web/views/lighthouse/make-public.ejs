@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Make this public</title>
+  <link rel="icon" type="image/png" href="/brand-harbor/harbor-tab-icon.png">
+  <style>
+    :root {
+      --color-oat:           #e8e0cd;
+      --color-clay:          #b89683;
+      --color-sage:          #7d8b6e;
+      --color-ink-brown:     #3a2f24;
+      --color-lantern-amber: #f4d29a;
+      --color-slate-blue:    #5e7187;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--color-oat);
+      color: var(--color-ink-brown);
+      font-family: 'Tiempos Text', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+      min-height: 100vh;
+    }
+    main { max-width: 560px; margin: 0 auto; padding: 64px 28px 96px; }
+    h1 { font-size: 32px; margin: 0 0 14px; font-weight: 600; line-height: 1.25; }
+    p { line-height: 1.65; margin: 0 0 18px; }
+    .eyebrow {
+      text-transform: uppercase; letter-spacing: 0.12em; font-size: 12px;
+      color: var(--color-ink-brown); margin-bottom: 8px; font-weight: 600;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid rgba(184, 150, 131, 0.35);
+      border-radius: 8px;
+      padding: 28px 30px;
+      box-shadow: 0 2px 10px rgba(58, 47, 36, 0.06);
+      margin-top: 18px;
+    }
+    label, .field-label { display: block; font-weight: 600; margin: 22px 0 8px; }
+    .account-email { font-size: 16px; margin: 0 0 6px; overflow-wrap: anywhere; }
+    input[type=email] {
+      width: 100%; padding: 12px 14px; font-size: 16px;
+      border: 1px solid rgba(184, 150, 131, 0.6);
+      border-radius: 5px; font-family: inherit;
+      background: #fff; color: var(--color-ink-brown);
+    }
+    input[type=email]:focus { outline: 2px solid var(--color-slate-blue); outline-offset: 1px; }
+    .slider-row { display: flex; align-items: baseline; gap: 16px; margin-top: 8px; }
+    .slider-row input[type=range] { flex: 1; }
+    .amount-display {
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      font-size: 22px; font-weight: 700;
+      color: var(--color-ink-brown);
+      min-width: 96px; text-align: right;
+    }
+    .pricing-line {
+      font-size: 15px; color: #5e4f3a; margin-top: 8px;
+    }
+    /* Legal-line: small disclosure rendered immediately above the pay
+       CTA so the keeper sees /terms + /privacy before paying. Both
+       links open in a new tab via target="_blank" + rel="noopener
+       noreferrer" so the keeper does not lose the form. WCAG / GDPR /
+       general consumer-protection alignment. Added 2026-05-09 per
+       harbor-make-public-legal-links-near-cta. */
+    .legal-line {
+      font-size: 13px; color: #6e5e48;
+      margin-top: 24px; margin-bottom: -4px;
+      line-height: 1.5;
+    }
+    .legal-line a {
+      color: var(--color-ink-brown);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .legal-line a:hover { color: var(--color-ink-brown); }
+    .attestation {
+      display: flex; gap: 10px; align-items: flex-start;
+      margin-top: 22px; padding: 14px;
+      background: rgba(244, 210, 154, 0.18);
+      border-radius: 5px;
+    }
+    .attestation input { margin-top: 3px; transform: scale(1.2); }
+    .attestation label { margin: 0; font-weight: 500; line-height: 1.5; }
+    .attestation .small { font-size: 14px; color: #5e4f3a; display: block; margin-top: 4px; font-weight: 400; }
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background: var(--color-lantern-amber);
+      color: var(--color-ink-brown); text-decoration: none;
+      border-radius: 6px; font-weight: 600;
+      font-family: inherit; font-size: 16px;
+      border: none; cursor: pointer;
+      transition: background 0.18s;
+    }
+    .btn:hover { background: #ecbf76; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .actions { margin-top: 28px; display: flex; gap: 12px; align-items: center; }
+    .actions a.cancel {
+      color: #5e4f3a; font-size: 15px; text-decoration: none;
+    }
+    .actions a.cancel:hover { text-decoration: underline; }
+    nav.breadcrumb { font-size: 15px; color: #5e4f3a; margin-bottom: 24px; }
+    nav.breadcrumb a { color: #5e4f3a; text-decoration: none; }
+  </style>
+</head>
+<body>
+<%- include('../partials/_harbor-skip-link') %>
+<main id="main">
+  <nav class="breadcrumb">
+    <a href="/lighthouse/lamp/<%= build.id %>">&larr; back to your lamp</a>
+  </nav>
+  <p class="eyebrow">When you are ready</p>
+  <h1>Make this public.</h1>
+  <p>Anyone you share the URL with can read your website now. When you are ready to put your website on the open web, the subscription begins. Choose any amount from $39 down to $19, whatever fits your practice.</p>
+
+  <form method="POST" action="/lighthouse/lamp/<%= build.id %>/make-public" class="card" id="mp-form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <%# The address the payment is tied to comes first, with its confirmation
+        right after it, so the order on the page and for the Tab key is: the
+        address, "this is my address", the amount, pay. When the account is
+        already decided (emailFixed) the address is shown, not asked for: the
+        server uses that account's address whatever the form says. Someone
+        paying from a trial is asked to confirm it, because whoever reads that
+        inbox can sign in to the website's account. The shown address is plain
+        text, which the Tab key skips, so the checkbox names it as its
+        description (aria-describedby) and a screen reader reads the address
+        out when the checkbox is reached. %>
+    <% if (emailFixed) { %>
+      <p class="field-label">Email for your website's account</p>
+      <p class="account-email" id="account-email"><%= prefilledEmail || '' %></p>
+      <input type="hidden" name="email" value="<%= prefilledEmail || '' %>">
+    <% } else { %>
+      <label for="email">Email for your website's account</label>
+      <input type="email" id="email" name="email" required value="<%= prefilledEmail || '' %>" placeholder="you@example.com">
+    <% } %>
+    <p class="pricing-line">Your receipt, the note that your website is public and the link to sign in all go to this address.</p>
+    <% if (confirmEmail) { %>
+      <div class="attestation">
+        <input type="checkbox" id="email-confirmed" name="email_confirmed" required<%- emailFixed ? ' aria-describedby="account-email"' : '' %>>
+        <label for="email-confirmed">This is my email address.<span class="small"><% if (emailFixed) { %>If it is not, please stop here and write to support@craftandship.io before you pay.<% } else { %>Please read it once more before you pay.<% } %> Whoever reads that inbox can sign in to your website's account.</span></label>
+      </div>
+    <% } %>
+
+    <label for="amount-slider">Monthly</label>
+    <div class="slider-row">
+      <%# The slider is the form field itself (name="monthly_amount_cents"), so
+          the submitted amount is always exactly what the slider shows. There is
+          deliberately no oninput= attribute: the Content-Security-Policy has no
+          script-src 'unsafe-inline', so inline handlers never run; the script
+          at the bottom of the page wires the live display with addEventListener. %>
+      <input
+        type="range"
+        id="amount-slider"
+        name="monthly_amount_cents"
+        min="<%= amountMinCents %>"
+        max="<%= amountMaxCents %>"
+        step="100"
+        value="<%= amountDefaultCents %>"
+        aria-describedby="amount-display"
+      >
+      <span class="amount-display"><span id="amount-display">$<%= (amountDefaultCents / 100).toFixed(0) %></span><span style="font-size:14px;color:var(--color-ink-brown);font-weight:400;">/mo</span></span>
+    </div>
+    <p class="pricing-line">Pick any whole-dollar amount in this range. The default is $39.</p>
+
+    <div class="attestation" id="attestation-block" style="display:none;">
+      <input type="checkbox" id="att" name="sliding_scale_attestation">
+      <label for="att">This amount fits my practice.<span class="small">A confirmation that you've chosen what works for you. We trust you.</span></label>
+    </div>
+
+    <p class="legal-line">By paying you agree to our <a href="/terms" target="_blank" rel="noopener noreferrer">terms</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">privacy policy</a>.</p>
+
+    <div class="actions">
+      <button type="submit" class="btn">Make it public &rarr;</button>
+      <a href="/lighthouse/lamp/<%= build.id %>" class="cancel">Not yet</a>
+    </div>
+  </form>
+
+  <p class="pricing-line" style="margin-top:24px;">You can cancel at any time from your website's page, or write to us to pause; your website stays up either way.</p>
+</main>
+
+<script nonce="<%= cspNonce %>">
+  // Show the attestation checkbox only when the keeper picks below standard.
+  var slider = document.getElementById('amount-slider');
+  function toggleAttestation() {
+    var amt = parseInt(slider.value, 10);
+    var def = <%= amountDefaultCents %>;
+    var block = document.getElementById('attestation-block');
+    var att = document.getElementById('att');
+    if (amt < def) {
+      block.style.display = 'flex';
+      att.required = true;
+    } else {
+      block.style.display = 'none';
+      att.required = false;
+      att.checked = false;
+    }
+  }
+  slider.addEventListener('input', function () {
+    document.getElementById('amount-display').textContent = '$' + (slider.value / 100).toFixed(0);
+    toggleAttestation();
+  });
+  toggleAttestation();
+</script>
+</body>
+</html>

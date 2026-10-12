@@ -1,0 +1,42 @@
+<!-- compose:widget shell/footer-minimal-line -->
+<%
+   // Editorial-statement footer: a single horizontal rule above one
+   // small line. Visually + structurally distinct from shell/footer
+   // (which is a 3-column grid).
+   //
+   // Same data contract: settings, nav_items.
+   //
+   // Layout:
+   //   <hr>
+   //   ©YYYY · <site_name> · <contact_email> · Login (if not logged in)
+   //
+   // Nav links go in a quiet centered row above the line on lg+,
+   // hidden on sm to avoid clutter (nav-thin-statement already
+   // surfaces them in the hamburger).
+   var _year = new Date().getFullYear();
+   var _email = settings.contact_email || '';
+%>
+<footer class="cas-footer-minimal" style="background-color: var(--color-background); border-top: 1px solid var(--color-border); padding: 4rem 1.5rem 3rem;">
+  <div class="max-w-5xl mx-auto" style="text-align: center;">
+    <div class="hidden md:flex items-center justify-center" style="gap: 2.5rem; margin-bottom: 2rem;">
+      <% (typeof nav_items !== 'undefined' ? nav_items : []).forEach(function(item) { %>
+        <a href="<%= item.href %>" class="font-body" style="color: var(--color-foreground-muted); text-decoration: none; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.18em;"><%= item.label %></a>
+      <% }); %>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1.5rem;">
+      <span aria-hidden="true" style="display:inline-block; width: 60px; height: 1px; background-color: var(--color-foreground-muted); opacity: 0.4;"></span>
+      <span class="font-display" style="color: var(--color-foreground); font-size: 1rem; font-weight: 500; letter-spacing: -0.01em;"><%= settings.site_name %></span>
+      <span aria-hidden="true" style="display:inline-block; width: 60px; height: 1px; background-color: var(--color-foreground-muted); opacity: 0.4;"></span>
+    </div>
+    <div class="font-body" style="color: var(--color-foreground-muted); font-size: 0.8125rem; line-height: 1.7;">
+      &copy; <%= _year %>
+      <% if (_email) { %>
+        &nbsp;&middot;&nbsp;<a href="mailto:<%= _email %>" class="cas-wrap-anywhere" style="color: inherit; text-decoration: none; border-bottom: 1px solid currentColor;"><%= _email %></a>
+      <% } %>
+      &nbsp;&middot;&nbsp;<a href="/login" style="color: inherit; text-decoration: none; opacity: 0.7;">Login</a>
+    </div>
+    <div style="margin-top: 1.25rem; display: flex; justify-content: center;">
+      <%- include('./cas-attribution.ejs', { settings: settings }) %>
+    </div>
+  </div>
+</footer>

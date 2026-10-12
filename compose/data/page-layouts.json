@@ -1,0 +1,1598 @@
+{
+  "version": 1,
+  "updated_at": "2026-04-28",
+  "layouts": {
+    "healer-home-default": {
+      "page": "home",
+      "archetype": "healer-wellness",
+      "variant_group": "healer-home",
+      "variant_id": "default",
+      "tags": [
+        "balanced",
+        "offering-first",
+        "warm",
+        "grounded"
+      ],
+      "mood": "warm",
+      "density": "standard",
+      "hero_style": "centered",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home.testimonials"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "healer-offerings-default": {
+      "page": "work-with-me",
+      "archetype": "healer-wellness",
+      "variant_group": "healer-services",
+      "variant_id": "default",
+      "tags": [
+        "default",
+        "balanced",
+        "card-grid",
+        "image-friendly"
+      ],
+      "mood": "warm",
+      "density": "standard",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.work_with_me.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.work_with_me.offerings"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.work_with_me.cta"
+        }
+      ]
+    },
+    "healer-offerings-editorial-table": {
+      "page": "work-with-me",
+      "archetype": "healer-wellness",
+      "variant_group": "healer-services",
+      "variant_id": "editorial-table",
+      "tags": [
+        "minimal",
+        "spare",
+        "quiet",
+        "editorial",
+        "table",
+        "text-first",
+        "thumbnail-optional"
+      ],
+      "mood": "minimal",
+      "density": "airy",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.work_with_me.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "offerings-services-editorial-table",
+          "source": "spec.work_with_me.offerings"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.work_with_me.cta"
+        }
+      ]
+    },
+    "healer-about-default": {
+      "page": "about",
+      "archetype": "healer-wellness",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.about.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.about.credentials",
+          "optional": true
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.about.cta"
+        }
+      ]
+    },
+    "healer-events-default": {
+      "page": "events",
+      "archetype": "healer-wellness",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.events.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "resource-list-card-grid",
+          "source": "db:events",
+          "spec_overlay": "spec.events.items"
+        }
+      ]
+    },
+    "healer-gallery-default": {
+      "page": "gallery",
+      "archetype": "healer-wellness",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.gallery.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "photo-gallery-grid",
+          "source": "db:photos",
+          "spec_overlay": "spec.gallery"
+        }
+      ]
+    },
+    "form-contact-default": {
+      "page": "contact",
+      "archetype": "healer-wellness",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.contact.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "form-contact",
+          "source": "spec.contact.form"
+        }
+      ]
+    },
+    "coach-home-default": {
+      "page": "home",
+      "archetype": "coach-consultant",
+      "variant_group": "coach-home",
+      "variant_id": "default",
+      "tags": [
+        "balanced",
+        "authority",
+        "professional"
+      ],
+      "mood": "authoritative",
+      "density": "standard",
+      "hero_style": "split-image",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home.testimonials"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "coach-services-default": {
+      "page": "services",
+      "archetype": "coach-consultant",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.services.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.services.offerings"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.services.cta"
+        }
+      ]
+    },
+    "coach-about-default": {
+      "page": "about",
+      "archetype": "coach-consultant",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.about.hero"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.about.cta"
+        }
+      ]
+    },
+    "local-service-home-default": {
+      "page": "home",
+      "archetype": "local-service",
+      "variant_group": "local-service-home",
+      "variant_id": "default",
+      "tags": [
+        "balanced",
+        "trust-led",
+        "practical"
+      ],
+      "mood": "practical",
+      "density": "standard",
+      "hero_style": "centered",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home.testimonials"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "local-service-services-default": {
+      "page": "services",
+      "archetype": "local-service",
+      "variant_group": "local-service-services",
+      "variant_id": "default",
+      "tags": [
+        "default",
+        "balanced",
+        "card-grid",
+        "image-friendly"
+      ],
+      "mood": "practical",
+      "density": "standard",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.services.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.services.offerings"
+        }
+      ]
+    },
+    "local-service-services-editorial-table": {
+      "page": "services",
+      "archetype": "local-service",
+      "variant_group": "local-service-services",
+      "variant_id": "editorial-table",
+      "tags": [
+        "minimal",
+        "spare",
+        "quiet",
+        "editorial",
+        "table",
+        "text-first",
+        "thumbnail-optional"
+      ],
+      "mood": "minimal",
+      "density": "airy",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.services.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "offerings-services-editorial-table",
+          "source": "spec.services.offerings"
+        }
+      ]
+    },
+    "tradesperson-services-default": {
+      "page": "services",
+      "archetype": "tradesperson-contractor",
+      "variant_group": "tradesperson-services",
+      "variant_id": "default",
+      "tags": [
+        "default",
+        "balanced",
+        "card-grid",
+        "image-friendly"
+      ],
+      "mood": "trustworthy",
+      "density": "standard",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.services.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.services.offerings"
+        }
+      ]
+    },
+    "tradesperson-services-editorial-table": {
+      "page": "services",
+      "archetype": "tradesperson-contractor",
+      "variant_group": "tradesperson-services",
+      "variant_id": "editorial-table",
+      "tags": [
+        "minimal",
+        "spare",
+        "quiet",
+        "editorial",
+        "table",
+        "text-first",
+        "thumbnail-optional"
+      ],
+      "mood": "minimal",
+      "density": "airy",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.services.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "offerings-services-editorial-table",
+          "source": "spec.services.offerings"
+        }
+      ]
+    },
+    "local-service-about-default": {
+      "page": "about",
+      "archetype": "local-service",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.about.hero"
+        }
+      ]
+    },
+    "therapist-home-default": {
+      "page": "home",
+      "archetype": "therapist-counselor",
+      "variant_group": "therapist-home",
+      "variant_id": "default",
+      "tags": [
+        "default",
+        "balanced",
+        "professional",
+        "warm"
+      ],
+      "mood": "warm",
+      "density": "standard",
+      "hero_style": "split-image",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home.testimonials"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "therapist-approach-default": {
+      "page": "approach",
+      "archetype": "therapist-counselor",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.approach.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.approach.modalities"
+        },
+        {
+          "id": "credentials-block",
+          "source": "spec.approach.credentials"
+        }
+      ]
+    },
+    "therapist-fees-default": {
+      "page": "fees-insurance",
+      "archetype": "therapist-counselor",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.fees_insurance.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "pricing-tier-table",
+          "source": "spec.fees_insurance.plans"
+        },
+        {
+          "id": "faq-accordion",
+          "source": "spec.fees_insurance.faq",
+          "optional": true
+        }
+      ]
+    },
+    "therapist-faq-default": {
+      "page": "faq",
+      "archetype": "therapist-counselor",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.faq.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "faq-accordion",
+          "source": "spec.faq.items"
+        }
+      ]
+    },
+    "fitness-home-default": {
+      "page": "home",
+      "archetype": "fitness-studio",
+      "variant_group": "fitness-home",
+      "variant_id": "default",
+      "tags": [
+        "balanced",
+        "energetic",
+        "class-led"
+      ],
+      "mood": "energetic",
+      "density": "standard",
+      "hero_style": "centered",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "instructor-grid",
+          "source": "db:instructors"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home.testimonials"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "fitness-classes-default": {
+      "page": "classes",
+      "archetype": "fitness-studio",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.classes.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.classes.items"
+        }
+      ]
+    },
+    "fitness-schedule-default": {
+      "page": "schedule",
+      "archetype": "fitness-studio",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.schedule.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "weekly-schedule-grid",
+          "source": "db:schedule_slots",
+          "spec_overlay": "spec.schedule"
+        }
+      ]
+    },
+    "fitness-instructors-default": {
+      "page": "instructors",
+      "archetype": "fitness-studio",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.instructors.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "instructor-grid",
+          "source": "db:instructors",
+          "spec_overlay": "spec.instructors.items"
+        }
+      ]
+    },
+    "fitness-pricing-default": {
+      "page": "pricing",
+      "archetype": "fitness-studio",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.pricing.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "pricing-tier-table",
+          "source": "spec.pricing.plans"
+        },
+        {
+          "id": "faq-accordion",
+          "source": "spec.pricing.faq",
+          "optional": true
+        }
+      ]
+    },
+    "salon-home-default": {
+      "page": "home",
+      "archetype": "salon-spa",
+      "variant_group": "salon-home",
+      "variant_id": "default",
+      "tags": [
+        "balanced",
+        "menu-led",
+        "luxe"
+      ],
+      "mood": "luxe",
+      "density": "standard",
+      "hero_style": "split-image",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "service-menu-priced",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "staff-card-grid",
+          "source": "db:staff"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home.testimonials"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "salon-services-default": {
+      "page": "services",
+      "archetype": "salon-spa",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.services.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "service-menu-priced",
+          "source": "spec.services.items"
+        }
+      ]
+    },
+    "salon-team-default": {
+      "page": "team",
+      "archetype": "salon-spa",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.team.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "staff-card-grid",
+          "source": "db:staff",
+          "spec_overlay": "spec.team"
+        }
+      ]
+    },
+    "restaurant-home-default": {
+      "page": "home",
+      "archetype": "restaurant-cafe",
+      "variant_group": "restaurant-home",
+      "variant_id": "default",
+      "tags": [
+        "balanced",
+        "menu-led",
+        "appetite"
+      ],
+      "mood": "appetite",
+      "density": "standard",
+      "hero_style": "split-image",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "hours-location-block",
+          "source": "spec.home.visit"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "restaurant-menu-default": {
+      "page": "menu",
+      "archetype": "restaurant-cafe",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.menu.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "menu-grouped-list",
+          "source": "db:menu_items",
+          "spec_overlay": "spec.menu.sections"
+        }
+      ]
+    },
+    "coach-blog-default": {
+      "page": "blog",
+      "archetype": "coach-consultant",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.blog.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "resource-list-card-grid",
+          "source": "db:blog_posts",
+          "spec_overlay": "spec.blog.items"
+        }
+      ]
+    },
+    "coach-case-studies-default": {
+      "page": "case-studies",
+      "archetype": "coach-consultant",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.case-studies.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "resource-list-card-grid",
+          "source": "db:case_studies",
+          "spec_overlay": "spec.case-studies.items"
+        }
+      ]
+    },
+    "healer-journal-default": {
+      "page": "journal",
+      "archetype": "healer-wellness",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.journal.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "resource-list-card-grid",
+          "source": "db:blog_posts",
+          "spec_overlay": "spec.journal.items"
+        }
+      ]
+    },
+    "shared-reviews-default": {
+      "page": "reviews",
+      "archetype": "shared",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.reviews.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "reviews-grid",
+          "source": "db:reviews",
+          "spec_overlay": "spec.reviews.items"
+        }
+      ]
+    },
+    "restaurant-visit-default": {
+      "page": "visit",
+      "archetype": "restaurant-cafe",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.visit.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "hours-location-block",
+          "source": "spec.visit.details"
+        }
+      ]
+    },
+    "tradesperson-home-default": {
+      "page": "home",
+      "archetype": "tradesperson-contractor",
+      "variant_group": "tradesperson-home",
+      "variant_id": "default",
+      "tags": [
+        "default",
+        "trust-first",
+        "service-area-aware"
+      ],
+      "mood": "trustworthy",
+      "density": "standard",
+      "hero_style": "centered",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "trust-badges-row",
+          "source": "spec.home.trust"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.services"
+        },
+        {
+          "id": "service-area-list",
+          "source": "db:service_areas",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home.testimonials"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "tradesperson-home-statement-portrait": {
+      "page": "home",
+      "archetype": "tradesperson-contractor",
+      "variant_group": "tradesperson-home",
+      "variant_id": "statement-portrait",
+      "tags": [
+        "minimal",
+        "single-page-feel",
+        "portrait-led",
+        "spare",
+        "real",
+        "solo-operator"
+      ],
+      "mood": "minimal",
+      "density": "airy",
+      "hero_style": "two-col-statement",
+      "widgets": [
+        {
+          "id": "hero-two-col-statement",
+          "source": "spec.home.hero"
+        }
+      ]
+    },
+    "coach-home-statement-portrait": {
+      "page": "home",
+      "archetype": "coach-consultant",
+      "variant_group": "coach-home",
+      "variant_id": "statement-portrait",
+      "tags": [
+        "minimal",
+        "single-page-feel",
+        "portrait-led",
+        "spare",
+        "real",
+        "solo-operator"
+      ],
+      "mood": "minimal",
+      "density": "airy",
+      "hero_style": "two-col-statement",
+      "widgets": [
+        {
+          "id": "hero-two-col-statement",
+          "source": "spec.home.hero"
+        }
+      ]
+    },
+    "healer-home-statement-portrait": {
+      "page": "home",
+      "archetype": "healer-wellness",
+      "variant_group": "healer-home",
+      "variant_id": "statement-portrait",
+      "tags": [
+        "minimal",
+        "single-page-feel",
+        "portrait-led",
+        "spare",
+        "real",
+        "solo-operator"
+      ],
+      "mood": "minimal",
+      "density": "airy",
+      "hero_style": "two-col-statement",
+      "widgets": [
+        {
+          "id": "hero-two-col-statement",
+          "source": "spec.home.hero"
+        }
+      ]
+    },
+    "therapist-home-statement-portrait": {
+      "page": "home",
+      "archetype": "therapist-counselor",
+      "variant_group": "therapist-home",
+      "variant_id": "statement-portrait",
+      "tags": [
+        "minimal",
+        "single-page-feel",
+        "portrait-led",
+        "spare",
+        "real",
+        "solo-operator"
+      ],
+      "mood": "minimal",
+      "density": "airy",
+      "hero_style": "two-col-statement",
+      "widgets": [
+        {
+          "id": "hero-two-col-statement",
+          "source": "spec.home.hero"
+        }
+      ]
+    },
+    "local-service-home-statement-portrait": {
+      "page": "home",
+      "archetype": "local-service",
+      "variant_group": "local-service-home",
+      "variant_id": "statement-portrait",
+      "tags": [
+        "minimal",
+        "single-page-feel",
+        "portrait-led",
+        "spare",
+        "real",
+        "solo-operator"
+      ],
+      "mood": "minimal",
+      "density": "airy",
+      "hero_style": "two-col-statement",
+      "widgets": [
+        {
+          "id": "hero-two-col-statement",
+          "source": "spec.home.hero"
+        }
+      ]
+    },
+    "salon-home-statement-portrait": {
+      "page": "home",
+      "archetype": "salon-spa",
+      "variant_group": "salon-home",
+      "variant_id": "statement-portrait",
+      "tags": [
+        "minimal",
+        "single-page-feel",
+        "portrait-led",
+        "spare",
+        "real",
+        "solo-operator"
+      ],
+      "mood": "minimal",
+      "density": "airy",
+      "hero_style": "two-col-statement",
+      "widgets": [
+        {
+          "id": "hero-two-col-statement",
+          "source": "spec.home.hero"
+        }
+      ]
+    },
+    "tradesperson-areas-default": {
+      "page": "service-areas",
+      "archetype": "tradesperson-contractor",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.service_areas.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "service-area-list",
+          "source": "db:service_areas",
+          "spec_overlay": "spec.service_areas.items"
+        }
+      ]
+    },
+    "event-producer-home-default": {
+      "page": "home",
+      "archetype": "event-producer",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "resource-list-card-grid",
+          "source": "db:events",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "optional": true,
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "event-producer-events-default": {
+      "page": "events",
+      "archetype": "event-producer",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.events.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "resource-list-card-grid",
+          "source": "db:events",
+          "spec_overlay": "spec.events.items"
+        }
+      ]
+    },
+    "event-producer-past-events-default": {
+      "page": "past-events",
+      "archetype": "event-producer",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.past_events.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "photo-gallery-grid",
+          "source": "db:photos",
+          "spec_overlay": "spec.past_events"
+        }
+      ]
+    },
+    "healer-home-trust-first": {
+      "page": "home",
+      "archetype": "healer-wellness",
+      "variant_group": "healer-home",
+      "variant_id": "trust-first",
+      "tags": [
+        "trust-first",
+        "testimonial-led",
+        "warm",
+        "intimate"
+      ],
+      "mood": "intimate",
+      "density": "standard",
+      "hero_style": "centered",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "healer-home-editorial": {
+      "page": "home",
+      "archetype": "healer-wellness",
+      "variant_group": "healer-home",
+      "variant_id": "editorial",
+      "tags": [
+        "editorial",
+        "airy",
+        "literary",
+        "quiet"
+      ],
+      "mood": "quiet",
+      "density": "airy",
+      "hero_style": "editorial",
+      "widgets": [
+        {
+          "id": "hero-editorial-stacked",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "coach-home-trust-first": {
+      "page": "home",
+      "archetype": "coach-consultant",
+      "variant_group": "coach-home",
+      "variant_id": "trust-first",
+      "tags": [
+        "trust-first",
+        "testimonial-led",
+        "credibility"
+      ],
+      "mood": "credible",
+      "density": "standard",
+      "hero_style": "split-image",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "coach-home-editorial": {
+      "page": "home",
+      "archetype": "coach-consultant",
+      "variant_group": "coach-home",
+      "variant_id": "editorial",
+      "tags": [
+        "editorial",
+        "airy",
+        "authority",
+        "minimal"
+      ],
+      "mood": "refined",
+      "density": "airy",
+      "hero_style": "editorial",
+      "widgets": [
+        {
+          "id": "hero-editorial-stacked",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "fitness-home-trust-first": {
+      "page": "home",
+      "archetype": "fitness-studio",
+      "variant_group": "fitness-home",
+      "variant_id": "trust-first",
+      "tags": [
+        "trust-first",
+        "social-proof",
+        "community"
+      ],
+      "mood": "communal",
+      "density": "standard",
+      "hero_style": "centered",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "instructor-grid",
+          "source": "db:instructors"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "fitness-home-editorial": {
+      "page": "home",
+      "archetype": "fitness-studio",
+      "variant_group": "fitness-home",
+      "variant_id": "editorial",
+      "tags": [
+        "editorial",
+        "airy",
+        "instructor-led",
+        "studio"
+      ],
+      "mood": "studio",
+      "density": "airy",
+      "hero_style": "editorial",
+      "widgets": [
+        {
+          "id": "hero-editorial-stacked",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "instructor-grid",
+          "source": "db:instructors"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "salon-home-trust-first": {
+      "page": "home",
+      "archetype": "salon-spa",
+      "variant_group": "salon-home",
+      "variant_id": "trust-first",
+      "tags": [
+        "trust-first",
+        "testimonial-led",
+        "luxe"
+      ],
+      "mood": "luxe",
+      "density": "standard",
+      "hero_style": "split-image",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "service-menu-priced",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "staff-card-grid",
+          "source": "db:staff"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "salon-home-editorial": {
+      "page": "home",
+      "archetype": "salon-spa",
+      "variant_group": "salon-home",
+      "variant_id": "editorial",
+      "tags": [
+        "editorial",
+        "airy",
+        "luxe",
+        "minimal"
+      ],
+      "mood": "refined",
+      "density": "airy",
+      "hero_style": "editorial",
+      "widgets": [
+        {
+          "id": "hero-editorial-stacked",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "service-menu-priced",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "staff-card-grid",
+          "source": "db:staff"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "restaurant-home-menu-first": {
+      "page": "home",
+      "archetype": "restaurant-cafe",
+      "variant_group": "restaurant-home",
+      "variant_id": "menu-first",
+      "tags": [
+        "menu-first",
+        "appetite-led",
+        "food-forward"
+      ],
+      "mood": "food-forward",
+      "density": "dense",
+      "hero_style": "split-image",
+      "widgets": [
+        {
+          "id": "hero-split-image",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "menu-grouped-list",
+          "source": "db:menu_items"
+        },
+        {
+          "id": "hours-location-block",
+          "source": "spec.home.visit"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "restaurant-home-editorial": {
+      "page": "home",
+      "archetype": "restaurant-cafe",
+      "variant_group": "restaurant-home",
+      "variant_id": "editorial",
+      "tags": [
+        "editorial",
+        "airy",
+        "craft-led",
+        "minimal"
+      ],
+      "mood": "craft",
+      "density": "airy",
+      "hero_style": "editorial",
+      "widgets": [
+        {
+          "id": "hero-editorial-stacked",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "menu-grouped-list",
+          "source": "db:menu_items"
+        },
+        {
+          "id": "hours-location-block",
+          "source": "spec.home.visit"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "local-service-home-trust-first": {
+      "page": "home",
+      "archetype": "local-service",
+      "variant_group": "local-service-home",
+      "variant_id": "trust-first",
+      "tags": [
+        "trust-first",
+        "badges",
+        "credibility"
+      ],
+      "mood": "credible",
+      "density": "standard",
+      "hero_style": "centered",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "spec_overlay": "spec.home"
+        },
+        {
+          "id": "trust-badges-row",
+          "source": "spec.home.trust_badges"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "local-service-home-reviews-rich": {
+      "page": "home",
+      "archetype": "local-service",
+      "variant_group": "local-service-home",
+      "variant_id": "reviews-rich",
+      "tags": [
+        "reviews-rich",
+        "trust-led",
+        "practical",
+        "social-proof"
+      ],
+      "mood": "credible",
+      "density": "standard",
+      "hero_style": "centered",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "reviews-grid",
+          "source": "db:reviews"
+        },
+        {
+          "id": "offerings-grid-3col",
+          "source": "spec.home.offerings"
+        },
+        {
+          "id": "cta-inquiry-block",
+          "source": "spec.home.cta"
+        }
+      ]
+    },
+    "copy-faithful-default": {
+      "page": "any",
+      "archetype": "any",
+      "variant_group": "copy-faithful",
+      "variant_id": "default",
+      "tags": [
+        "imported",
+        "faithful-copy"
+      ],
+      "mood": "neutral",
+      "density": "standard",
+      "hero_style": "centered",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.page.hero"
+        },
+        {
+          "id": "content-raw-markdown",
+          "source": "spec.page.copy"
+        }
+      ]
+    },
+    "author-home-default": {
+      "page": "home",
+      "archetype": "author",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.home.hero"
+        },
+        {
+          "id": "books-grid",
+          "source": "db:books",
+          "spec_overlay": "spec.home.books"
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "optional": true,
+          "spec_overlay": "spec.home.testimonials"
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    },
+    "author-books-default": {
+      "page": "books",
+      "archetype": "author",
+      "widgets": [
+        {
+          "id": "hero-centered",
+          "source": "spec.books.hero",
+          "static_data": {
+            "compact": true
+          }
+        },
+        {
+          "id": "books-grid",
+          "source": "db:books",
+          "spec_overlay": "spec.books"
+        }
+      ]
+    },
+    "author-home-spotlight": {
+      "page": "home",
+      "archetype": "author",
+      "comment": "Author-forward home: nameplate+shelf hero, ONE spotlight book, a 3-quote shortest-first praise taste, newsletter close. NOT a catalog clone; /books keeps the full grid.",
+      "widgets": [
+        {
+          "id": "hero-nameplate-shelf",
+          "source": "db:books",
+          "spec_overlay": "spec.home.hero"
+        },
+        {
+          "id": "book-spotlight",
+          "source": "db:books",
+          "spec_overlay": "spec.home.spotlight",
+          "static_data": {
+            "eyebrow": "START HERE",
+            "browse_text": "Browse all the books"
+          }
+        },
+        {
+          "id": "testimonials-stack",
+          "source": "db:testimonials",
+          "optional": true,
+          "spec_overlay": "spec.home.testimonials",
+          "static_data": {
+            "limit": 3,
+            "order": "shortest_first",
+            "columns": 3
+          }
+        },
+        {
+          "id": "cta-newsletter-inline",
+          "source": "spec.home.newsletter"
+        }
+      ]
+    }
+  },
+  "variants_schema_version": 2
+}

@@ -1,0 +1,128 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <h2 class="text-lg font-bold text-gray-200 mb-4">Coordinator Settings</h2>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="bg-red-900/30 border border-red-500/40 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm"><%= error %></div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="bg-[rgba(42,190,170,0.10)] border border-[rgba(42,190,170,0.3)] text-[#2ABEAA] px-4 py-3 rounded-lg mb-4 text-sm"><%= success %></div>
+  <% } %>
+  <% if (!settings.readable) { %>
+    <div class="bg-red-900/30 border border-red-500/40 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+      The worker's variables could not be read from Railway. Check RAILWAY_ADMIN_TOKEN, RAILWAY_PROJECT_ID, RAILWAY_ENVIRONMENT_ID and RAILWAY_WORKER_SERVICE_ID.
+      No switch is shown, because this page does not know its state, and nothing can be saved from here.
+    </div>
+  <% } else if (!canWrite) { %>
+    <div class="bg-red-900/30 border border-red-500/40 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+      This page is read only in this environment: saving needs NODE_ENV=production and CAS_ALLOW_RAILWAY_WRITES=true.
+    </div>
+  <% } %>
+
+  <%# Each control is sent with a hidden shown_<NAME> field holding the state
+      this page displayed. The save writes a variable only when that field
+      came back and the submitted value differs from it, so a control that is
+      missing from a submission is never read as "off". %>
+  <form action="/admin/settings/coordinator" method="POST" class="space-y-6">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <% if (settings.readable) { %>
+    <!-- Main toggles -->
+    <div class="bg-surface-3 rounded-xl p-5 space-y-4">
+      <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">Controls</h3>
+      <div class="text-sm text-gray-300"><%= settings.summary %></div>
+
+      <% var mainSwitches = [
+        { key: 'COORDINATOR_ENABLED', label: 'Coordinator Enabled', desc: 'Master on/off switch for the coordinator agent loop. Off unless set to an on value.' },
+        { key: 'COORDINATOR_DRY_RUN', label: 'Dry Run', desc: 'When on, the coordinator records its gated actions instead of performing them. On unless set to an off value.' }
+      ]; %>
+      <% mainSwitches.forEach(function(m) { var sw = settings.switches[m.key]; %>
+        <label class="flex items-center justify-between py-2 border-b border-border">
+          <div>
+            <div class="text-sm font-medium text-gray-200"><%= m.label %></div>
+            <div class="text-xs text-muted"><%= m.desc %></div>
+            <div class="text-xs text-muted"><%= sw.note %></div>
+          </div>
+          <input type="hidden" name="<%= shownPrefix + m.key %>" value="<%= sw.on ? 'on' : 'off' %>">
+          <input type="checkbox" name="<%= m.key %>" value="true"<%- sw.on ? ' checked' : '' %>
+            class="w-5 h-5 rounded bg-surface-2 border-border text-brand focus:ring-brand">
+        </label>
+      <% }); %>
+
+      <div class="py-2">
+        <label for="confirm-live" class="block text-sm font-medium text-gray-300 mb-1">Confirmation for going live</label>
+        <input type="text" id="confirm-live" name="<%= goLiveField %>" value="" autocomplete="off" spellcheck="false" autocapitalize="off"
+          class="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-gray-200 text-sm focus:ring-brand focus:border-brand">
+        <div class="text-xs text-muted mt-1">
+          Turning Dry Run off, or turning Coordinator Enabled on, lets the coordinator act. A save that includes either is refused unless you type
+          <code class="text-gray-300"><%= goLivePhrase %></code> here. Leave this empty for any other change.
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget and timing -->
+    <div class="bg-surface-3 rounded-xl p-5 space-y-4">
+      <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">Budget &amp; Timing</h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <% var numberFields = [
+          { key: 'COORDINATOR_DAILY_BUDGET', label: 'Daily Budget (USD)', desc: 'Max API spend per day for coordinator agents' },
+          { key: 'COORDINATOR_INTERVAL_S', label: 'Tick Interval (seconds)', desc: 'How often the coordinator checks for work (1800 = 30 min)' }
+        ]; %>
+        <% numberFields.forEach(function(f) { var num = settings.numbers[f.key]; %>
+          <div>
+            <label for="<%= f.key %>" class="block text-sm font-medium text-gray-300 mb-1"><%= f.label %></label>
+            <input type="hidden" name="<%= shownPrefix + f.key %>" value="<%= num.value %>">
+            <input type="number" id="<%= f.key %>" name="<%= f.key %>" value="<%= num.value %>"
+              step="<%= num.step %>" min="<%= num.min %>" max="<%= num.max %>"
+              class="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-gray-200 text-sm focus:ring-brand focus:border-brand">
+            <div class="text-xs text-muted mt-1"><%= f.desc %></div>
+            <div class="text-xs text-muted mt-1"><%= num.note %></div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Agent toggles -->
+    <div class="bg-surface-3 rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">Agent Toggles</h3>
+      <div class="text-xs text-muted mb-4">
+        Enable or disable individual coordinator agents. Unchecked = disabled. An agent whose variable is not set runs.
+        The cost analyst and the reconciliation agent have their own variables (AGENT_COST_ENABLED, AGENT_RECONCILIATION_ENABLED), which this page does not write.
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <% var agents = [
+          { key: 'AGENT_INFRA_ENABLED', label: 'Infra Engineer', desc: 'Ops playbooks for failed builds, downtime and backup alerts' },
+          { key: 'AGENT_BACKEND_ENABLED', label: 'Backend Engineer', desc: 'Rebuilds of failed builds, QA warnings, test builds' },
+          { key: 'AGENT_FINANCIAL_ENABLED', label: 'Financial Manager', desc: 'Budget alerts, cost summary' },
+          { key: 'AGENT_CUSTOMER_ENABLED', label: 'Customer Service', desc: 'Feedback triage, support KB' },
+          { key: 'AGENT_DOCS_ENABLED', label: 'Documentation', desc: 'CLAUDE.md drift detection' },
+          { key: 'AGENT_SECURITY_ENABLED', label: 'Security Engineer', desc: 'Post-deploy rule checks, daily reachability probe' },
+          { key: 'AGENT_QA_ENABLED', label: 'QA Engineer', desc: 'Lists live builds rebuilt within 48 hours' },
+          { key: 'AGENT_ARCHITECT_ENABLED', label: 'Architect', desc: 'Spec and build reviews, QA patterns' }
+        ]; %>
+        <% agents.forEach(function(a) { var sw = settings.switches[a.key]; %>
+          <label class="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-surface-2 transition-colors cursor-pointer">
+            <input type="hidden" name="<%= shownPrefix + a.key %>" value="<%= sw.on ? 'on' : 'off' %>">
+            <input type="checkbox" name="<%= a.key %>" value="true"<%- sw.on ? ' checked' : '' %>
+              class="w-4 h-4 rounded bg-surface-2 border-border text-brand focus:ring-brand shrink-0">
+            <div class="min-w-0">
+              <div class="text-sm font-medium text-gray-200"><%= a.label %></div>
+              <div class="text-xs text-muted truncate"><%= a.desc %></div>
+              <div class="text-xs text-muted truncate"><%= sw.note %></div>
+            </div>
+          </label>
+        <% }); %>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="flex items-center gap-3">
+      <button type="submit" class="bg-brand text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-brand/90 transition-colors min-h-[44px] disabled:opacity-40 disabled:cursor-not-allowed"<%- (settings.readable && canWrite) ? '' : ' disabled' %>>
+        Save Settings
+      </button>
+      <span class="text-xs text-muted">Only the settings you changed are written. The worker reads them when it starts, so a change applies from its next start.</span>
+    </div>
+  </form>
+</section>

@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""scripts/cas-magic-link: print the magic-link login URL for a build.
+
+Reads the latest "Magic link login URL: <url>" entry from the build_logs table
+for the given build_id. The worker writes this row at the `preview` stage when
+a build deploys successfully (the "preview" _append_log call in
+queue/worker_pg.py).
+
+USAGE:
+    scripts/cas-magic-link <build-id>            # local DB (DATABASE_URL)
+    scripts/cas-magic-link <build-id> --prod     # PROD_DATABASE_URL
+
+Export the database URL first if it is not already in your environment, for
+example:
+    set -a; . web/.env; set +a        # loads every variable in web/.env
+
+EXIT CODES:
+    0  url printed (within 24h TTL)
+    1  build not found
+    2  no magic-link log row (build still in flight, or token injection failed)
+    3  log message present but didn't match the expected pattern
+    4  url printed but token is older than 24h (likely expired; rebuild to refresh)
+"""
+
+import argparse
+import os
+import re
+import sys
+from datetime import datetime, timezone, timedelta
+
+try:
+    import psycopg2
+except ImportError:
+    sys.exit("error: psycopg2 not installed. `pip3 install psycopg2-binary`")
+
+MAGIC_RE = re.compile(r"Magic link login URL:\s*(\S+)")
+TOKEN_TTL = timedelta(hours=24)
+
+
+def _db_url(prod: bool) -> str:
+    key = "PROD_DATABASE_URL" if prod else "DATABASE_URL"
+    url = os.environ.get(key)
+    if not url:
+        sys.exit(
+            f"error: {key} not set. Load web/.env into your shell first:\n"
+            f"  set -a; . web/.env; set +a"
+        )
+    return url
+
+
+def _as_utc(dt: datetime) -> datetime:
+    """build_logs.created_at is TIMESTAMP (no tz). Treat naive timestamps as UTC.
+
+    Railway Postgres + local Postgres both run UTC by convention here; if the
+    server clock drifts the warning fires off by hours, never silently passes.
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Print the magic-link login URL for a CAS build.",
+    )
+    parser.add_argument("build_id", help="Build UUID")
+    parser.add_argument(
+        "--prod",
+        action="store_true",
+        help="Query prod DB (PROD_DATABASE_URL) instead of local",
+    )
+    args = parser.parse_args()
+
+    conn = psycopg2.connect(_db_url(args.prod))
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT live_url, status FROM builds WHERE id = %s",
+                (args.build_id,),
+            )
+            build_row = cur.fetchone()
+            if not build_row:
+                print(
+                    f"error: build {args.build_id} not found",
+                    file=sys.stderr,
+                )
+                return 1
+            live_url, status = build_row
+
+            cur.execute(
+                "SELECT message, created_at FROM build_logs "
+                "WHERE build_id = %s AND message LIKE 'Magic link login URL:%%' "
+                "ORDER BY created_at DESC LIMIT 1",
+                (args.build_id,),
+            )
+            log_row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not log_row:
+        print(
+            f"error: no magic-link log row for build {args.build_id} "
+            f"(status={status}, live_url={live_url or 'none'})",
+            file=sys.stderr,
+        )
+        print(
+            "       Either the build hasn't reached the preview stage, "
+            "or token injection failed (check worker logs).",
+            file=sys.stderr,
+        )
+        return 2
+
+    message, created_at = log_row
+    match = MAGIC_RE.search(message)
+    if not match:
+        print(
+            f"error: log message did not match expected pattern: {message!r}",
+            file=sys.stderr,
+        )
+        return 3
+    url = match.group(1)
+
+    age = datetime.now(timezone.utc) - _as_utc(created_at)
+    expired = age > TOKEN_TTL
+
+    if expired:
+        print(
+            f"warning: token is {age} old (TTL={TOKEN_TTL}); likely expired. "
+            f"Re-trigger a build to mint a fresh token.",
+            file=sys.stderr,
+        )
+        print(url)
+        return 4
+
+    print(url)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

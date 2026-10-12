@@ -1,0 +1,141 @@
+<%
+// Reusable auto-refresh for admin list pages. Reloads the page every
+// intervalSeconds (default 60) but pauses when the admin is mid-interaction
+// so we don't blow away their typing or lose scroll position right when
+// they're reading something. Pause conditions checked at fire time:
+// document.hidden, focused input/textarea/select/contenteditable, visible
+// modal-overlay or role=dialog, or the admin clicked "Pause" on the chip.
+// Caller-supplied via include locals: intervalSeconds.
+var intervalSeconds = (typeof intervalSeconds !== 'undefined' && intervalSeconds > 0)
+  ? intervalSeconds
+  : 60;
+%>
+<div id="admin-auto-refresh" class="admin-auto-refresh" data-interval="<%= intervalSeconds %>" aria-live="polite">
+  <span class="admin-auto-refresh__dot" aria-hidden="true"></span>
+  <span class="admin-auto-refresh__label">Auto-refresh in <span id="admin-auto-refresh-countdown"><%= intervalSeconds %></span>s</span>
+  <button type="button" id="admin-auto-refresh-toggle" class="admin-auto-refresh__btn" aria-pressed="false">Pause</button>
+</div>
+<style>
+  .admin-auto-refresh {
+    position: fixed;
+    bottom: 22px;
+    left: 22px;
+    z-index: 60;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 10px;
+    background: rgba(26, 22, 18, 0.92);
+    border: 1px solid rgba(251, 241, 220, 0.10);
+    border-radius: 5px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-family: 'Source Sans 3', system-ui, sans-serif;
+    font-size: 12px;
+    color: #A89B85;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  }
+  .admin-auto-refresh__dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #C68A3A;
+    box-shadow: 0 0 0 3px rgba(198, 138, 58, 0.18);
+    animation: admin-auto-refresh-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes admin-auto-refresh-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.6; transform: scale(0.8); }
+  }
+  .admin-auto-refresh.is-paused .admin-auto-refresh__dot {
+    background: #7E6E55;
+    box-shadow: none;
+    animation: none;
+  }
+  .admin-auto-refresh__label { font-feature-settings: 'tnum'; letter-spacing: 0.01em; }
+  .admin-auto-refresh__btn {
+    background: transparent;
+    border: 1px solid rgba(251, 241, 220, 0.14);
+    color: #A89B85;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: border-color .12s ease, color .12s ease, background .12s ease;
+  }
+  .admin-auto-refresh__btn:hover {
+    border-color: rgba(251, 241, 220, 0.28);
+    color: #FBF1DC;
+  }
+  .admin-auto-refresh.is-paused .admin-auto-refresh__btn {
+    background: rgba(198, 138, 58, 0.12);
+    border-color: rgba(198, 138, 58, 0.45);
+    color: #E5B470;
+  }
+</style>
+<script nonce="<%= cspNonce %>">
+(function () {
+  var root = document.getElementById('admin-auto-refresh');
+  if (!root) return;
+  var interval = parseInt(root.dataset.interval, 10) || 60;
+  var countdownEl = document.getElementById('admin-auto-refresh-countdown');
+  var toggleBtn = document.getElementById('admin-auto-refresh-toggle');
+  var paused = false;
+  var remaining = interval;
+  var timer = null;
+
+  function isUserBusy() {
+    if (document.hidden) return true;
+    var ae = document.activeElement;
+    if (ae && ae !== document.body) {
+      var tag = (ae.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+      if (ae.isContentEditable) return true;
+    }
+    if (document.querySelector('.modal-overlay:not([style*="display:none"]), [role="dialog"][aria-hidden="false"]')) return true;
+    return false;
+  }
+
+  function tick() {
+    if (paused) return;
+    if (isUserBusy()) {
+      remaining = interval;
+      if (countdownEl) countdownEl.textContent = remaining;
+      return;
+    }
+    remaining -= 1;
+    if (countdownEl) countdownEl.textContent = remaining > 0 ? remaining : 0;
+    if (remaining <= 0) {
+      window.location.reload();
+    }
+  }
+
+  function start() {
+    stop();
+    timer = setInterval(tick, 1000);
+  }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  toggleBtn.addEventListener('click', function () {
+    paused = !paused;
+    root.classList.toggle('is-paused', paused);
+    toggleBtn.textContent = paused ? 'Resume' : 'Pause';
+    toggleBtn.setAttribute('aria-pressed', paused ? 'true' : 'false');
+    if (paused) {
+      stop();
+      if (countdownEl) countdownEl.textContent = '...';
+    } else {
+      remaining = interval;
+      if (countdownEl) countdownEl.textContent = remaining;
+      start();
+    }
+  });
+
+  start();
+})();
+</script>

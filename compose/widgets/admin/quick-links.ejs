@@ -1,0 +1,14 @@
+<!-- compose:widget admin/quick-links -->
+<div class="p-6 rounded-xl border" style="background: white; border-color: var(--color-border);">
+  <h2 class="font-display text-xl font-bold mb-4" style="color: var(--color-foreground);">Quick Links</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <% (typeof items !== 'undefined' ? items : []).forEach(function(item) { %>
+      <a href="<%= item.href %>" class="block px-4 py-3 rounded-lg border transition-all hover:shadow-md" style="background: var(--color-surface); border-color: var(--color-border); text-decoration: none;">
+        <div class="font-body text-sm font-semibold" style="color: var(--color-foreground);"><%= item.label %></div>
+        <% if (item.description) { %>
+          <div class="font-body text-xs mt-1" style="color: var(--color-foreground-muted);"><%= item.description %></div>
+        <% } %>
+      </a>
+    <% }); %>
+  </div>
+</div>

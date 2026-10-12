@@ -1,0 +1,525 @@
+{
+  "app_name": "sample-healer",
+  "archetype": "healer-wellness",
+  "palette": "warm-earth",
+  "font_pair": "cormorant-lato",
+  "admin_email": "admin@sample-healer.example",
+  "settings": {
+    "site_name": "Sample Healing Studio",
+    "site_description": "Sample wellness practice offering Reiki, breathwork, and guided relaxation.",
+    "hero_tagline": "Reiki and Breathwork for Rest",
+    "hero_description": "Sample hero copy for a solo wellness practitioner: gentle Reiki, breathwork, and guided relaxation for people who want an unhurried hour to reset.",
+    "hero_image_url": "https://picsum.photos/seed/sample-healer-hero/1600/900",
+    "nav_logo_url": "https://picsum.photos/seed/sample-healer-logo/120/120",
+    "about_title": "About the Practitioner",
+    "about_body": "The practitioner described here is fictional sample content. This paragraph stands in for a short professional bio covering training, approach, and the kinds of sessions on offer.",
+    "about_photo_url": "https://picsum.photos/seed/sample-healer-about/800/1000",
+    "contact_email": "hello@samplehealingstudio.example",
+    "contact_phone": "(555) 555-0142",
+    "contact_address": "Sample City, ST",
+    "business_name": "Sample Healing Studio LLC",
+    "support_email": "hello@samplehealingstudio.example",
+    "instagram_url": "https://instagram.example/samplehealingstudio",
+    "facebook_url": "https://facebook.example/samplehealingstudio",
+    "twitter_url": "",
+    "linkedin_url": "",
+    "youtube_url": "",
+    "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "Sample practice",
+        "heading": "Reiki and breathwork for {rest}",
+        "description": "Sample hero description. Sessions are calm, simple, and paced to the person in the room.",
+        "image_url": "https://picsum.photos/seed/sample-healer-hero/1600/900",
+        "cta_primary": {
+          "text": "Work With Me",
+          "href": "/work-with-me"
+        },
+        "cta_secondary": {
+          "text": "Read the Journal",
+          "href": "/journal"
+        }
+      },
+      "offerings": {
+        "eyebrow": "OFFERINGS",
+        "heading": "How We Can Work Together",
+        "items": [
+          {
+            "label": "INDIVIDUAL",
+            "title": "1:1 Sessions",
+            "description": "Sample offering text. A 60-minute one-to-one session combining Reiki and guided breathwork, shaped around what you bring that day.",
+            "price_display": "$120",
+            "cta_text": "Book a Session",
+            "cta_href": "/contact?service=1%3A1+Sessions"
+          },
+          {
+            "label": "CONTAINER",
+            "title": "Mentorship",
+            "description": "Sample offering text. A three-month program with regular check-ins for people who want steady support over a longer stretch.",
+            "price_display": "Apply",
+            "cta_text": "Inquire",
+            "cta_href": "/contact?service=Mentorship"
+          },
+          {
+            "label": "COLLABORATION",
+            "title": "Events & Festivals",
+            "description": "Sample offering text. Group circles and workshops for community events and festivals. Open to partnership inquiries.",
+            "price_display": "Collaborate",
+            "cta_text": "Collaborate",
+            "cta_href": "/contact?service=Events+%26+Festivals"
+          }
+        ]
+      },
+      "testimonials": {
+        "eyebrow": "VOICES",
+        "heading": "What Clients Are Saying",
+        "items": [
+          {
+            "quote": "Sample testimonial text. A short, warm line about a calm and attentive session.",
+            "author_name": "Sample Client A",
+            "service": "1:1 Session"
+          },
+          {
+            "quote": "Sample testimonial text. A line about a group circle that felt welcoming and well held.",
+            "author_name": "Sample Client B",
+            "service": "Events & Festivals"
+          },
+          {
+            "quote": "Sample testimonial text. A line about a multi-week program that moved at a comfortable pace.",
+            "author_name": "Sample Client C",
+            "service": "Mentorship"
+          },
+          {
+            "quote": "Sample testimonial text. A line about feeling heard and unhurried during a first session.",
+            "author_name": "Sample Client D",
+            "service": "1:1 Session"
+          }
+        ]
+      },
+      "newsletter": {
+        "heading": "Stay Connected",
+        "description": "Sample newsletter copy. One email a month with upcoming events and short notes, no spam.",
+        "placeholder": "Your email address",
+        "button_text": "Subscribe"
+      }
+    },
+    "work-with-me": {
+      "hero": {
+        "eyebrow": "OFFERINGS",
+        "heading": "Work With Me",
+        "description": "Sample page copy. Choose a single session, a longer program, or a group event. Each option is described below so you can pick the one that fits."
+      },
+      "offerings": {
+        "eyebrow": "",
+        "heading": "Ways to Work Together",
+        "items": [
+          {
+            "label": "INDIVIDUAL",
+            "title": "1:1 Sessions",
+            "description": "Sample offering text. A 60-minute one-to-one session combining Reiki and guided breathwork.",
+            "price_display": "$120 / session",
+            "cta_text": "Book a Session",
+            "cta_href": "/contact?service=1%3A1+Sessions"
+          },
+          {
+            "label": "CONTAINER",
+            "title": "3-Month Mentorship",
+            "description": "Sample offering text. A three-month program for people who want steady support. Meetings every two weeks.",
+            "price_display": "Apply",
+            "cta_text": "Inquire",
+            "cta_href": "/contact?service=Mentorship"
+          },
+          {
+            "label": "COLLABORATION",
+            "title": "Events & Festivals",
+            "description": "Sample offering text. Group circles and workshops for community events and festivals.",
+            "price_display": "Collaborate",
+            "cta_text": "Get in touch",
+            "cta_href": "/contact?service=Events+%26+Festivals"
+          }
+        ]
+      },
+      "cta": {
+        "heading": "Ready to begin?",
+        "description": "Reach out with any questions or to book a first session.",
+        "cta_text": "Contact Me",
+        "cta_href": "/contact"
+      }
+    },
+    "about": {
+      "hero": {
+        "eyebrow": "ABOUT",
+        "heading": "About the Practitioner",
+        "description": "The practitioner described here is fictional sample content. This longer paragraph stands in for a professional bio: how long she has practiced, where she trained, and the settings she works in, from one-to-one sessions to community events. Replace it with real copy when you adapt this fixture.",
+        "image_url": "https://picsum.photos/seed/sample-healer-about/800/1000",
+        "image_alt": "Portrait of the practitioner"
+      },
+      "cta": {
+        "heading": "Ready to work together?",
+        "description": "Browse offerings or reach out to start a conversation.",
+        "cta_text": "Work With Me",
+        "cta_href": "/work-with-me"
+      }
+    },
+    "journal": {
+      "hero": {
+        "eyebrow": "REFLECTIONS",
+        "heading": "Journal",
+        "description": "Sample notes on rest, breath, and everyday practice."
+      }
+    },
+    "events": {
+      "hero": {
+        "eyebrow": "GATHER",
+        "heading": "Upcoming Events",
+        "description": "Workshops, circles, and seasonal gatherings."
+      }
+    },
+    "gallery": {
+      "hero": {
+        "eyebrow": "VISUAL JOURNAL",
+        "heading": "Gallery",
+        "description": "Sample gallery copy. Photos from sessions, circles, and community events."
+      }
+    },
+    "contact": {
+      "hero": {
+        "eyebrow": "REACH OUT",
+        "heading": "Contact",
+        "description": "Sample contact copy. Send a message below or reach out directly by email."
+      },
+      "form": {
+        "heading": "Send a Message",
+        "service_options": [
+          "1:1 Sessions",
+          "Mentorship",
+          "Events & Festivals",
+          "General Inquiry"
+        ]
+      }
+    }
+  },
+  "seed_content": {
+    "blog_posts": [
+      {
+        "title": "Sample Post: Practicing in a Group",
+        "slug": "sample-practicing-in-a-group",
+        "excerpt": "Sample excerpt. A short note on what changes when a relaxation practice is shared with a room full of people.",
+        "body": "Sample excerpt. A short note on what changes when a relaxation practice is shared with a room full of people.\n\nThis is sample journal content for the demo site. It stands in for a short article of two or three paragraphs so the listing and detail pages have realistic text to lay out.\n\nThe closing paragraph is here to give the article a believable length. Replace it with real writing when you adapt this fixture.",
+        "image_url": "https://picsum.photos/seed/sample-post-group/1200/800",
+        "published": true,
+        "published_at": "2026-04-17"
+      },
+      {
+        "title": "Sample Post: What Reiki Is",
+        "slug": "sample-what-reiki-is",
+        "excerpt": "Sample excerpt. A plain-language introduction to Reiki for readers who have never tried it.",
+        "body": "Sample excerpt. A plain-language introduction to Reiki for readers who have never tried it.\n\nThis is sample journal content for the demo site. It stands in for a short article of two or three paragraphs so the listing and detail pages have realistic text to lay out.\n\nThe closing paragraph is here to give the article a believable length. Replace it with real writing when you adapt this fixture.",
+        "image_url": "https://picsum.photos/seed/sample-post-reiki/1200/800",
+        "published": true,
+        "published_at": "2026-04-13"
+      },
+      {
+        "title": "Sample Post: Your First Session",
+        "slug": "sample-your-first-session",
+        "excerpt": "Sample excerpt. What a first appointment usually looks like, from the opening conversation to the closing check-in.",
+        "body": "Sample excerpt. What a first appointment usually looks like, from the opening conversation to the closing check-in.\n\nThis is sample journal content for the demo site. It stands in for a short article of two or three paragraphs so the listing and detail pages have realistic text to lay out.\n\nThe closing paragraph is here to give the article a believable length. Replace it with real writing when you adapt this fixture.",
+        "image_url": "https://picsum.photos/seed/sample-post-first-session/1200/800",
+        "published": true,
+        "published_at": "2026-04-05"
+      },
+      {
+        "title": "Sample Post: Making Time for Rest",
+        "slug": "sample-making-time-for-rest",
+        "excerpt": "Sample excerpt. Small, practical ways to protect an hour of quiet in a busy week.",
+        "body": "Sample excerpt. Small, practical ways to protect an hour of quiet in a busy week.\n\nThis is sample journal content for the demo site. It stands in for a short article of two or three paragraphs so the listing and detail pages have realistic text to lay out.\n\nThe closing paragraph is here to give the article a believable length. Replace it with real writing when you adapt this fixture.",
+        "image_url": "https://picsum.photos/seed/sample-post-rest/1200/800",
+        "published": true,
+        "published_at": "2026-03-21"
+      },
+      {
+        "title": "Sample Post: A Simple Breathing Practice",
+        "slug": "sample-simple-breathing-practice",
+        "excerpt": "Sample excerpt. A five-minute breathing exercise that needs no equipment and no experience.",
+        "body": "Sample excerpt. A five-minute breathing exercise that needs no equipment and no experience.\n\nThis is sample journal content for the demo site. It stands in for a short article of two or three paragraphs so the listing and detail pages have realistic text to lay out.\n\nThe closing paragraph is here to give the article a believable length. Replace it with real writing when you adapt this fixture.",
+        "image_url": "https://picsum.photos/seed/sample-post-breathing/1200/800",
+        "published": true,
+        "published_at": "2026-03-06"
+      },
+      {
+        "title": "Sample Post: Routines for the Colder Months",
+        "slug": "sample-routines-for-colder-months",
+        "excerpt": "Sample excerpt. Ideas for keeping a steady practice when the days get shorter.",
+        "body": "Sample excerpt. Ideas for keeping a steady practice when the days get shorter.\n\nThis is sample journal content for the demo site. It stands in for a short article of two or three paragraphs so the listing and detail pages have realistic text to lay out.\n\nThe closing paragraph is here to give the article a believable length. Replace it with real writing when you adapt this fixture.",
+        "image_url": "https://picsum.photos/seed/sample-post-seasons/1200/800",
+        "published": true,
+        "published_at": "2026-02-14"
+      }
+    ],
+    "events": [
+      {
+        "title": "Sample Evening Reiki Circle",
+        "event_date": "2026-07-12",
+        "event_time": "19:30",
+        "end_time": "21:30",
+        "location": "Sample Community Hall",
+        "description": "Sample event listing. A guided evening circle open to all experience levels. Bring a blanket and arrive a few minutes early to settle in.",
+        "registration_url": "https://example.com/register/evening-circle",
+        "image_url": "https://picsum.photos/seed/sample-event-evening-circle/1200/800"
+      },
+      {
+        "title": "Sample Festival Wellness Tent",
+        "event_date": "2026-08-02",
+        "event_time": "10:00",
+        "end_date": "2026-08-03",
+        "end_time": "18:00",
+        "location": "Sample Festival Grounds",
+        "description": "Sample event listing. Drop-in sessions throughout the weekend, first come, first served. Group circles on Saturday morning and Sunday afternoon.",
+        "registration_url": "",
+        "image_url": "https://picsum.photos/seed/sample-event-festival-tent/1200/800"
+      },
+      {
+        "title": "Sample Introduction to Reiki Workshop",
+        "event_date": "2026-08-16",
+        "event_time": "13:00",
+        "end_time": "16:00",
+        "location": "Sample Studio",
+        "description": "Sample event listing. A three-hour introductory workshop for anyone curious about Reiki. No experience necessary; materials are provided.",
+        "registration_url": "https://example.com/register/reiki-workshop",
+        "image_url": "https://picsum.photos/seed/sample-event-reiki-workshop/1200/800"
+      },
+      {
+        "title": "Sample Autumn Gathering",
+        "event_date": "2026-09-22",
+        "event_time": "14:00",
+        "end_time": "18:00",
+        "location": "Sample Retreat Center",
+        "description": "Sample event listing. A half-day seasonal gathering with breathwork, sound, and quiet time to mark the turn from summer to autumn.",
+        "registration_url": "",
+        "image_url": "https://picsum.photos/seed/sample-event-autumn-gathering/1200/800"
+      },
+      {
+        "title": "Sample Winter Sound Bath",
+        "event_date": "2026-12-21",
+        "event_time": "19:00",
+        "end_time": "21:00",
+        "location": "Sample Event Space",
+        "description": "Sample event listing. An evening of rest with singing bowls and gentle Reiki. Limited to 20 participants.",
+        "registration_url": "https://example.com/register/winter-sound-bath",
+        "image_url": "https://picsum.photos/seed/sample-event-winter-sound-bath/1200/800"
+      },
+      {
+        "title": "Sample New Year Circle",
+        "event_date": "2027-01-07",
+        "event_time": "18:30",
+        "end_time": "20:30",
+        "location": "Sample Studio",
+        "description": "Sample event listing. A two-hour circle with guided meditation and group Reiki to start the year with a clear intention.",
+        "registration_url": "",
+        "image_url": "https://picsum.photos/seed/sample-event-new-year-circle/1200/800"
+      }
+    ],
+    "testimonials": [
+      {
+        "author_name": "Sample Client A",
+        "quote": "Sample testimonial text. A short, warm line about a calm and attentive session.",
+        "service": "1:1 Session",
+        "published": true
+      },
+      {
+        "author_name": "Sample Client B",
+        "quote": "Sample testimonial text. A line about a group circle that felt welcoming and well held.",
+        "service": "Events & Festivals",
+        "published": true
+      },
+      {
+        "author_name": "Sample Client C",
+        "quote": "Sample testimonial text. A line about a multi-week program that moved at a comfortable pace.",
+        "service": "1:1 Session",
+        "published": true
+      },
+      {
+        "author_name": "Sample Client D",
+        "quote": "Sample testimonial text. A line about feeling heard and unhurried during a first session.",
+        "service": "Mentorship",
+        "published": true
+      },
+      {
+        "author_name": "Sample Client E",
+        "quote": "Sample testimonial text. A line about a breathwork session that felt safe and clear.",
+        "service": "1:1 Session",
+        "published": true
+      },
+      {
+        "author_name": "Sample Client F",
+        "quote": "Sample testimonial text. A line from a first-time client who arrived skeptical and left curious.",
+        "service": "1:1 Session",
+        "published": true
+      },
+      {
+        "author_name": "Sample Client G",
+        "quote": "Sample testimonial text. A line about noticing a small, steady change after one session.",
+        "service": "1:1 Session",
+        "published": true
+      },
+      {
+        "author_name": "Sample Client H",
+        "quote": "Sample testimonial text. A line about a seasonal circle that left a lasting sense of calm.",
+        "service": "Events & Festivals",
+        "published": true
+      },
+      {
+        "author_name": "Sample Client I",
+        "quote": "Sample testimonial text. A line about a mentorship container and growing self-trust.",
+        "service": "Mentorship",
+        "published": true
+      },
+      {
+        "author_name": "Sample Client J",
+        "quote": "Sample testimonial text. A line about an overall positive experience.",
+        "service": "1:1 Session",
+        "published": true
+      }
+    ],
+    "contact_inquiries": [
+      {
+        "name": "Avery Patel",
+        "email": "avery.patel@example.com",
+        "service_interest": "1:1 Sessions",
+        "message": "Sample inquiry. I would like to book a one-to-one session in the next couple of weeks if you have availability."
+      },
+      {
+        "name": "Kenji Matsumoto",
+        "email": "kenji.m@example.com",
+        "service_interest": "Mentorship",
+        "message": "Sample inquiry. I am interested in the three-month program. Could we schedule a short intro call?"
+      },
+      {
+        "name": "Priya Ramaswamy",
+        "email": "priya.r@example.com",
+        "service_interest": "Events & Festivals",
+        "message": "Sample inquiry. We are organizing a community weekend in October and would like to ask about a group circle."
+      },
+      {
+        "name": "Marcus Whitlock",
+        "email": "marcus.w@example.com",
+        "service_interest": "1:1 Sessions",
+        "message": "Sample inquiry. I am new to this kind of session and have a few questions before booking."
+      }
+    ],
+    "newsletter_subscribers": [
+      {
+        "email": "ember.soulpath@example.com"
+      },
+      {
+        "email": "sage.stillness@example.com"
+      },
+      {
+        "email": "luna.stardust@example.com"
+      },
+      {
+        "email": "theo.innerwork@example.com"
+      },
+      {
+        "email": "willow.awakened@example.com"
+      },
+      {
+        "email": "river.clearlight@example.com"
+      },
+      {
+        "email": "aspen.quiet@example.com"
+      },
+      {
+        "email": "fern.groves@example.com"
+      }
+    ],
+    "photos": [
+      {
+        "title": "Evening Circle",
+        "caption": "Sample caption: a quiet moment during an evening circle.",
+        "image_url": "https://picsum.photos/seed/photo-moon/1200/1200",
+        "category": "circles",
+        "featured": true
+      },
+      {
+        "title": "Festival Tent",
+        "caption": "Sample caption: the wellness tent at sunrise.",
+        "image_url": "https://picsum.photos/seed/photo-tent/1200/1200",
+        "category": "festivals",
+        "featured": true
+      },
+      {
+        "title": "Studio Session",
+        "caption": "Sample caption: warm light in the studio before a session.",
+        "image_url": "https://picsum.photos/seed/photo-studio/1200/1200",
+        "category": "studio",
+        "featured": true
+      },
+      {
+        "title": "Singing Bowls",
+        "caption": "Sample caption: setting up for a sound bath.",
+        "image_url": "https://picsum.photos/seed/photo-bowls/1200/1200",
+        "category": "sessions",
+        "featured": false
+      },
+      {
+        "title": "Table Arrangement",
+        "caption": "Sample caption: flowers and candles on a side table.",
+        "image_url": "https://picsum.photos/seed/photo-altar/1200/1200",
+        "category": "retreats",
+        "featured": false
+      },
+      {
+        "title": "Sunset Gathering",
+        "caption": "Sample caption: closing circle at a seasonal gathering.",
+        "image_url": "https://picsum.photos/seed/photo-sunset/1200/1200",
+        "category": "ceremonies",
+        "featured": true
+      },
+      {
+        "title": "Forest Path",
+        "caption": "Sample caption: a morning walk before the first session.",
+        "image_url": "https://picsum.photos/seed/photo-forest/1200/1200",
+        "category": "retreats",
+        "featured": false
+      },
+      {
+        "title": "Group Workshop",
+        "caption": "Sample caption: practice time during an introductory workshop.",
+        "image_url": "https://picsum.photos/seed/photo-reiki/1200/1200",
+        "category": "workshops",
+        "featured": false
+      },
+      {
+        "title": "Tea Break",
+        "caption": "Sample caption: tea between sessions.",
+        "image_url": "https://picsum.photos/seed/photo-tea/1200/1200",
+        "category": "ceremonies",
+        "featured": false
+      },
+      {
+        "title": "Garden",
+        "caption": "Sample caption: the studio garden in bloom.",
+        "image_url": "https://picsum.photos/seed/photo-garden/1200/1200",
+        "category": "studio",
+        "featured": false
+      },
+      {
+        "title": "Candlelight Session",
+        "caption": "Sample caption: an evening session by candlelight.",
+        "image_url": "https://picsum.photos/seed/photo-candle/1200/1200",
+        "category": "sessions",
+        "featured": false
+      },
+      {
+        "title": "Community Circle",
+        "caption": "Sample caption: a new year circle at the studio.",
+        "image_url": "https://picsum.photos/seed/photo-community/1200/1200",
+        "category": "circles",
+        "featured": true
+      }
+    ]
+  }
+}

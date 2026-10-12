@@ -1,0 +1,40 @@
+<!-- compose:widget auth/magic-link-confirm; letterpress-shell confirmation
+     surface rendered by GET /magic?token=X. The token is validated (SELECT
+     + used_at + expires_at checks) BUT NOT consumed at GET time. The user
+     must click "Sign in" to POST /magic/consume, which is what actually
+     marks the token used + sets the session.
+
+     This two-step pattern matches Slack, Notion, Substack, and Linear:
+     it prevents link-preview crawlers (iMessage, Slack, Discord, etc.)
+     from burning the single-use token by pre-fetching the URL when the
+     link is pasted into a chat. The previous UA-blocklist approach was
+     necessarily incomplete; an always-non-consuming GET closes the hole
+     for every client, known or unknown.
+
+     Locals: token (raw token string), siteName (optional), csrfToken
+     (from res.locals.csrfToken middleware). -->
+<%
+var _site = (typeof settings !== 'undefined' && settings) ? settings : {};
+var _siteName = _site.site_name || 'Site';
+var _token = (typeof token !== 'undefined' && token) ? String(token) : '';
+var _safeToken = _token.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+var _bodyHtml =
+  '<p class="cas-auth-letterpress__lead">You are about to sign in to ' +
+    String(_siteName).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+  '.</p>' +
+  '<form action="/magic/consume" method="POST" class="cas-auth-letterpress__form cas-form" novalidate>' +
+    '<input type="hidden" name="_csrf" value="' + String(csrfToken).replace(/[^A-Za-z0-9_-]/g, '') + '">' +
+    '<input type="hidden" name="token" value="' + _safeToken + '">' +
+    '<button type="submit" class="cas-auth-letterpress__submit">Sign in</button>' +
+  '</form>';
+var _footerHtml = '<p class="cas-auth-letterpress__foot-line"><a href="/login">Cancel</a></p>';
+%>
+<%- include('widgets/auth/letterpress', {
+  siteName: _siteName,
+  brandHref: '/',
+  eyebrow: 'One more step',
+  formHeading: 'Confirm sign-in',
+  formSubheading: 'Click the button to finish signing in.',
+  bodyHtml: _bodyHtml,
+  footerHtml: _footerHtml,
+}) %>

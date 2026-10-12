@@ -1,0 +1,354 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <%
+    // 2026-05-18 rewrite: status banner reflects TRUE loop state from
+    // heartbeatRun (absolute newest row), not the latest item-attached run
+    // (which could be hours stale and falsely suggest the executor is
+    // actively working).
+    var hbr = (typeof heartbeatRun !== 'undefined') ? heartbeatRun : null;
+    var litemr = (typeof latestItemRun !== 'undefined') ? latestItemRun : null;
+    var qd = (typeof queueDiag !== 'undefined' && queueDiag) ? queueDiag : null;
+
+    // Heartbeat freshness: 30-min loop with 5min slack = healthy ≤35min.
+    var hbAgeMs = hbr ? (Date.now() - new Date(hbr.created_at).getTime()) : null;
+    var hbAgeMin = hbAgeMs != null ? Math.floor(hbAgeMs / 60000) : null;
+    var hbStale = hbAgeMin != null && hbAgeMin > 35;
+
+    // Decide the operative state shown in the banner:
+    //   ACTIVE: heartbeat is `working` with an item, the executor is
+    //     mid-cycle on real work.
+    //   IDLE_EMPTY: heartbeat is `running`/`idle` AND queue has 0 eligible
+    //     items. The loop is alive but has nothing it's allowed to pick.
+    //   IDLE_HEALTHY: heartbeat is `running`/`idle` AND queue has eligible
+    //     items. Should rarely linger; if it does, the loop is stuck on
+    //     something or a pick failed.
+    //   PAUSED: heartbeat is `paused` (executor config enabled=false).
+    //   STALE: no heartbeat within last 35min, regardless of status.
+    //   NO_DATA: no heartbeat row at all.
+    var state, statusColor, statusText, detail;
+    if (!hbr) {
+      state = 'NO_DATA';
+      statusColor = 'text-muted';
+      statusText = 'NO DATA';
+      detail = 'No heartbeats in DB. Check launchctl list | grep cas.roadmap.';
+    } else if (hbStale) {
+      state = 'STALE';
+      statusColor = 'text-red-400';
+      statusText = 'STALE';
+      detail = 'Last heartbeat ' + hbAgeMin + 'm ago. LaunchAgent may have died; check `launchctl list | grep cas.roadmap` and tail logs/executor/launchd-stdout.log.';
+    } else if (hbr.status === 'paused') {
+      state = 'PAUSED';
+      statusColor = 'text-amber-400';
+      statusText = 'PAUSED';
+      detail = 'Executor config enabled=false. Flip scripts/cas-executor-config.json + commit/push to resume.';
+    } else if (hbr.status === 'working' && hbr.roadmap_item_id) {
+      state = 'ACTIVE';
+      statusColor = 'text-brand-sky';
+      statusText = 'WORKING';
+      detail = hbr.roadmap_item_title || hbr.roadmap_item_id;
+    } else if (qd && qd.eligible === 0 && qd.pending > 0) {
+      state = 'IDLE_EMPTY';
+      statusColor = 'text-amber-400';
+      statusText = 'QUEUE EMPTY';
+      var skipParts = [];
+      if (qd.skipped_executor_eligible_false > 0) skipParts.push(qd.skipped_executor_eligible_false + ' opted-out (operator/framing)');
+      if (qd.skipped_complex > 0) skipParts.push(qd.skipped_complex + ' complex');
+      if (qd.skipped_blocked > 0) skipParts.push(qd.skipped_blocked + ' blocked');
+      detail = qd.pending + ' pending items, 0 eligible (' + skipParts.join(', ') + '). Refine roadmap to feed the executor.';
+    } else if (qd && qd.eligible > 0) {
+      state = 'IDLE_WITH_WORK';
+      statusColor = 'text-amber-400';
+      statusText = 'IDLE';
+      detail = qd.eligible + ' eligible item' + (qd.eligible === 1 ? '' : 's') + ' waiting (next: ' + (qd.sample_eligible_id || '?') + '). Pick happens next cycle.';
+    } else {
+      state = 'IDLE';
+      statusColor = 'text-amber-400';
+      statusText = (hbr.status || 'idle').toUpperCase();
+      detail = hbr.skipped_reason || hbr.result || '';
+    }
+  %>
+
+  <!-- Status banner -->
+  <div class="bg-surface-3 rounded-[10px] p-4 sm:p-5 mb-6" data-executor-state="<%= state %>">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        <span class="text-muted text-sm">Executor:</span>
+        <span class="<%= statusColor %> font-bold text-lg ml-1"><%= statusText %></span>
+        <% if (detail) { %>
+          <span class="text-subtle text-sm ml-2"><%= detail %></span>
+        <% } %>
+      </div>
+      <div class="text-subtle text-xs text-right">
+        <% if (hbr) { %>
+          Last heartbeat:
+          <span data-ts="<%= new Date(hbr.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(hbr.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span>
+          <% if (hbAgeMin != null && hbAgeMin < 999) { %>
+            <span class="<%= hbStale ? 'text-red-400' : 'text-muted' %> ml-1">(<%= hbAgeMin %>m ago)</span>
+          <% } %>
+          <% if (litemr && litemr.id !== hbr.id) { %>
+            <div class="mt-1">
+              Last real activity: <span class="text-gray-400" title="<%= litemr.roadmap_item_title || litemr.roadmap_item_id %>"><%= litemr.status %></span>
+              <span data-ts="<%= new Date(litemr.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(litemr.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span>
+            </div>
+          <% } %>
+        <% } else { %>
+          No heartbeats received
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Today Completed</div>
+      <div class="text-xl sm:text-2xl font-bold text-brand" data-stat="today_completed"><%= stats.today_completed || 0 %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Total Completed</div>
+      <div class="text-xl sm:text-2xl font-bold text-gray-200" data-stat="total_completed"><%= stats.total_completed || 0 %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Spend Today</div>
+      <div class="text-xl sm:text-2xl font-bold text-gray-200" data-stat="today_cost"><%= fmtUsd(stats.today_cost) %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Pending Questions</div>
+      <div class="text-xl sm:text-2xl font-bold <%= pendingQuestions > 0 ? 'text-amber-400' : 'text-muted' %>" data-stat="pending_questions"><%= pendingQuestions %></div>
+    </div>
+  </div>
+
+  <!-- Run history -->
+  <%
+    // Filter + pagination state passed in by /admin/executor.
+    // statusFilter defaults to 'active' (excludes paused + idle heartbeats).
+    var _filter = (typeof statusFilter !== 'undefined' && statusFilter) ? statusFilter : 'active';
+    var _statusCounts = (typeof statusCounts !== 'undefined' && statusCounts) ? statusCounts : {};
+    var _page = (typeof page !== 'undefined' && page) ? page : 1;
+    var _totalPages = (typeof totalPages !== 'undefined' && totalPages) ? totalPages : 1;
+    var _totalRuns = (typeof totalRuns !== 'undefined' && totalRuns) ? totalRuns : runs.length;
+    var _perPage = (typeof perPage !== 'undefined' && perPage) ? perPage : 25;
+    // Order chips so the "real activity" filters (active + 5 item-attached
+    // result states) come first; Heartbeats (loop diagnostics) + All come
+    // last so the operator doesn't accidentally land on them. The old
+    // Paused / Idle chips are folded into Heartbeats since all 3 represent
+    // no-item-attached loop cycles.
+    var _chips = [
+      ['active',     'Active runs'],
+      ['completed',  'Completed'],
+      ['failed',     'Failed'],
+      ['crashed',    'Crashed'],
+      ['review',     'Review'],
+      ['working',    'Working'],
+      ['heartbeats', 'Heartbeats'],
+      ['all',        'All'],
+    ];
+    function chipHref(s) { return '/admin/executor?status=' + encodeURIComponent(s); }
+    function pageHref(s, p) { return '/admin/executor?status=' + encodeURIComponent(s) + '&page=' + p; }
+  %>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+    <h2 class="text-lg font-semibold text-gray-200">Run History</h2>
+    <div class="text-xs text-subtle">
+      <%= _totalRuns %> <%= _totalRuns === 1 ? 'run' : 'runs' %> in this view
+      <% if (_totalPages > 1) { %> · page <%= _page %> of <%= _totalPages %><% } %>
+    </div>
+  </div>
+
+  <!-- Filter chips: status filter is read-only via GET, no JS -->
+  <div class="flex flex-wrap gap-2 mb-4">
+    <% _chips.forEach(function(c) {
+         var key = c[0], label = c[1];
+         var count = _statusCounts[key] != null ? _statusCounts[key] : 0;
+         var active = (key === _filter);
+    %>
+      <a href="<%= chipHref(key) %>"
+         class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors
+                <%= active ? 'bg-brand text-bg border-brand' : 'bg-surface-3 text-gray-300 border-border hover:bg-surface-2' %>">
+        <span><%= label %></span>
+        <span class="<%= active ? 'opacity-80' : 'text-subtle' %>"><%= count %></span>
+      </a>
+    <% }); %>
+  </div>
+
+  <!-- Desktop table -->
+  <div class="hidden lg:block bg-surface-3 rounded-[10px] mb-6 overflow-x-auto">
+    <table class="w-full border-collapse text-sm table-fixed min-w-[700px]">
+      <thead>
+        <tr>
+          <th class="w-[130px] px-3 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Timestamp</th>
+          <th class="w-[200px] px-3 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Item</th>
+          <th class="w-[80px] px-3 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Status</th>
+          <th class="w-[60px] px-3 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Time</th>
+          <th class="w-[55px] px-3 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Cost</th>
+          <th class="w-[70px] px-3 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Commit</th>
+          <th class="px-3 py-3 text-left text-subtle font-semibold border-b border-border">Result / Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (runs.length === 0) { %>
+          <tr><td colspan="7" class="text-center text-subtle py-8">No executor runs yet.</td></tr>
+        <% } %>
+        <% runs.forEach(function(r) { %>
+          <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+            <td class="px-3 py-2.5 text-subtle text-xs whitespace-nowrap"><span data-ts="<%= new Date(r.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(r.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></td>
+            <td class="px-3 py-2.5 text-gray-300 text-xs truncate" title="<%= r.roadmap_item_title || r.roadmap_item_id || '' %>"><%= r.roadmap_item_title || r.roadmap_item_id || '-' %></td>
+            <td class="px-3 py-2.5">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold
+                <% if (r.status === 'completed') { %>bg-[rgba(42,190,170,0.15)] text-[#2ABEAA]<% } %>
+                <% if (r.status === 'failed') { %>bg-red-900 text-red-300<% } %>
+                <% if (r.status === 'running' || r.status === 'working') { %>bg-[rgba(168,155,122,0.15)] text-[#A89B7A]<% } %>
+                <% if (r.status === 'idle') { %>bg-amber-900 text-amber-300<% } %>
+                <% if (r.status === 'paused') { %>bg-surface-2 text-muted<% } %>
+                <% if (r.status === 'skipped') { %>bg-surface-2 text-muted<% } %>
+              "><%= r.status %></span>
+            </td>
+            <td class="px-3 py-2.5 text-subtle text-xs whitespace-nowrap"><% if (r.duration_s != null) { %><%= r.duration_s < 60 ? r.duration_s + 's' : Math.round(r.duration_s / 60) + 'm' %><% } else { %>-<% } %></td>
+            <td class="px-3 py-2.5 text-gray-300 text-xs whitespace-nowrap"><% if (r.cost_usd != null && parseFloat(r.cost_usd) > 0) { %><%= fmtUsd(r.cost_usd, 4) %><% } else { %>-<% } %></td>
+            <td class="px-3 py-2.5 text-subtle text-xs font-mono whitespace-nowrap"><% if (r.commit_sha) { %><%= r.commit_sha.slice(0, 8) %><% } else { %>-<% } %></td>
+            <td class="px-3 py-2.5 text-muted text-xs break-words" title="<%= r.error_message || r.result || r.skipped_reason || '' %>"><% if (r.error_message) { %><span class="text-red-400"><%= r.error_message.length > 80 ? r.error_message.slice(0, 80) + '...' : r.error_message %></span><% } else if (r.result) { %><%= r.result.length > 80 ? r.result.slice(0, 80) + '...' : r.result %><% } else if (r.skipped_reason) { %><span class="text-subtle"><%= r.skipped_reason %></span><% } else { %>-<% } %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile card view -->
+  <div class="lg:hidden space-y-3 mb-6">
+    <% if (runs.length === 0) { %>
+      <div class="text-center text-subtle py-8">No executor runs yet.</div>
+    <% } %>
+    <% runs.forEach(function(r) { %>
+      <div class="bg-surface rounded-lg p-4">
+        <div class="flex justify-between items-start mb-2">
+          <span class="text-gray-200 text-sm font-semibold flex-1 mr-2 break-words"><%= r.roadmap_item_title || r.roadmap_item_id || '(no item)' %></span>
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold shrink-0
+            <% if (r.status === 'completed') { %>bg-[rgba(42,190,170,0.15)] text-[#2ABEAA]<% } %>
+            <% if (r.status === 'failed') { %>bg-red-900 text-red-300<% } %>
+            <% if (r.status === 'running' || r.status === 'working') { %>bg-[rgba(168,155,122,0.15)] text-[#A89B7A]<% } %>
+            <% if (r.status === 'idle') { %>bg-amber-900 text-amber-300<% } %>
+            <% if (r.status === 'paused') { %>bg-surface-2 text-muted<% } %>
+            <% if (r.status === 'skipped') { %>bg-surface-2 text-muted<% } %>
+          "><%= r.status %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Time</span>
+          <span class="text-muted"><span data-ts="<%= new Date(r.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(r.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></span>
+        </div>
+        <% if (r.duration_s != null) { %>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Duration</span>
+          <span class="text-muted"><%= r.duration_s < 60 ? r.duration_s + 's' : Math.round(r.duration_s / 60) + 'm' %></span>
+        </div>
+        <% } %>
+        <% if (r.cost_usd != null && parseFloat(r.cost_usd) > 0) { %>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Cost</span>
+          <span class="text-gray-300"><%= fmtUsd(r.cost_usd, 4) %></span>
+        </div>
+        <% } %>
+        <% if (r.commit_sha) { %>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Commit</span>
+          <span class="text-muted font-mono"><%= r.commit_sha.slice(0, 8) %></span>
+        </div>
+        <% } %>
+        <% if (r.error_message) { %>
+        <div class="text-xs mt-2 text-red-400 break-words"><%= r.error_message.length > 120 ? r.error_message.slice(0, 120) + '...' : r.error_message %></div>
+        <% } else if (r.result) { %>
+        <div class="text-xs mt-2 text-muted break-words"><%= r.result.length > 120 ? r.result.slice(0, 120) + '...' : r.result %></div>
+        <% } else if (r.skipped_reason) { %>
+        <div class="text-xs mt-2 text-subtle break-words"><%= r.skipped_reason %></div>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+
+  <!-- Pagination: prev / page-N-of-M / next. Only renders when >1 page. -->
+  <% if (_totalPages > 1) { %>
+    <nav class="flex items-center justify-between gap-2 mb-6 text-sm" aria-label="Run history pagination">
+      <% if (_page > 1) { %>
+        <a href="<%= pageHref(_filter, _page - 1) %>" class="px-3 py-1.5 rounded bg-surface-3 text-gray-300 border border-border hover:bg-surface-2">&larr; Newer</a>
+      <% } else { %>
+        <span class="px-3 py-1.5 rounded bg-surface-3 text-muted border border-border opacity-50 cursor-not-allowed">&larr; Newer</span>
+      <% } %>
+      <span class="text-subtle text-xs">
+        Showing <%= (_page - 1) * _perPage + 1 %>–<%= Math.min(_page * _perPage, _totalRuns) %> of <%= _totalRuns %>
+      </span>
+      <% if (_page < _totalPages) { %>
+        <a href="<%= pageHref(_filter, _page + 1) %>" class="px-3 py-1.5 rounded bg-surface-3 text-gray-300 border border-border hover:bg-surface-2">Older &rarr;</a>
+      <% } else { %>
+        <span class="px-3 py-1.5 rounded bg-surface-3 text-muted border border-border opacity-50 cursor-not-allowed">Older &rarr;</span>
+      <% } %>
+    </nav>
+  <% } %>
+
+  <!-- Pending questions -->
+  <h2 class="text-lg font-semibold text-gray-200 mb-3">Questions <% if (pendingQuestions > 0) { %><span class="text-amber-400 text-sm font-normal">(<%= pendingQuestions %> pending)</span><% } %></h2>
+
+  <% var pendingQs = questions.filter(function(q) { return q.status === 'pending'; }); %>
+  <% var answeredQs = questions.filter(function(q) { return q.status !== 'pending'; }); %>
+
+  <% if (pendingQs.length === 0 && answeredQs.length === 0) { %>
+    <div class="bg-surface-3 rounded-[10px] p-6 text-center text-subtle mb-6">No questions from the executor yet.</div>
+  <% } %>
+
+  <% if (pendingQs.length > 0) { %>
+    <div class="space-y-3 mb-6">
+      <% pendingQs.forEach(function(q) { %>
+        <div class="bg-surface-3 rounded-[10px] p-4">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+            <div class="flex-1">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-amber-900 text-amber-300 mb-2">pending</span>
+              <p class="text-gray-200 text-sm"><%= q.question %></p>
+              <% if (q.roadmap_item_id) { %>
+                <p class="text-subtle text-xs mt-1">Item: <%= q.roadmap_item_id %></p>
+              <% } %>
+              <p class="text-subtle text-xs mt-1"><span data-ts="<%= new Date(q.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(q.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></p>
+            </div>
+          </div>
+          <form action="/admin/executor/answer/<%= q.id %>" method="POST" class="flex flex-col sm:flex-row gap-2">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="text" name="answer" placeholder="Type your answer..." required
+              class="flex-1 bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm min-h-[44px]" />
+            <button type="submit" class="btn btn-primary whitespace-nowrap">Answer</button>
+          </form>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <% if (answeredQs.length > 0) { %>
+    <div class="space-y-3 mb-6">
+      <% answeredQs.forEach(function(q) { %>
+        <div class="bg-surface-3 rounded-[10px] p-4 opacity-70">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div class="flex-1">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-[rgba(42,190,170,0.15)] text-[#2ABEAA] mb-2"><%= q.status %></span>
+              <p class="text-gray-300 text-sm"><%= q.question %></p>
+              <% if (q.roadmap_item_id) { %>
+                <p class="text-subtle text-xs mt-1">Item: <%= q.roadmap_item_id %></p>
+              <% } %>
+              <% if (q.answer) { %>
+                <p class="text-gray-200 text-sm mt-2 pl-3 border-l-2 border-border"><%= q.answer %></p>
+              <% } %>
+              <p class="text-subtle text-xs mt-1">
+                Asked: <span data-ts="<%= new Date(q.created_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(q.created_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span>
+                <% if (q.answered_at) { %> | Answered: <span data-ts="<%= new Date(q.answered_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(q.answered_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span><% } %>
+              </p>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</section>
+
+<script nonce="<%= cspNonce %>">
+(function() {
+  // Auto-refresh every 30 seconds
+  setTimeout(function() {
+    window.location.reload();
+  }, 30000);
+})();
+</script>

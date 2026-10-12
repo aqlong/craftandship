@@ -1,0 +1,272 @@
+<% var _s = (typeof settings !== 'undefined' && settings) ? settings : {}; %>
+<% var _pv = _s._palette_vars || {'--color-primary':'#111','--color-background':'#fff','--color-foreground':'#111','--color-surface':'#f8f8f8','--color-border':'#e5e5e5','--color-on-primary':'#fff','--color-foreground-muted':'#666'}; %>
+<% var _fn = _s._fonts || { display: {family:'Georgia', is_serif: true}, body: {family:'system-ui', is_serif: false} }; %>
+<% var _fu = _s._fonts_url || ''; %>
+<% var _nav = (typeof nav_items !== 'undefined' && nav_items) ? nav_items : []; %>
+<% var _csrf = (typeof csrfToken !== 'undefined' && csrfToken) ? csrfToken : ''; %>
+<% var _body = (typeof body !== 'undefined' && body) ? body : ''; %>
+<%
+  // Social-link preview helpers (OG + Twitter Card). Crawlers (FB Sharing
+  // Debugger, iMessage, Twitter, Slack, Discord) require ABSOLUTE og:image
+  // and og:url URLs and a 1200x630 image to render the rich card. We
+  // prefer the configured site URL; the settings middleware auto-populates
+  // it from the live request when the DB value is blank, so previews work
+  // even before an admin edits site config.
+  //
+  // Per-route SEO threading:
+  // every public route handler emitted by compose/build.py:emit_routes_pages_js
+  // passes a route-specific `title` (HTML <title>) AND `metaDescription`
+  // local. The conditional fallbacks here keep the layout safe to render
+  // outside that route flow (error pages, admin views, future surfaces).
+  var _siteName = (typeof title !== 'undefined' && title) ? title : (_s.site_name || 'Site');
+  var _siteDescription = (typeof metaDescription !== 'undefined' && metaDescription)
+    ? metaDescription
+    : (_s.site_description || _s.hero_tagline || '');
+  var _ogTitle = (typeof ogTitle !== 'undefined' && ogTitle) ? ogTitle : _siteName;
+  var _ogDescription = (typeof ogDescription !== 'undefined' && ogDescription)
+    ? ogDescription
+    : _siteDescription;
+  var _ogImage = (typeof ogImage !== 'undefined' && ogImage) ? ogImage : '/brand/og-default.jpg';
+  var _ogImageAlt = (typeof ogImageAlt !== 'undefined' && ogImageAlt)
+    ? ogImageAlt
+    : ((_s.site_name || 'Site') + ' preview card');
+  var _ogType = (typeof ogType !== 'undefined' && ogType) ? ogType : 'website';
+  var _siteUrl = (_s.site_url || '').replace(/\/+$/, '');
+  // Absolute URLs follow the LIVE request origin, falling back to the
+  // configured site_url. When site_url is a future custom domain (set
+  // pre-DNS-cutover), URLs built from it 404 on the current host and
+  // link-preview crawlers show no card.
+  var _requestOrigin = (typeof requestOrigin !== 'undefined' && requestOrigin)
+    ? String(requestOrigin).replace(/\/+$/, '')
+    : '';
+  var _absBase = _requestOrigin || _siteUrl;
+  function _absUrl(u) {
+    if (!u) return _absBase || '';
+    if (/^https?:\/\//i.test(u)) return u;
+    if (!_absBase) return u;
+    return _absBase + (u.charAt(0) === '/' ? u : '/' + u);
+  }
+  var _canonicalRel = (typeof canonicalUrl !== 'undefined' && canonicalUrl)
+    ? canonicalUrl
+    : ('/' + (typeof pagePath !== 'undefined' ? pagePath : ''));
+  var _canonical = _absUrl(_canonicalRel);
+  var _ogImageAbs = _absUrl(_ogImage);
+  var _ogUrlAbs = _absUrl(_canonicalRel);
+
+  // Aspect-aware card metadata. The card
+  // type + declared dimensions must match the image's real aspect:
+  // declaring a portrait book cover as 1200x630 summary_large_image
+  // crops it to a thin center band. Dims are only emitted when known
+  // (the 1200x630 default card, or route-passed ogImageWidth/Height);
+  // an entity image with unknown dims gets the square `summary` card,
+  // which never crops portrait images.
+  var _ogImageIsDefault = (_ogImage === '/brand/og-default.jpg');
+  var _ogImageW = (typeof ogImageWidth !== 'undefined' && Number(ogImageWidth) > 0)
+    ? Number(ogImageWidth) : (_ogImageIsDefault ? 1200 : 0);
+  var _ogImageH = (typeof ogImageHeight !== 'undefined' && Number(ogImageHeight) > 0)
+    ? Number(ogImageHeight) : (_ogImageIsDefault ? 630 : 0);
+  var _ogDimsKnown = (_ogImageW > 0 && _ogImageH > 0);
+  var _twitterCard = _ogDimsKnown
+    ? (_ogImageW > _ogImageH ? 'summary_large_image' : 'summary')
+    : 'summary';
+  var _ogImageType = (function (u) {
+    var m = /\.(jpe?g|png|webp|gif)(\?|#|$)/i.exec(u || '');
+    if (!m) return _ogImageIsDefault ? 'image/jpeg' : '';
+    var ext = m[1].toLowerCase();
+    return (ext === 'jpg' || ext === 'jpeg') ? 'image/jpeg' : ('image/' + ext);
+  })(_ogImage);
+
+  // datePublished feed for the Article node. Only a real publish date
+  // qualifies; created_at would date an event recap to its DB-insert
+  // time, which would be a fabricated publish date.
+  var _publishedAt = (typeof publishedAt !== 'undefined' && publishedAt)
+    ? publishedAt : '';
+
+  // Organization JSON-LD.
+  // Emitted on every public page so AI engines (ChatGPT, Claude,
+  // Perplexity, Google AI Overviews) and traditional crawlers can extract
+  // a clean Organization entity for the brand. Pattern mirrors
+  // web/src/services/structured-data.ts:organizationJsonLd():
+  //   - name  = _s.site_name
+  //   - url   = site origin (_s.site_url, populated from the live request
+  //             by the settings middleware when blank)
+  //   - logo  = absolute URL to /logo.svg (or _s.nav_logo_url when a real
+  //             logo URL has been uploaded; falls back to /favicon.svg
+  //             when neither is present)
+  //   - sameAs = non-empty social URLs from _s (instagram/facebook/
+  //             twitter/linkedin/youtube/tiktok). Omitted entirely when
+  //             empty so schema.org validators don't flag empty arrays.
+  //   - description = _s.site_description when present.
+  var _orgUrl = _siteUrl || _absUrl('/');
+  function _isPlaceholderLogo(u) {
+    if (!u) return true;
+    return /picsum|placeholder|loremflickr|via\.placeholder|lorempixel/i.test(u);
+  }
+  var _orgLogoSrc = (!_isPlaceholderLogo(_s.nav_logo_url)) ? _s.nav_logo_url : '/logo.svg';
+  var _orgLogo = _absUrl(_orgLogoSrc || '/favicon.svg');
+  var _orgSameAs = [
+    _s.instagram_url, _s.facebook_url, _s.twitter_url,
+    _s.linkedin_url, _s.youtube_url, _s.tiktok_url
+  ].filter(function(u) { return typeof u === 'string' && /^https?:\/\//i.test(u); });
+  var _orgNode = {
+    '@type': 'Organization',
+    '@id': _orgUrl + '/#organization',
+    name: _s.site_name || 'Site',
+    url: _orgUrl,
+    logo: _orgLogo
+  };
+  if (_s.site_description) _orgNode.description = _s.site_description;
+  if (_orgSameAs.length > 0) _orgNode.sameAs = _orgSameAs;
+
+  // JSON-LD graph: WebSite on every page;
+  // Person when the site has a named owner (_s.owner_name, set by
+  // personal-brand archetypes like author); Article on detail pages
+  // (ogType === 'article'). Never fabricate: no invented ratings, no
+  // invented sameAs, datePublished only from a real publish date.
+  var _graph = [_orgNode];
+  var _webSiteNode = {
+    '@type': 'WebSite',
+    '@id': _orgUrl + '/#website',
+    url: _orgUrl,
+    name: _s.site_name || 'Site',
+    publisher: { '@id': _orgUrl + '/#organization' }
+  };
+  if (_s.site_description) _webSiteNode.description = _s.site_description;
+  _graph.push(_webSiteNode);
+  if (_s.owner_name) {
+    var _personNode = {
+      '@type': 'Person',
+      '@id': _orgUrl + '/#owner',
+      name: _s.owner_name,
+      url: _orgUrl,
+      worksFor: { '@id': _orgUrl + '/#organization' }
+    };
+    if (_orgSameAs.length > 0) _personNode.sameAs = _orgSameAs;
+    _graph.push(_personNode);
+  }
+  if (_ogType === 'article') {
+    var _articleNode = {
+      '@type': 'Article',
+      headline: _ogTitle,
+      mainEntityOfPage: _ogUrlAbs,
+      url: _ogUrlAbs
+    };
+    if (_ogDescription) _articleNode.description = _ogDescription;
+    if (typeof ogImage !== 'undefined' && ogImage) _articleNode.image = _ogImageAbs;
+    if (_publishedAt) _articleNode.datePublished = _publishedAt;
+    if (_s.owner_name) _articleNode.author = { '@id': _orgUrl + '/#owner' };
+    _graph.push(_articleNode);
+  }
+  // The JSON-LD sits inside a script element, so its text must hold no closing
+  // tag for that element and no comment opener followed by an opening tag: the
+  // HTML tokenizer would end the element, or read on in a double-escaped state
+  // that can swallow the rest of the page. JSON has the less-than and
+  // greater-than signs only inside strings, so each is written as its
+  // backslash-u escape (JSON.parse reads back the same text). U+2028 and U+2029
+  // are escaped too, for older JavaScript parsers that read them as line ends.
+  // This is the escaping _ejs_json applies in compose/build.py.
+  var _orgJsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': _graph
+  }).split('<').join('\\' + 'u003c')
+    .split('>').join('\\' + 'u003e')
+    .split(String.fromCharCode(0x2028)).join('\\' + 'u2028')
+    .split(String.fromCharCode(0x2029)).join('\\' + 'u2029');
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="<%= _siteDescription %>">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="<%= _s.owner_name || _s.site_name || 'Site' %>">
+  <meta name="theme-color" content="<%= _pv['--color-primary'] %>">
+  <meta property="og:type" content="<%= _ogType %>">
+  <meta property="og:site_name" content="<%= _s.site_name || 'Site' %>">
+  <meta property="og:title" content="<%= _ogTitle %>">
+  <meta property="og:description" content="<%= _ogDescription %>">
+  <meta property="og:url" content="<%= _ogUrlAbs %>">
+  <meta property="og:image" content="<%= _ogImageAbs %>">
+  <meta property="og:image:secure_url" content="<%= _ogImageAbs %>">
+<% if (_ogImageType) { %>
+  <meta property="og:image:type" content="<%= _ogImageType %>">
+<% } %>
+<% if (_ogDimsKnown) { %>
+  <meta property="og:image:width" content="<%= _ogImageW %>">
+  <meta property="og:image:height" content="<%= _ogImageH %>">
+<% } %>
+  <meta property="og:image:alt" content="<%= _ogImageAlt %>">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="<%= _twitterCard %>">
+  <meta name="twitter:title" content="<%= _ogTitle %>">
+  <meta name="twitter:description" content="<%= _ogDescription %>">
+  <meta name="twitter:image" content="<%= _ogImageAbs %>">
+  <meta name="twitter:image:alt" content="<%= _ogImageAlt %>">
+  <title><%= _siteName %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/brand/logo-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/brand/logo-32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="/brand/logo-48.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/brand/logo-64.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="/brand/logo-96.png">
+  <link rel="icon" type="image/png" sizes="128x128" href="/brand/logo-128.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/brand/logo-192.png">
+  <link rel="icon" type="image/png" sizes="256x256" href="/brand/logo-256.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/brand/logo-512.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/brand/logo-180.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="canonical" href="<%= _canonical %>">
+  <script type="application/ld+json"<% if (typeof cspNonce !== 'undefined' && cspNonce) { %> nonce="<%= cspNonce %>"<% } %>><%- _orgJsonLd %></script>
+  <% if (process.env.NODE_ENV !== 'production') { %>
+  <link rel="stylesheet" href="/style.css?v=<%= Date.now() %>">
+  <% } else { %>
+  <link rel="stylesheet" href="/style.css">
+  <% } %>
+  <% if (_fu) { %>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="<%= _fu %>" rel="stylesheet">
+  <% } %>
+  __SELF_HOST_FONT_PRELOADS__
+  <style>
+__SELF_HOST_FONT_FACE__
+    :root {
+      <% Object.keys(_pv).forEach(function(k) { %><%= k %>: <%= _pv[k] %>;
+      <% }); %>
+      /* Template-family typography scale (filled at compose time;
+         unset when running outside a template family). */
+__TYPOGRAPHY_SCALE_CSS__
+    }
+    body {
+      font-family: '<%= _fn.body.family %>', sans-serif;
+      background-color: var(--color-background);
+      color: var(--color-foreground);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .font-display { font-family: '<%= _fn.display.family %>', <%= _fn.display.is_serif ? "Georgia, serif" : "system-ui, sans-serif" %>; }
+    .font-body { font-family: '<%= _fn.body.family %>', system-ui, sans-serif; }
+    main { flex: 1; }
+    a { color: var(--color-primary); }
+    a.no-underline, nav a, .btn { text-decoration: none; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .focus\:not-sr-only:focus { position: static; width: auto; height: auto; padding: 0.5rem 1rem; margin: 0; overflow: visible; clip: auto; white-space: normal; }
+__TYPOGRAPHY_SCALE_CLASSES__
+  </style>
+</head>
+<body>
+  <%- include('../widgets/shell/skip-to-content') %>
+  <%- include('../widgets/shell/__SHELL_NAV_FILE__', { nav_items: _nav, user: locals.user, csrfToken: _csrf, settings: _s, currentPath: (typeof currentPath !== 'undefined') ? currentPath : '/' }) %>
+  <main id="main-content">
+    <%- _body %>
+  </main>
+  <%- include('../widgets/shell/__SHELL_FOOTER_FILE__', { nav_items: _nav, settings: _s }) %>
+  <script src="/js/cas-form-validate.js" defer></script>
+  <script src="/js/cas-reveal.js" defer></script>
+  <script src="/js/cas-fmt.js" defer></script>
+</body>
+</html>

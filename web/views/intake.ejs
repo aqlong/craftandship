@@ -1,0 +1,458 @@
+<%
+  var anonMode = typeof isAnonymous !== 'undefined' && isAnonymous;
+  var currentTurnCount = typeof turnCount !== 'undefined' ? turnCount : 0;
+  var previewData = typeof specPreview !== 'undefined' ? specPreview : null;
+  var panelVisible = specComplete || previewData;
+    var userMsgCount = messages.filter(function(m) { return m.role === 'user'; }).length;
+  var progressStep = Math.min(Math.floor(userMsgCount / 2) + 1, 5);
+  var progressLabels = ['Website idea', 'Users and roles', 'Features and pages', 'Design preferences', 'Finalizing spec'];
+%>
+
+<section class="intake">
+  <div class="max-site intake__head">
+    <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:8px;">Begin a conversation,</span>
+    <h1 class="display intake__title">Tell us about <em style="color:var(--color-clay);">your work.</em></h1>
+    <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.55; margin:14px 0 0; max-width:660px;">
+      A conversation. Haven listens and writes a summary of everything about your website from your own words. You review it, then we begin.
+    </p>
+  </div>
+
+  <% if (anonMode) { %>
+    <div class="max-site intake__notice" id="anon-banner">
+      <span class="hand" style="font-size:20px; color:var(--color-ink-pencil); display:block; margin-bottom:4px;">Anonymous preview,</span>
+      Your summary is saved when you enter your email.
+    </div>
+  <% } %>
+
+  <div class="max-site intake__grid">
+    <div class="intake__chat">
+      <% if (!specComplete) { %>
+        <div class="intake__progress" id="intake-progress">
+          <span class="intake__progress-label" id="progress-label">Step <%= progressStep %> of 5</span>
+          <span class="intake__progress-stage" id="progress-stage-label">
+            <%= progressLabels[progressStep - 1] %>
+          </span>
+          <div class="intake__progress-dots" id="progress-dots">
+            <% for (var i = 1; i <= 5; i++) { %>
+              <span class="intake__progress-dot<%= i <= progressStep ? ' intake__progress-dot--lit' : '' %>" data-dot="<%= i %>"></span>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+
+      <div id="chat-messages" class="intake__messages" role="log" aria-live="polite">
+        <% if (messages.length <= 1 && !specComplete) { %>
+          <div class="intake__helper" id="intake-helper">
+            <span class="hand" style="font-size:22px; color:var(--color-ink-pencil); display:block; margin-bottom:6px;">A few starts,</span>
+            <p style="font-family:var(--font-display); font-style:italic; font-size:16px; color:var(--color-ink-soft); margin:0 0 14px; line-height:1.5;">
+              Tap one to get going, or write your own.
+            </p>
+            <div class="intake__chips" id="suggestion-chips">
+              <button type="button" class="suggestion-chip chip" data-suggestion="A booking website for my somatic practice where clients can pick a session type, choose a time, and prepare with a short intake form.">A booking site for a practice</button>
+              <button type="button" class="suggestion-chip chip" data-suggestion="A workshop and retreat website where I can list upcoming events, take registrations, and send everyone the schedule and details after they sign up.">Workshops and retreats</button>
+              <button type="button" class="suggestion-chip chip" data-suggestion="A simple website for my therapy practice with my approach, who I work with, fees, and a contact form.">A therapy practice page</button>
+              <button type="button" class="suggestion-chip chip" data-suggestion="A directory of practitioners in my collective with profiles, schedules, and a way for clients to book directly with each one.">A practitioner collective</button>
+              <button type="button" class="suggestion-chip chip" data-suggestion="A landing page for my upcoming book with the launch date, an excerpt, and a way for readers to join the list.">A book or program launch</button>
+            </div>
+          </div>
+        <% } %>
+        <% messages.forEach(function(msg) { %>
+          <div class="harbor-chat-row harbor-chat-row--<%= msg.role %>">
+            <div class="harbor-chat-bubble harbor-chat-bubble--<%= msg.role %>">
+              <pre class="harbor-chat-text"><%= msg.content %></pre>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+
+      <% if (anonMode && currentTurnCount >= 3) { %>
+        <div class="intake__email-gate" id="anon-email-gate">
+          <span class="hand" style="font-size:20px; color:var(--color-ink-pencil); display:block; margin-bottom:4px;">Nice, we're getting somewhere,</span>
+          <p style="font-size:16px; color:var(--color-ink-soft); margin:0 0 12px; line-height:1.5;">
+            Enter your email so we can save your summary and keep going. No password yet, no card.
+          </p>
+          <form id="anon-email-gate-form" action="/intake/<%= build.id %>/email-gate" method="POST" class="intake__email-gate-form">
+            <%- include('_csrf-field') %>
+            <input type="email" name="email" required placeholder="you@example.com" class="intake__email-input" aria-label="Your email address" />
+            <button type="submit" class="btn btn-primary">Save my spec</button>
+          </form>
+          <p class="intake__email-status" id="anon-email-gate-status"></p>
+        </div>
+      <% } %>
+
+      <% if (!specComplete) { %>
+        <div class="intake__input" id="chat-input-area" <%- (anonMode && currentTurnCount >= 3) ? 'style="display:none;"' : '' %>>
+          <textarea id="message-input" class="intake__textarea" placeholder="Tell us a few sentences about your work, or answer the question above." aria-label="Type your message" rows="3"></textarea>
+          <button id="send-btn" class="btn btn-primary">Send</button>
+        </div>
+      <% } %>
+    </div>
+
+    <aside id="spec-panel" class="intake__aside" <%- panelVisible ? '' : 'style="display:none;"' %>>
+      <div class="intake__panel-card">
+        <span class="eyebrow" style="font-size:15px; display:block; margin-bottom:6px;">
+          <%= specComplete ? 'Your spec' : 'Spec so far' %>,
+        </span>
+        <h2 class="display" style="font-size:24px; line-height:1.1; margin:0 0 10px;">
+          <%= specComplete ? 'Ready to begin' : 'Picking up shape' %>.
+        </h2>
+        <p style="font-family:var(--font-display); font-style:italic; font-size:15px; color:var(--color-ink-soft); margin:0 0 18px; line-height:1.5;">
+          <%= specComplete ? 'Your spec is saved.' : 'Keep chatting to refine it.' %>
+        </p>
+
+        <% if (!specComplete && previewData) { %>
+          <div class="intake__preview">
+            <%- include('partials/_anon-spec-preview', { specPreview: previewData, specPreviewCompact: true }) %>
+          </div>
+        <% } %>
+
+        <div id="spec-content" class="intake__spec-content" <%- specComplete ? '' : 'style="display:none;"' %>>
+          <% if (build.spec && build.spec.app_name) { %>
+            <div class="intake__spec-row">
+              <span class="caps">Website name</span>
+              <span><%= build.spec.app_name %></span>
+            </div>
+            <div class="intake__spec-row">
+              <span class="caps">Description</span>
+              <span><%= build.spec.description %></span>
+            </div>
+            <% if (build.spec.pages && build.spec.pages.length > 0) { %>
+              <div class="intake__spec-row">
+                <span class="caps">Pages</span>
+                <ul>
+                  <% build.spec.pages.forEach(function(page) { %>
+                    <li><strong><%= page.title %>:</strong> <%= page.purpose %></li>
+                  <% }); %>
+                </ul>
+              </div>
+            <% } %>
+            <% if (build.spec.user_roles && build.spec.user_roles.length > 0) { %>
+              <div class="intake__spec-row">
+                <span class="caps">Who uses it</span>
+                <ul>
+                  <% build.spec.user_roles.forEach(function(ur) { %>
+                    <li><strong><%= ur.role %>:</strong> <%= ur.description %></li>
+                  <% }); %>
+                </ul>
+              </div>
+            <% } %>
+            <% if (build.spec.data_models && build.spec.data_models.length > 0) { %>
+              <div class="intake__spec-row">
+                <span class="caps">What it stores</span>
+                <ul>
+                  <% build.spec.data_models.forEach(function(model) { %>
+                    <li><%= model.name %></li>
+                  <% }); %>
+                </ul>
+              </div>
+            <% } %>
+          <% } %>
+        </div>
+
+        <div class="intake__logo" id="logo-upload-section">
+          <span class="caps" style="display:block; margin-bottom:6px;">A logo (optional)</span>
+          <p style="font-family:var(--font-display); font-style:italic; font-size:14px; color:var(--color-ink-soft); margin:0 0 12px; line-height:1.5;">
+            Drop one in and we'll pull your colors.
+          </p>
+          <div id="logo-upload-area">
+            <div id="logo-preview" style="display:none; margin-bottom:10px;">
+              <img id="logo-preview-img" alt="Logo preview" style="max-width:120px; max-height:80px; background:var(--color-vellum); padding:6px; border:1px solid var(--color-rule); border-radius: 5px;" />
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+              <label class="btn btn-ghost" for="logo-file-input" style="cursor:pointer;">
+                <span id="logo-upload-label">Choose a file</span>
+              </label>
+              <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none;" />
+              <span style="font-family:var(--font-display); font-style:italic; font-size:13px; color:var(--color-ink-faded);" id="logo-filename"></span>
+            </div>
+            <div style="display:none; align-items:center; gap:8px; margin-bottom:6px;" id="logo-colors">
+              <span style="display:inline-block; width:24px; height:24px; border-radius:50%; border:2px solid var(--color-rule);" id="swatch-primary"></span>
+              <span style="display:inline-block; width:24px; height:24px; border-radius:50%; border:2px solid var(--color-rule);" id="swatch-secondary"></span>
+              <span style="display:inline-block; width:24px; height:24px; border-radius:50%; border:2px solid var(--color-rule);" id="swatch-accent"></span>
+              <span style="font-family:var(--font-display); font-style:italic; font-size:13px; color:var(--color-ink-faded);">From your logo.</span>
+            </div>
+            <div style="font-family:var(--font-display); font-style:italic; font-size:13px; color:var(--color-clay); min-height:1.2em;" id="logo-status"></div>
+          </div>
+        </div>
+
+        <div class="intake__confirm" <%- specComplete ? '' : 'style="display:none;"' %>>
+          <p class="intake__confirm-note">Your website spec is saved. Builds start from the Haven conversation, which is switched off on this server, so nothing is built from this page. Whoever runs the server can turn Haven on (CAS_HARBOR_ENABLED=true) and start again from the home page.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<button type="button" id="scroll-to-spec" class="intake__scroll-btn" style="display:none;" aria-label="Scroll to your spec">
+  See your spec &darr;
+</button>
+
+<script nonce="<%= cspNonce %>">
+  window.INTAKE_BUILD_ID = <%- safeJSON(build.id) %>;
+  window.INTAKE_CSRF_TOKEN = <%- safeJSON(csrfToken) %>;
+  window.INTAKE_SPEC_COMPLETE = <%= specComplete ? 'true' : 'false' %>;
+  window.INTAKE_IS_ANONYMOUS = <%= anonMode ? 'true' : 'false' %>;
+  window.INTAKE_TURN_COUNT = <%= currentTurnCount %>;
+
+  (function() {
+    var specPanel = document.getElementById('spec-panel');
+    var scrollBtn = document.getElementById('scroll-to-spec');
+    if (!specPanel || !scrollBtn) return;
+
+    function checkSpecVisibility() {
+      if (specPanel.style.display === 'none') {
+        scrollBtn.style.display = 'none';
+        return;
+      }
+      if (window.innerWidth >= 1024) {
+        scrollBtn.style.display = 'none';
+        return;
+      }
+      var rect = specPanel.getBoundingClientRect();
+      scrollBtn.style.display = rect.top > window.innerHeight ? 'inline-flex' : 'none';
+    }
+
+    scrollBtn.addEventListener('click', function() {
+      specPanel.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    var observer = new MutationObserver(function() { checkSpecVisibility(); });
+    observer.observe(specPanel, { attributes: true, attributeFilter: ['style'] });
+    window.addEventListener('scroll', checkSpecVisibility, { passive: true });
+    window.addEventListener('resize', checkSpecVisibility, { passive: true });
+    checkSpecVisibility();
+  })();
+</script>
+<% if (anonMode) { %>
+<script nonce="<%= cspNonce %>">
+  (function() {
+    var gateForm = document.getElementById('anon-email-gate-form');
+    if (!gateForm) return;
+    gateForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var formData = new FormData(gateForm);
+      var email = formData.get('email');
+      var statusEl = document.getElementById('anon-email-gate-status');
+      var submitBtn = gateForm.querySelector('button[type="submit"]');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
+      fetch(gateForm.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.INTAKE_CSRF_TOKEN },
+        body: JSON.stringify({ email: email })
+      }).then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
+        .then(function(result) {
+          if (result.ok) {
+            gateForm.innerHTML = '<p style="font-family:var(--font-display); font-style:italic; color:var(--color-clay); font-size:15px;">Check your inbox for a verification link.</p>';
+            var inputArea = document.getElementById('chat-input-area');
+            if (inputArea) inputArea.style.display = 'none';
+          } else {
+            if (statusEl) statusEl.textContent = result.data.error || 'Something went wrong. Please try again.';
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save my spec'; }
+          }
+        }).catch(function() {
+          if (statusEl) statusEl.textContent = 'Network error. Please try again.';
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save my spec'; }
+        });
+    });
+  })();
+</script>
+<% } %>
+
+<style>
+  .intake { padding:48px 0 96px; }
+  .intake__head { max-width:1100px; margin-bottom:24px; }
+  .intake__title { font-size:48px; line-height:1.04; margin:0; letter-spacing:-0.012em; }
+  @media (max-width: 900px) { .intake__title { font-size:36px; } }
+
+  .intake__notice {
+    max-width:1100px;
+    margin: 0 auto 24px;
+    padding: 14px 18px;
+    background: var(--color-vellum);
+    border-left: 3px solid var(--color-lantern);
+    font-family: var(--font-display); font-style: italic; font-size: 15px;
+    color: var(--color-ink-soft); line-height:1.5;
+  }
+
+  .intake__grid {
+    max-width:1100px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 1024px) {
+    .intake__grid { grid-template-columns: 1fr; }
+  }
+
+  .intake__chat {
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    box-shadow: var(--shadow-slip);
+    display: flex; flex-direction: column;
+    height: clamp(440px, 75vh, 660px);
+  }
+
+  .intake__progress {
+    display:flex; align-items:center; gap:14px;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--color-rule);
+    background: var(--color-companion-paper);
+    flex-wrap:wrap;
+  }
+  .intake__progress-label {
+    font-family: var(--font-body); font-size:12px; font-weight:600; color: var(--color-clay);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .intake__progress-stage {
+    font-family: var(--font-display); font-style: italic; font-size:15px; color: var(--color-ink-soft);
+    flex: 1;
+  }
+  .intake__progress-dots { display: inline-flex; gap: 6px; }
+  .intake__progress-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--color-rule);
+    transition: background .25s ease;
+  }
+  .intake__progress-dot--lit {
+    background: var(--color-lantern);
+    box-shadow: 0 0 6px var(--color-lantern-glow);
+  }
+
+  .intake__messages {
+    flex:1; overflow-y:auto;
+    padding: 22px;
+    display: flex; flex-direction: column; gap: 14px;
+    scroll-behavior: smooth;
+    background-image:
+      radial-gradient(rgba(126, 100, 72, 0.04) 1px, transparent 1px),
+      radial-gradient(rgba(126, 100, 72, 0.03) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+  }
+
+  .intake__helper {
+    padding: 18px 20px;
+    background: var(--color-companion-paper);
+    border-radius: 5px;
+    margin-bottom: 4px;
+  }
+  .intake__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .harbor-chat-row { display:flex; max-width:82%; }
+  .harbor-chat-row--user { align-self:flex-end; }
+  .harbor-chat-row--assistant { align-self:flex-start; }
+  .harbor-chat-bubble {
+    padding:14px 18px;
+    border-radius: 5px;
+    border:1px solid var(--color-rule);
+    box-shadow:0 1px 0 rgba(255, 250, 235, 0.40) inset, 0 2px 6px rgba(58, 42, 31, 0.06);
+  }
+  .harbor-chat-bubble--user {
+    background: var(--color-ink); color: var(--color-vellum); border-color: var(--color-ink);
+  }
+  .harbor-chat-bubble--assistant {
+    background: var(--color-companion-paper); color: var(--color-ink);
+  }
+  .harbor-chat-text {
+    margin:0;
+    font-family: var(--font-body);
+    font-size:15px; line-height:1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .harbor-chat-bubble--user .harbor-chat-text { color: var(--color-vellum); }
+
+  .intake__email-gate {
+    padding: 18px 22px;
+    border-top: 1px solid var(--color-rule);
+    background: var(--color-paper-soft);
+  }
+  .intake__email-gate-form { display:flex; gap:10px; flex-wrap:wrap; }
+  .intake__email-input {
+    flex:1; min-width:200px;
+    font-family: var(--font-body); font-size:15px; color: var(--color-ink);
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    padding: 10px 14px;
+    outline: none;
+  }
+  .intake__email-input:focus { border-color: var(--color-ink); }
+  .intake__email-status {
+    margin: 8px 0 0; font-family: var(--font-display); font-style:italic; font-size:14px; color: var(--color-clay); min-height: 1.2em;
+  }
+
+  .intake__input {
+    display:flex; gap:10px;
+    padding: 14px;
+    border-top: 1px solid var(--color-rule);
+    background: var(--color-companion-paper);
+    border-radius: 0 0 5px 5px;
+  }
+  .intake__textarea {
+    flex:1;
+    font-family: var(--font-body); font-size:15px; color: var(--color-ink);
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    padding: 10px 14px;
+    resize: none; line-height: 1.55; outline: none;
+    transition: border-color .15s ease;
+  }
+  .intake__textarea:focus { border-color: var(--color-ink); }
+
+  .intake__aside {
+    position: sticky; top: 96px;
+  }
+  @media (max-width: 1024px) { .intake__aside { position: static; } }
+
+  .intake__panel-card {
+    background: var(--color-companion-paper);
+    border: 1px solid var(--color-rule);
+    border-top: 3px solid var(--color-lantern);
+    border-radius: 5px;
+    box-shadow: var(--shadow-slip);
+    padding: 28px 28px 32px;
+  }
+
+  .intake__preview { margin-bottom: 18px; }
+  .intake__spec-content { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
+  .intake__spec-row {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-rule-soft);
+    font-size: 14px; color: var(--color-ink-soft); line-height: 1.55;
+  }
+  .intake__spec-row:last-child { border-bottom: none; }
+  .intake__spec-row .caps {
+    display:block; margin-bottom: 4px; color: var(--color-ink-faded);
+  }
+  .intake__spec-row ul {
+    list-style: none; padding: 0; margin: 6px 0 0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .intake__spec-row strong { color: var(--color-ink); font-weight: 600; }
+
+  .intake__logo {
+    margin: 22px 0 22px;
+    padding: 18px 20px;
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule-soft);
+    border-radius: 5px;
+  }
+
+  .intake__confirm { display: flex; flex-direction: column; gap: 14px; }
+  .intake__confirm-note { font-family: var(--font-display); font-style: italic; font-size: 15px; color: var(--color-ink-soft); line-height: 1.5; margin: 0; }
+
+  .intake__scroll-btn {
+    position: fixed; right: 22px; bottom: 22px; z-index: 50;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px;
+    background: var(--color-ink); color: var(--color-vellum);
+    border: none; border-radius: 5px;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: 0.02em;
+    box-shadow: 0 6px 14px rgba(58, 42, 31, 0.18);
+    cursor: pointer;
+  }
+  @media (min-width: 1024px) { .intake__scroll-btn { display: none !important; } }
+</style>

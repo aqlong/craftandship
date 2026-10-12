@@ -1,0 +1,241 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <div class="mb-4">
+    <h1 class="text-2xl font-bold text-gray-100">Senior Web Craftsman Reviews</h1>
+    <p class="text-sm text-subtle">Review queue for builds awaiting Senior Web Craftsman sign-off</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Pending</div>
+      <div class="text-xl sm:text-2xl font-bold text-amber-400" data-stat="pending_count"><%= pending_count %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Reviewed Today</div>
+      <div class="text-xl sm:text-2xl font-bold text-brand" data-stat="reviewed_today"><%= reviewed_today %></div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Total Reviewed</div>
+      <div class="text-xl sm:text-2xl font-bold text-gray-200" data-stat="total_reviewed"><%= total_reviewed %></div>
+    </div>
+  </div>
+
+  <%
+    var allBuilds = builds || [];
+    var pendingBuilds = allBuilds.filter(function(b) { return b.review_status === 'pending'; });
+    var changesBuilds = allBuilds.filter(function(b) { return b.review_status === 'changes_requested'; });
+    var approvedWaitingBuilds = allBuilds.filter(function(b) { return b.review_status === 'approved' && b.status === 'preview'; });
+    var liveBuilds = allBuilds.filter(function(b) { return b.status === 'live'; });
+
+    function fmtTs(ts) {
+      if (!ts) return '-';
+      try { return new Date(ts).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; }
+      catch (e) { return '-'; }
+    }
+  %>
+
+  <!-- Pending queue card -->
+  <div class="bg-surface-3 rounded-[10px] overflow-hidden mb-5">
+    <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider">Pending Review</h2>
+      <span class="text-xs text-subtle"><%= pendingBuilds.length %> waiting</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm cas-mobile-cards">
+        <thead>
+          <tr>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">App</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Customer</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Tier</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Created</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Preview</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (pendingBuilds.length === 0) { %>
+            <tr><td colspan="6" class="text-center text-subtle py-8">No builds awaiting review.</td></tr>
+          <% } %>
+          <% pendingBuilds.forEach(function(build) { %>
+            <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+              <td data-label="App" class="px-4 py-2.5 text-gray-300"><%= build.app_name || build.build_id %></td>
+              <td data-label="Customer" class="px-4 py-2.5 text-gray-300"><%= build.customer_email || '-' %></td>
+              <td data-label="Tier" class="px-4 py-2.5 text-gray-300 text-xs"><%= build.tier || '-' %></td>
+              <td data-label="Created" class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><%= fmtTs(build.created_at) %></td>
+              <td data-label="Preview" class="px-4 py-2.5 text-xs">
+                <% if (build.preview_url) { %>
+                  <a href="<%= httpUrl(build.preview_url) %>" target="_blank" rel="noopener noreferrer" class="text-brand underline">open</a>
+                <% } else { %><span class="text-subtle">-</span><% } %>
+              </td>
+              <td data-label="Action" class="px-4 py-2.5 whitespace-nowrap">
+                <a href="/admin/reviews/<%= build.build_id %>" class="btn btn-sm btn-primary">Review</a>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Changes requested card -->
+  <details class="bg-surface-3 rounded-[10px] overflow-hidden mb-5" <% if (changesBuilds.length > 0) { %>open<% } %>>
+    <summary class="px-4 py-3 border-b border-border flex items-center justify-between cursor-pointer select-none">
+      <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider">Changes Requested</h2>
+      <span class="text-xs text-subtle"><%= changesBuilds.length %> open</span>
+    </summary>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm cas-mobile-cards">
+        <thead>
+          <tr>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">App</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Customer</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Tier</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Last Review</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Preview</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (changesBuilds.length === 0) { %>
+            <tr><td colspan="6" class="text-center text-subtle py-8">No open change requests.</td></tr>
+          <% } %>
+          <% changesBuilds.forEach(function(build) { %>
+            <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+              <td data-label="App" class="px-4 py-2.5 text-gray-300"><%= build.app_name || build.build_id %></td>
+              <td data-label="Customer" class="px-4 py-2.5 text-gray-300"><%= build.customer_email || '-' %></td>
+              <td data-label="Tier" class="px-4 py-2.5 text-gray-300 text-xs"><%= build.tier || '-' %></td>
+              <td data-label="Last Review" class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><%= fmtTs(build.reviewed_at) %></td>
+              <td data-label="Preview" class="px-4 py-2.5 text-xs">
+                <% if (build.preview_url) { %>
+                  <a href="<%= httpUrl(build.preview_url) %>" target="_blank" rel="noopener noreferrer" class="text-brand underline">open</a>
+                <% } else { %><span class="text-subtle">-</span><% } %>
+              </td>
+              <td data-label="Action" class="px-4 py-2.5 whitespace-nowrap">
+                <a href="/admin/reviews/<%= build.build_id %>" class="btn btn-sm btn-secondary">Open</a>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- Approved waiting for customer card -->
+  <details class="bg-surface-3 rounded-[10px] overflow-hidden mb-5" <% if (approvedWaitingBuilds.length > 0) { %>open<% } %>>
+    <summary class="px-4 py-3 border-b border-border flex items-center justify-between cursor-pointer select-none">
+      <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider">Approved, Waiting for Customer</h2>
+      <span class="text-xs text-subtle"><%= approvedWaitingBuilds.length %> pending promotion</span>
+    </summary>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm cas-mobile-cards">
+        <thead>
+          <tr>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">App</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Customer</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Tier</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Reviewed At</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Preview</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (approvedWaitingBuilds.length === 0) { %>
+            <tr><td colspan="6" class="text-center text-subtle py-8">No approved builds waiting on customer.</td></tr>
+          <% } %>
+          <% approvedWaitingBuilds.forEach(function(build) { %>
+            <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+              <td data-label="App" class="px-4 py-2.5 text-gray-300"><%= build.app_name || build.build_id %></td>
+              <td data-label="Customer" class="px-4 py-2.5 text-gray-300"><%= build.customer_email || '-' %></td>
+              <td data-label="Tier" class="px-4 py-2.5 text-gray-300 text-xs"><%= build.tier || '-' %></td>
+              <td data-label="Reviewed At" class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><%= fmtTs(build.reviewed_at) %></td>
+              <td data-label="Preview" class="px-4 py-2.5 text-xs">
+                <% if (build.preview_url) { %>
+                  <a href="<%= httpUrl(build.preview_url) %>" target="_blank" rel="noopener noreferrer" class="text-brand underline">open</a>
+                <% } else { %><span class="text-subtle">-</span><% } %>
+              </td>
+              <td data-label="Action" class="px-4 py-2.5 whitespace-nowrap">
+                <a href="/admin/reviews/<%= build.build_id %>" class="btn btn-sm btn-secondary">Open</a>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- Live history card (collapsed by default) -->
+  <details class="bg-surface-3 rounded-[10px] overflow-hidden mb-5">
+    <summary class="px-4 py-3 border-b border-border flex items-center justify-between cursor-pointer select-none">
+      <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider">Live History</h2>
+      <span class="text-xs text-subtle"><%= liveBuilds.length %> shown</span>
+    </summary>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm cas-mobile-cards">
+        <thead>
+          <tr>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">App</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Customer</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Review</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Reviewed At</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (liveBuilds.length === 0) { %>
+            <tr><td colspan="5" class="text-center text-subtle py-8">No live builds in history.</td></tr>
+          <% } %>
+          <% liveBuilds.forEach(function(build) { %>
+            <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+              <td data-label="App" class="px-4 py-2.5 text-gray-300"><%= build.app_name || build.build_id %></td>
+              <td data-label="Customer" class="px-4 py-2.5 text-gray-300"><%= build.customer_email || '-' %></td>
+              <td data-label="Review" class="px-4 py-2.5 text-gray-300 text-xs"><%= build.review_status || 'none' %></td>
+              <td data-label="Reviewed At" class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><%= fmtTs(build.reviewed_at) %></td>
+              <td data-label="Action" class="px-4 py-2.5 whitespace-nowrap">
+                <a href="/builds/<%= build.build_id %>" class="btn btn-sm btn-secondary">Status</a>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </details>
+</section>
+
+<script nonce="<%= cspNonce %>">
+  (function () {
+    var POLL_ACTIVE = 5000;
+    var POLL_IDLE = 20000;
+    var lastPending = <%= pending_count %>;
+
+    function updateStat(name, value) {
+      var el = document.querySelector('[data-stat="' + name + '"]');
+      if (el) el.textContent = String(value);
+    }
+
+    async function pollReviews() {
+      try {
+        var res = await fetch('/admin/api/reviews', { credentials: 'same-origin' });
+        if (!res.ok) { schedule(); return; }
+        var data = await res.json();
+        var pending = data.pending_count || 0;
+        updateStat('pending_count', pending);
+        // If the queue transitions (new pending arriving or last pending drained),
+        // refresh the page so the card partitions update without per-card AJAX wiring.
+        if (pending !== lastPending) {
+          lastPending = pending;
+          window.location.reload();
+          return;
+        }
+      } catch (_) {}
+      schedule();
+    }
+
+    function schedule() {
+      var delay = lastPending > 0 ? POLL_ACTIVE : POLL_IDLE;
+      setTimeout(pollReviews, delay);
+    }
+
+    schedule();
+  })();
+</script>

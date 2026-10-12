@@ -1,0 +1,32 @@
+<!-- compose:widget offerings/faq-accordion -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-8">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= eyebrow %></div>
+        <% } %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+      </div>
+    <% } %>
+    <% var _items = (typeof items !== 'undefined' && items) ? items : (typeof rows !== 'undefined' ? rows : []); %>
+    <% if (_items.length === 0) { %>
+      <p class="font-body text-center" style="color: var(--color-foreground-muted);">No questions yet.</p>
+    <% } else { %>
+      <div class="space-y-3">
+        <% _items.forEach(function(faq, i) { %>
+          <details class="rounded-xl border overflow-hidden" style="background-color: var(--color-surface); border-color: var(--color-border);" <% if (i === 0) { %>open<% } %>>
+            <summary class="font-body font-medium text-base cursor-pointer px-5 py-4 transition-opacity hover:opacity-80" style="color: var(--color-foreground); list-style: none;">
+              <span style="display: inline-block; margin-right: 8px; color: var(--color-primary); font-weight: 700;">+</span><%= faq.question %>
+            </summary>
+            <div class="px-5 pb-5 pt-1 font-body text-sm leading-relaxed" style="color: var(--color-foreground-muted); white-space: pre-wrap;"><%= faq.answer %></div>
+          </details>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>
+<style>
+  details[open] summary span { transform: rotate(45deg); display: inline-block; }
+</style>

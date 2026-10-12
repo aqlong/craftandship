@@ -1,0 +1,312 @@
+/* ──────────────────────────────────────────────────────────────────────
+   HARBOR: homepage tokens (subset of harbor/Harbor design system v2.html)
+   Lifted as-is. Used by all three Harbor homepage variants.
+   ────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --color-paper:              #F1E4C9;
+  --color-paper-soft:         #EAD8B6;
+  --color-paper-shadow:       #D9C49E;
+  --color-paper-deep:         #C9AE82;
+  --color-vellum:             #FBF1DC;
+
+  /* Inks */
+  --color-ink:                #3A2A1F;
+  --color-ink-soft:           #5A4636;
+  --color-ink-faded:          #8A7560;
+  --color-ink-pencil:         #6E5742;
+
+  /* Companion / keeper palette */
+  --color-companion-paper:    #F4E7CC;
+  --color-companion-rule:     #C9A769;
+  --color-companion-edge:     #D6BB87;
+  --color-companion-shadow:   rgba(58, 42, 31, 0.10);
+  --color-keeper-paper:       #EFE5D2;
+  --color-keeper-rule:        rgba(126, 100, 72, 0.16);
+  --color-keeper-binding:     #7E6448;
+
+  /* Accents */
+  --color-lantern:            #C68A3A;
+  --color-lantern-glow:       rgba(198, 138, 58, 0.22);
+  --color-lantern-deep:       #8E5A1F;
+  --color-dusk-rose:          #C58A78;
+  --color-slate-blue:         #4F6478;
+  --color-slate-deep:         #2F3E4D;
+  --color-sage:               #7B8466;
+  --color-clay:               #A56F4F;
+
+  /* Functional */
+  --color-rule:               rgba(58, 42, 31, 0.14);
+  --color-rule-soft:          rgba(58, 42, 31, 0.08);
+  --color-focus:              #8E5A1F;
+
+  /* Type */
+  --font-display:             'Cormorant Garamond', 'EB Garamond', Georgia, serif;
+  --font-body:                'Source Sans 3', -apple-system, 'Segoe UI', sans-serif;
+  --font-hand:                'Caveat', 'Bradley Hand', cursive;
+
+  --leading-loose:            1.7;
+  --leading-relaxed:          1.55;
+  --leading-tight:            1.12;
+
+  --tracking-display:         -0.012em;
+  --tracking-caps:            0.10em;
+
+  /* Edges & light */
+  --shadow-letter:
+    0 1px 0 rgba(255, 250, 235, 0.40) inset,
+    0 1px 1px rgba(58, 42, 31, 0.05),
+    0 8px 22px rgba(58, 42, 31, 0.10),
+    18px 14px 30px rgba(58, 42, 31, 0.08);
+  --shadow-slip:
+    0 1px 0 rgba(255, 250, 235, 0.40) inset,
+    0 2px 6px rgba(58, 42, 31, 0.08),
+    0 10px 18px rgba(58, 42, 31, 0.06);
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+   BASE: every Harbor variant inherits this
+   ────────────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+.harbor, .harbor * { font-family: var(--font-body); }
+.harbor {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-size: 19px;
+  line-height: var(--leading-relaxed);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0.005em;
+}
+
+/* paper-grain: a subtle tooth that survives at any zoom */
+.harbor .paper {
+  background-image:
+    radial-gradient(rgba(126, 100, 72, 0.05) 1px, transparent 1px),
+    radial-gradient(rgba(126, 100, 72, 0.04) 1px, transparent 1px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 1px 2px;
+}
+
+.harbor a { color: inherit; text-decoration: underline;
+  text-decoration-thickness: 1px; text-underline-offset: 3px;
+  text-decoration-color: var(--color-rule); }
+.harbor a:hover { text-decoration-color: var(--color-lantern); }
+
+.harbor .display { font-family: var(--font-display); font-weight: 400;
+  letter-spacing: var(--tracking-display); line-height: var(--leading-tight); }
+.harbor .display em, .harbor em.in-clay { font-style: italic; color: var(--color-clay); }
+.harbor .italic { font-style: italic; }
+.harbor .hand { font-family: var(--font-hand); font-weight: 500; }
+.harbor .eyebrow {
+  font-family: var(--font-display); font-style: italic;
+  font-size: 18px; color: var(--color-clay);
+  font-weight: 400; letter-spacing: 0;
+}
+.harbor .caps {
+  font-family: var(--font-body); font-size: 11px;
+  text-transform: uppercase; letter-spacing: var(--tracking-caps);
+  color: var(--color-ink-faded); font-weight: 600;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+   CHROME: nav + footer (shared across variants, reskinned per CAS site)
+   ────────────────────────────────────────────────────────────────────── */
+.harbor .max-site { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+.harbor .nav {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(241, 228, 201, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-rule-soft);
+}
+.harbor .nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px;
+  gap: 16px;
+  container-type: inline-size;
+  container-name: nav-inner;
+}
+/* Brand: lighthouse glyph + wordmark, single-line and bulletproof */
+.harbor .nav-brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--color-ink); text-decoration: none;
+  white-space: nowrap; flex-shrink: 0;
+  line-height: 1;
+}
+.harbor .nav-brand .mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 22px;
+  background: var(--color-ink);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.harbor .nav-brand .mark svg { display: block; }
+.harbor .nav-brand .name {
+  font-family: var(--font-body);
+  font-size: 17px; font-weight: 500; letter-spacing: -0.005em;
+  color: var(--color-ink);
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.harbor .nav-brand .name em {
+  font-family: var(--font-display);
+  font-style: italic; font-weight: 400;
+  font-size: 19px; letter-spacing: -0.01em;
+  color: var(--color-clay);
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+/* Links cluster */
+.harbor .nav-links {
+  display: inline-flex; gap: 4px; align-items: center;
+  flex-wrap: nowrap; flex-shrink: 0;
+}
+.harbor .nav-link {
+  padding: 8px 12px; color: var(--color-ink-soft);
+  font-family: var(--font-display); font-style: italic;
+  font-size: 15px; line-height: 1;
+  text-decoration: none;
+  white-space: nowrap; flex-shrink: 0;
+}
+.harbor .nav-link:hover { color: var(--color-ink); }
+.harbor .nav-link--quiet {
+  font-family: var(--font-body); font-style: normal;
+  font-size: 14px; font-weight: 500;
+  margin-left: 6px; margin-right: 4px;
+}
+.harbor .nav-cta {
+  font-size: 13.5px !important;
+  padding: 10px 18px !important;
+  white-space: nowrap; flex-shrink: 0;
+  margin-left: 2px;
+}
+.harbor .nav .btn { white-space: nowrap; flex-shrink: 0; }
+
+/* Responsive: drop "Sign in" first, then secondary links, keep CTA always */
+@container nav-inner (max-width: 720px) {
+  .harbor .nav-link--quiet { display: none; }
+}
+@container nav-inner (max-width: 560px) {
+  .harbor .nav-links .nav-link { display: none; }
+}
+@media (max-width: 720px) {
+  .harbor .nav-link--quiet { display: none; }
+}
+@media (max-width: 560px) {
+  .harbor .nav-links .nav-link { display: none; }
+  .harbor .max-site { padding: 0 18px; }
+}
+
+/* Buttons: paper-stamp aesthetic, NOT pill */
+.harbor .btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 11px 22px; font-family: var(--font-body);
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: 5px;
+  cursor: pointer; text-decoration: none;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.harbor .btn-primary {
+  background: var(--color-ink); color: var(--color-vellum);
+  box-shadow: 0 1px 0 rgba(255, 250, 235, 0.10) inset,
+              0 6px 14px rgba(58, 42, 31, 0.18);
+}
+.harbor .btn-primary:hover { background: #2a1d14; transform: translateY(-1px); }
+.harbor .btn-ghost {
+  background: transparent; color: var(--color-ink);
+  border: 1px solid var(--color-rule);
+}
+.harbor .btn-ghost:hover { border-color: var(--color-ink); }
+.harbor .btn-quiet {
+  background: transparent; color: var(--color-ink-soft);
+  padding: 11px 0;
+}
+.harbor .btn-quiet .arrow {
+  border-bottom: 1px solid var(--color-rule); padding-bottom: 2px;
+  transition: border-color .15s ease, color .15s ease;
+}
+.harbor .btn-quiet:hover .arrow { color: var(--color-ink); border-color: var(--color-ink); }
+
+/* Chips: small, paper-stamp style, NOT pill */
+.harbor .chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; font-size: 13px; font-weight: 500;
+  background: var(--color-vellum);
+  border: 1px solid var(--color-rule);
+  color: var(--color-ink-soft); cursor: pointer;
+  border-radius: 5px;
+  font-family: var(--font-body); letter-spacing: 0.01em;
+}
+.harbor .chip:hover { border-color: var(--color-ink); color: var(--color-ink); }
+
+/* Ruled cards (used by pricing + faq) */
+.harbor .ruled-card {
+  background: var(--color-keeper-paper);
+  background-image: linear-gradient(transparent calc(30px - 1px), var(--color-keeper-rule) 30px);
+  background-size: 100% 30px;
+  background-position: 0 14px;
+  padding: 36px 32px 32px;
+  border: 1px solid var(--color-rule);
+  box-shadow: var(--shadow-slip);
+  border-radius: 5px;
+}
+
+/* Footer */
+.harbor footer.harbor-footer {
+  /* No top margin: the footer's own 64px top padding plus the border give
+     ample separation. A large margin here stacked on the preceding section's
+     bottom padding produced a 300px+ dead band on the home page. */
+  margin-top: 0;
+  padding: 48px 0 40px;
+  background: var(--color-paper-soft);
+  border-top: 1px solid var(--color-rule);
+}
+.harbor footer.harbor-footer .row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 56px;
+}
+/* min-width:0 lets grid tracks shrink below their content's intrinsic width,
+   preventing the long-link blowout that pushed columns past the viewport. */
+.harbor footer.harbor-footer .row > div { min-width: 0; }
+@media (max-width: 860px) {
+  .harbor footer.harbor-footer .row { grid-template-columns: 1fr 1fr; gap: 40px 32px; }
+}
+@media (max-width: 520px) {
+  .harbor footer.harbor-footer .row { grid-template-columns: 1fr; gap: 28px; }
+}
+.harbor footer.harbor-footer h4 {
+  font-family: var(--font-display); font-style: italic;
+  font-size: 18px; color: var(--color-clay);
+  margin: 0 0 16px; font-weight: 400;
+}
+.harbor footer.harbor-footer ul {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.harbor footer.harbor-footer a { font-size: 15px; color: var(--color-ink-soft); }
+.harbor footer.harbor-footer .colophon {
+  margin-top: 56px; padding-top: 24px;
+  border-top: 1px solid var(--color-rule-soft);
+  display: flex; justify-content: space-between;
+  flex-wrap: wrap; gap: 6px 24px;
+  font-family: var(--font-display); font-style: italic;
+  font-size: 15px; color: var(--color-ink-faded);
+}
+
+/* the deckled paper edge: used as a subtle frame on contained art */
+.harbor .deckle {
+  position: relative; padding: 14px;
+  background: var(--color-paper-soft);
+  box-shadow: var(--shadow-letter);
+  border-radius: 5px;
+}
+.harbor .deckle::before {
+  content: ''; position: absolute; inset: 8px;
+  border: 1px solid rgba(58, 42, 31, 0.12);
+  pointer-events: none;
+  border-radius: 5px;
+}
+.harbor .deckle img { display: block; width: 100%; height: auto; }

@@ -1,0 +1,87 @@
+<!-- compose:widget admin/crud-form -->
+<% var _name = (typeof resource_name_display !== 'undefined' && resource_name_display) ? resource_name_display : resource_name; %>
+<% var _US_STATES = [["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["DC","District of Columbia"],["FL","Florida"],["GA","Georgia"],["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],["OK","Oklahoma"],["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],["SD","South Dakota"],["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],["VA","Virginia"],["WA","Washington"],["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"]]; %>
+<section class="py-10" style="background-color: var(--color-surface); min-height: calc(100vh - 64px);">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6">
+    <a href="/admin/<%= resource_slug %>" class="font-body text-sm transition-opacity hover:opacity-70 mb-4 inline-block" style="color: var(--color-primary);">← Back to <%= _name %>s</a>
+    <h1 class="font-display text-3xl font-bold mb-8" style="color: var(--color-foreground);"><%= mode === 'new' ? 'Add New' : 'Edit' %> <%= _name %></h1>
+    <% if (locals.error) { %>
+      <div class="mb-4 bg-red-50 text-red-800 border border-red-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= error %></div>
+    <% } %>
+    <form action="<%= mode === 'new' ? '/admin/' + resource_slug : '/admin/' + resource_slug + '/' + record_id + '/update' %>" method="POST" class="p-6 rounded-xl border space-y-4 cas-form" style="background: white; border-color: var(--color-border);">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% fields.forEach(function(field) { %>
+        <% var _common = 'class="w-full px-3 py-2 border rounded-md font-body text-sm" style="border-color: var(--color-border); background: white;"'; %>
+        <%# _extra is emitted with the raw output tag, so every value that goes
+            into it is attribute-escaped here (placeholder comes from the spec). %>
+        <% var _attr = function(v){ return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }; %>
+        <% var _extra = ''; %>
+        <% if (field.pattern) _extra += ' pattern="' + _attr(field.pattern) + '"'; %>
+        <% if (field.maxlength) _extra += ' maxlength="' + _attr(field.maxlength) + '"'; %>
+        <% if (field.inputmode) _extra += ' inputmode="' + _attr(field.inputmode) + '"'; %>
+        <% if (field.autocomplete) _extra += ' autocomplete="' + _attr(field.autocomplete) + '"'; %>
+        <% if (field.placeholder) _extra += ' placeholder="' + _attr(field.placeholder) + '"'; %>
+        <% if (field.required) _extra += ' required'; %>
+        <div>
+          <% if (field.type !== 'checkbox' && field.type !== 'hidden') { %>
+            <label for="field-<%= field.name %>" class="block font-body text-sm font-medium mb-1" style="color: var(--color-foreground);"><%= field.label %><% if (field.required) { %> <span style="color: var(--color-error);">*</span><% } %></label>
+          <% } %>
+          <% if (field.type === 'textarea') { %>
+            <textarea id="field-<%= field.name %>" name="<%= field.name %>" rows="4" <% if (field.required) { %>required<% } %><% if (field.maxlength) { %> maxlength="<%= field.maxlength %>"<% } %><% if (field.placeholder) { %> placeholder="<%= field.placeholder %>"<% } %> class="w-full px-3 py-2 border rounded-md font-body text-sm" style="border-color: var(--color-border); background: white;"><%= field.value || '' %></textarea>
+          <% } else if (field.type === 'select' || field.type === 'state-us') { %>
+            <select id="field-<%= field.name %>" name="<%= field.name %>" <% if (field.required) { %>required<% } %> class="w-full px-3 py-2 border rounded-md font-body text-sm" style="border-color: var(--color-border); background: white;">
+              <option value=""><%= field.placeholder || 'Select...' %></option>
+              <% if (field.type === 'state-us') { %>
+                <% _US_STATES.forEach(function(s) { %>
+                  <option value="<%= s[0] %>"<% if (field.value === s[0]) { %> selected<% } %>><%= s[1] %> (<%= s[0] %>)</option>
+                <% }); %>
+              <% } else { %>
+                <% (field.options || []).forEach(function(opt) { var val = (typeof opt === 'string') ? opt : opt.value; var lbl = (typeof opt === 'string') ? opt : (opt.label || opt.value); %>
+                  <option value="<%= val %>"<% if (field.value === val) { %> selected<% } %>><%= lbl %></option>
+                <% }); %>
+              <% } %>
+            </select>
+          <% } else if (field.type === 'checkbox') { %>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input id="field-<%= field.name %>" type="checkbox" name="<%= field.name %>" value="1" <% if (field.value) { %>checked<% } %> />
+              <span class="font-body text-sm" style="color: var(--color-foreground);"><%= field.label %></span>
+            </label>
+          <% } else if (field.type === 'hidden') { %>
+            <input id="field-<%= field.name %>" type="hidden" name="<%= field.name %>" value="<%= field.value || '' %>" />
+          <% } else if (field.type === 'date') { %>
+            <input id="field-<%= field.name %>" type="date" name="<%= field.name %>" value="<%= field.value || '' %>"<%- _extra %> class="w-full px-3 py-2 border rounded-md font-body text-sm" style="border-color: var(--color-border); background: white;" />
+          <% } else if (field.type === 'time') { %>
+            <input id="field-<%= field.name %>" type="time" name="<%= field.name %>" value="<%= field.value || '' %>"<%- _extra %> class="w-full px-3 py-2 border rounded-md font-body text-sm" style="border-color: var(--color-border); background: white;" />
+          <% } else if (field.type === 'datetime-local') { %>
+            <input id="field-<%= field.name %>" type="datetime-local" name="<%= field.name %>" value="<%= field.value || '' %>"<%- _extra %> class="w-full px-3 py-2 border rounded-md font-body text-sm" style="border-color: var(--color-border); background: white;" />
+          <% } else if (field.type === 'file') { %>
+            <%- include('./upload-zone.ejs', { field_name: field.name, label: field.label, current_url: field.value || '', accept: 'PNG / JPG / WEBP' }) %>
+          <% } else if (field.type === 'color') { %>
+            <input id="field-<%= field.name %>" type="color" name="<%= field.name %>" value="<%= field.value || '#000000' %>"<%- _extra %> class="px-2 py-1 border rounded-md" style="border-color: var(--color-border); background: white; width: 80px; height: 44px;" />
+          <% } else { %>
+            <input id="field-<%= field.name %>" type="<%= field.type || 'text' %>" name="<%= field.name %>" value="<%= field.value || '' %>"<%- _extra %> class="w-full px-3 py-2 border rounded-md font-body text-sm" style="border-color: var(--color-border); background: white;" />
+          <% } %>
+        </div>
+      <% }); %>
+      <%# Action row (Save + Cancel); INSIDE the main form. The Delete form %>
+      <%# MUST be a sibling of the main form, not nested: nested <form> is %>
+      <%# invalid HTML. Browsers flatten the inner form's hidden inputs into %>
+      <%# the outer form, which makes req.body._csrf an array, breaks CSRF %>
+      <%# validation, and surfaces as "Something Went Wrong" on the admin %>
+      <%# edit Save button. %>
+      <div class="flex gap-3 pt-2" style="flex-wrap: wrap;">
+        <button type="submit" class="font-body font-medium px-6 py-3 rounded-md transition-opacity hover:opacity-90 min-h-[44px]" style="background-color: var(--color-primary); color: var(--color-on-primary);"><%= mode === 'new' ? ('Create ' + _name) : 'Save Changes' %></button>
+        <a href="/admin/<%= resource_slug %>" class="font-body font-medium px-6 py-3 rounded-md border min-h-[44px] inline-flex items-center" style="border-color: var(--color-border); color: var(--color-foreground); background: transparent;">Cancel</a>
+      </div>
+    </form>
+    <% if (mode === 'edit' && record_id) { %>
+      <%# Delete form: SIBLING of the edit form, not nested. Visually %>
+      <%# placed below to avoid the nesting bug; pt-0 + mt-4 keeps the look %>
+      <%# tight and intentional. %>
+      <form action="/admin/<%= resource_slug %>/<%= record_id %>/delete" method="POST" class="mt-4 flex justify-end" data-confirm="Delete this <%= _name.toLowerCase() %>? This cannot be undone.">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="font-body font-medium px-5 py-3 rounded-md border min-h-[44px] transition-opacity hover:opacity-80" style="background: transparent; border-color: var(--color-error); color: var(--color-error); cursor: pointer;">Delete</button>
+      </form>
+    <% } %>
+  </div>
+</section>

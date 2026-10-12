@@ -1,0 +1,87 @@
+<!-- compose:partial offerings/book-card - one book, card or spotlight.
+     Include args:
+       - book (required): a books-table row (or spec-authored equivalent)
+       - show_series_badge (optional, default true): suppressed inside a
+         grouped section whose eyebrow already names the series
+         (never say the group label three times in one viewport)
+       - spotlight (optional, default false): full-width horizontal
+         treatment for single-member groups / home spotlight
+         (a one-member group must never render as a lone orphan card in a
+         3-up grid) -->
+<%
+function _bcEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// Book descriptions may carry simple formatting. Basic entities are decoded
+// once (so "&amp;" is not shown twice-escaped), EVERYTHING is escaped, and
+// only these attribute-free tags are turned back into markup. No link,
+// image, style, script, form or event handler can come through. Same rule
+// as compose.markdown_safe.sanitize_html_fragment on the build side.
+function _bcSafeHtml(s){
+  var decoded = String(s == null ? '' : s).replace(/&(amp|lt|gt|quot|#39);/g, function(_m, n){ return ({amp:'&', lt:'<', gt:'>', quot:'"', '#39':"'"})[n]; });
+  return _bcEsc(decoded).replace(/&lt;(\/?)(p|br|em|strong|i|b|ul|ol|li|blockquote)\s*(\/?)&gt;/gi, function(_m, open, tag, close){ return '<' + open + tag.toLowerCase() + close + '>'; });
+}
+var _bcBook = (typeof book !== 'undefined' && book) ? book : {};
+var _bcShowSeries = (typeof show_series_badge !== 'undefined') ? !!show_series_badge : true;
+var _bcSpotlight = (typeof spotlight !== 'undefined') ? !!spotlight : false;
+var _bcCoverUrl = _bcBook.cover_image_url || _bcBook.image_url || '';
+var _bcCoverAlt = _bcBook.cover_image_alt || ((_bcBook.title || 'Book') + ' cover');
+var _bcHref = _bcBook.detail_href || '';
+var _bcRetailers = [];
+if (_bcBook.goodreads_url) _bcRetailers.push('<a href="' + _bcEsc(_bcBook.goodreads_url) + '" target="_blank" rel="noopener">Goodreads</a>');
+if (_bcBook.local_bookstore_url) _bcRetailers.push('<a href="' + _bcEsc(_bcBook.local_bookstore_url) + '" target="_blank" rel="noopener">Local bookstore</a>');
+if (_bcBook.barnesnoble_url) _bcRetailers.push('<a href="' + _bcEsc(_bcBook.barnesnoble_url) + '" target="_blank" rel="noopener">Barnes &amp; Noble</a>');
+if (_bcBook.netgalley_url) _bcRetailers.push('<a href="' + _bcEsc(_bcBook.netgalley_url) + '" target="_blank" rel="noopener">NetGalley</a>');
+if (_bcBook.audible_url) _bcRetailers.push('<a href="' + _bcEsc(_bcBook.audible_url) + '" target="_blank" rel="noopener">Audible</a>');
+%>
+<article class="rounded-xl border overflow-hidden transition-all hover:shadow-md <%= _bcSpotlight ? 'md:grid md:grid-cols-5' : 'flex flex-col' %>" style="background-color: var(--color-surface); border-color: var(--color-border);">
+  <% if (_bcCoverUrl) { %>
+    <div class="<%= _bcSpotlight ? 'md:col-span-2' : '' %>">
+      <% if (_bcHref) { %><a href="<%= _bcHref %>"><% } %>
+        <img loading="lazy" src="<%= _bcCoverUrl %>" alt="<%= _bcCoverAlt %>" class="w-full h-full" style="aspect-ratio: 2 / 3; object-fit: contain; background-color: var(--color-secondary, var(--color-surface)); padding: 1.25rem;" />
+      <% if (_bcHref) { %></a><% } %>
+    </div>
+  <% } %>
+  <div class="p-6 <%= _bcSpotlight ? 'md:col-span-3 md:p-8 md:flex md:flex-col md:justify-center' : 'flex flex-col flex-1' %>">
+    <% if (_bcShowSeries && _bcBook.series_label) { %>
+      <div class="font-body text-xs font-bold uppercase mb-3" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;"><%= _bcBook.series_label %></div>
+    <% } %>
+    <h3 class="font-display <%= _bcSpotlight ? 'text-2xl md:text-3xl' : 'text-xl' %> font-bold mb-2" style="color: var(--color-foreground); letter-spacing: -0.01em;">
+      <% if (_bcHref) { %><a href="<%= _bcHref %>" style="color: inherit; text-decoration: none;"><%= _bcBook.title || '' %></a><% } else { %><%= _bcBook.title || '' %><% } %>
+    </h3>
+    <% if (_bcBook.subtitle) { %>
+      <div class="font-body text-sm italic mb-3" style="color: var(--color-foreground-muted);"><%= _bcBook.subtitle %></div>
+    <% } %>
+    <% if (_bcBook.description) { %>
+      <div class="font-body text-sm leading-relaxed mb-4" style="color: var(--color-foreground-muted);"><%- _bcSafeHtml(_bcBook.description) %></div>
+    <% } %>
+    <% if (_bcBook.accolade || _bcBook.rating_callout) { %>
+      <div class="font-body text-sm mb-4" style="color: var(--color-foreground);">
+        <% if (_bcBook.accolade) { %><strong><%= _bcBook.accolade %></strong><% } %>
+        <% if (_bcBook.accolade && _bcBook.rating_callout) { %> &middot; <% } %>
+        <% if (_bcBook.rating_callout) { %><span style="color: var(--color-accent-earth, var(--color-primary)); font-weight: 600;"><%= _bcBook.rating_callout %></span><% } %>
+      </div>
+    <% } %>
+    <% if (_bcBook.price_display) { %>
+      <div class="font-body text-sm mb-4" style="color: var(--color-foreground-muted);"><%= _bcBook.price_display %></div>
+    <% } %>
+    <div>
+      <% if (_bcBook.amazon_url) { %>
+        <a href="<%= _bcBook.amazon_url %>" target="_blank" rel="noopener" class="inline-flex items-center justify-center font-body text-sm font-semibold rounded-md px-4 py-2 mb-3 mr-2 transition-opacity hover:opacity-90" style="background-color: var(--color-primary); color: var(--color-on-primary); text-decoration: none;">
+          Buy on Amazon
+        </a>
+      <% } %>
+      <% if (_bcHref) { %>
+        <a href="<%= _bcHref %>" class="inline-flex items-center justify-center font-body text-sm font-semibold rounded-md px-4 py-2 mb-3 border transition-opacity hover:opacity-80" style="border-color: var(--color-border); color: var(--color-primary); text-decoration: none;">
+          About this book
+        </a>
+      <% } %>
+    </div>
+    <% if (_bcRetailers.length > 0) { %>
+      <div class="font-body text-xs" style="color: var(--color-foreground-muted);">
+        <em>Also at:</em> <%- _bcRetailers.join(' &middot; ') %>
+      </div>
+    <% } %>
+    <% if (_bcBook.cover_credit && !_bcSpotlight) { %>
+      <div class="font-body text-xs mt-3" style="color: var(--color-foreground-muted); font-style: italic;"><%= _bcBook.cover_credit %></div>
+    <% } %>
+  </div>
+</article>

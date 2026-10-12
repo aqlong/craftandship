@@ -1,0 +1,15 @@
+<section style="padding:120px 0;">
+  <div class="max-site" style="max-width:560px; text-align:center;">
+    <div style="font-family:var(--font-display); font-style:italic; font-size:120px; line-height:1; color:var(--color-clay); letter-spacing:-0.03em; margin:0 0 18px;">500</div>
+    <h1 class="display" style="font-size:44px; line-height:1.05; margin:0 0 18px; letter-spacing:-0.012em;">
+      Something went sideways.
+    </h1>
+    <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.6; margin:0 0 32px;">
+      <%= typeof error !== 'undefined' && error ? error : 'Something on our end. Please try again. If it keeps happening, write to Ocean.' %>
+    </p>
+    <div style="display:flex; gap:18px; justify-content:center; flex-wrap:wrap;">
+      <a href="/" class="btn btn-primary">Back home &rarr;</a>
+      <a href="/contact" class="btn btn-quiet"><span class="arrow">Reach Ocean</span></a>
+    </div>
+  </div>
+</section>

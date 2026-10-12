@@ -1,0 +1,451 @@
+<section class="max-w-[1400px] mx-auto px-3 py-4 sm:p-6 sm:pt-8 overflow-x-hidden">
+  <%- include("_admin-nav") %>
+
+  <%
+    // Today's Spend card was removed: it was always $0.00 because Anthropic
+    // billing has a 24h lag. Period Total + Claude Code (est.) are the
+    // useful numbers.
+    var hasPlatform = summary.today_platform > 0 || summary.period_platform > 0;
+  %>
+
+  <!-- Stat Cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Period Total</div>
+      <div class="text-xl sm:text-2xl font-bold text-gray-200" data-stat="period_total"><%= fmtUsd(summary.period_total) %></div>
+      <div class="text-xs text-subtle mt-1">Last <%= range %> days (all costs incl. platform)</div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Avg / Build</div>
+      <div class="text-xl sm:text-2xl font-bold text-brand-sky" data-stat="avg_per_build"><%= fmtUsd(summary.avg_per_build) %></div>
+      <div class="text-xs text-subtle mt-1">$0 expected: v2 builds are AI-free</div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Avg Platform / Day</div>
+      <div class="text-xl sm:text-2xl font-bold text-brand-teal" data-stat="avg_platform_per_day"><%= fmtUsd(summary.avg_platform_per_day) %></div>
+      <div class="text-xs text-subtle mt-1">Days with platform data</div>
+    </div>
+    <div class="bg-surface-3 rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+      <div class="text-[0.75rem] text-subtle mb-1 uppercase tracking-wider">Claude Code (est.)</div>
+      <div class="text-xl sm:text-2xl font-bold text-brand" data-stat="period_untracked"><%= fmtUsd(summary.period_untracked) %></div>
+      <div class="text-xs text-subtle mt-1"><%= hasPlatform ? 'Period: platform minus tracked' : 'No platform cost data yet' %></div>
+    </div>
+  </div>
+
+  <!-- Date Range Filter -->
+  <div class="mb-6">
+    <select data-nav-select="/admin/costs?range=" class="bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm w-full sm:w-auto">
+      <option value="7" <%= range === 7 ? 'selected' : '' %>>Last 7 days</option>
+      <option value="30" <%= range === 30 ? 'selected' : '' %>>Last 30 days</option>
+      <option value="90" <%= range === 90 ? 'selected' : '' %>>Last 90 days</option>
+    </select>
+  </div>
+
+  <!-- Daily Breakdown Table -->
+  <h2 class="text-lg font-semibold text-gray-200 mb-3">Daily Breakdown</h2>
+  <!-- Desktop -->
+  <div class="hidden lg:block bg-surface-3 rounded-[10px] mb-8">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Date</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Build Spend</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Agent Spend</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Platform</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Claude Code</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Day Total</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Builds</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (daily.length === 0) { %>
+          <tr><td colspan="7" class="text-center text-subtle py-8">No cost data yet.</td></tr>
+        <% } %>
+        <% daily.forEach(function(row) { %>
+          <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+            <td class="px-4 py-2.5 text-gray-300 whitespace-nowrap">
+              <span data-ts="<%= row.date %>T12:00:00Z" data-ts-fmt="date"><%= row.date %></span>
+            </td>
+            <td class="px-4 py-2.5 text-gray-300 text-right"><%= fmtUsd(row.build_cost) %></td>
+            <td class="px-4 py-2.5 text-gray-300 text-right"><%= fmtUsd(row.agent_cost) %></td>
+            <td class="px-4 py-2.5 text-right <%= row.platform_usd > 0 ? 'text-gray-300' : 'text-subtle' %>"><%= row.platform_usd > 0 ? fmtUsd(row.platform_usd) : '-' %></td>
+            <td class="px-4 py-2.5 text-right <%= row.untracked > 0 ? 'text-brand' : 'text-subtle' %>"><%= row.untracked > 0 ? fmtUsd(row.untracked) : '-' %></td>
+            <td class="px-4 py-2.5 text-gray-100 text-right font-semibold"><%= fmtUsd(row.total) %></td>
+            <td class="px-4 py-2.5 text-gray-300 text-right"><%= row.build_count %></td>
+          </tr>
+        <% }); %>
+        <% if (daily.length > 0) {
+          var sumBuild = 0, sumAgent = 0, sumPlatform = 0, sumUntracked = 0, sumTotal = 0, sumBuilds = 0;
+          daily.forEach(function(row) {
+            sumBuild += Number(row.build_cost);
+            sumAgent += Number(row.agent_cost);
+            sumPlatform += Number(row.platform_usd);
+            sumUntracked += Number(row.untracked);
+            sumTotal += Number(row.total);
+            sumBuilds += Number(row.build_count);
+          });
+        %>
+          <tr class="border-t-2 border-border bg-surface-2">
+            <td class="px-4 py-2.5 text-gray-200 font-semibold">Total</td>
+            <td class="px-4 py-2.5 text-gray-200 text-right font-semibold"><%= fmtUsd(sumBuild) %></td>
+            <td class="px-4 py-2.5 text-gray-200 text-right font-semibold"><%= fmtUsd(sumAgent) %></td>
+            <td class="px-4 py-2.5 text-gray-200 text-right font-semibold"><%= sumPlatform > 0 ? fmtUsd(sumPlatform) : '-' %></td>
+            <td class="px-4 py-2.5 text-brand-sky text-right font-semibold"><%= sumUntracked > 0 ? fmtUsd(sumUntracked) : '-' %></td>
+            <td class="px-4 py-2.5 text-gray-100 text-right font-bold"><%= fmtUsd(sumTotal) %></td>
+            <td class="px-4 py-2.5 text-gray-200 text-right font-semibold"><%= sumBuilds %></td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+  <!-- Mobile -->
+  <div class="lg:hidden space-y-3 mb-8">
+    <% if (daily.length === 0) { %>
+      <div class="text-center text-subtle py-8">No cost data yet.</div>
+    <% } %>
+    <% daily.forEach(function(row) { %>
+      <div class="bg-surface rounded-lg p-4">
+        <div class="text-gray-200 font-semibold text-sm mb-2"><span data-ts="<%= row.date %>T12:00:00Z" data-ts-fmt="date"><%= row.date %></span></div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Day Total</span>
+          <span class="text-gray-100 font-semibold"><%= fmtUsd(row.total) %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Build</span>
+          <span class="text-gray-300"><%= fmtUsd(row.build_cost) %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Agent</span>
+          <span class="text-gray-300"><%= fmtUsd(row.agent_cost) %></span>
+        </div>
+        <% if (row.platform_usd > 0) { %>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Platform</span>
+          <span class="text-gray-300"><%= fmtUsd(row.platform_usd) %></span>
+        </div>
+        <% } %>
+        <% if (row.untracked > 0) { %>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Claude Code</span>
+          <span class="text-brand"><%= fmtUsd(row.untracked) %></span>
+        </div>
+        <% } %>
+        <div class="flex justify-between text-xs">
+          <span class="text-subtle">Builds</span>
+          <span class="text-gray-300"><%= row.build_count %></span>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+
+  <!-- Per-Tier Breakdown -->
+  <% if (per_tier.length > 0) { %>
+  <h2 class="text-lg font-semibold text-gray-200 mb-3">Cost by Tier</h2>
+  <!-- Desktop -->
+  <div class="hidden lg:block bg-surface-3 rounded-[10px] mb-8">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Tier</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Builds</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Total Cost</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Avg Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% per_tier.forEach(function(row) { %>
+          <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+            <td class="px-4 py-2.5"><span class="admin-badge admin-badge-<%= row.tier %>"><%= row.tier %></span></td>
+            <td class="px-4 py-2.5 text-gray-300 text-right"><%= row.count %></td>
+            <td class="px-4 py-2.5 text-gray-300 text-right"><%= fmtUsd(row.total_cost) %></td>
+            <td class="px-4 py-2.5 text-gray-300 text-right"><%= fmtUsd(row.avg_cost) %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <!-- Mobile -->
+  <div class="lg:hidden space-y-3 mb-8">
+    <% per_tier.forEach(function(row) { %>
+      <div class="bg-surface rounded-lg p-4">
+        <div class="mb-2"><span class="admin-badge admin-badge-<%= row.tier %>"><%= row.tier %></span></div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Builds</span>
+          <span class="text-gray-300"><%= row.count %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Total Cost</span>
+          <span class="text-gray-300"><%= fmtUsd(row.total_cost) %></span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-subtle">Avg Cost</span>
+          <span class="text-gray-300"><%= fmtUsd(row.avg_cost) %></span>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+  <% } %>
+
+  <!-- Per-Build Costs -->
+  <h2 class="text-lg font-semibold text-gray-200 mb-3">Recent Build Costs</h2>
+  <!-- Desktop -->
+  <div class="hidden lg:block bg-surface-3 rounded-[10px] mb-8">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">App</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Tier</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Cost</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Status</th>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Completed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (builds.length === 0) { %>
+          <tr><td colspan="5" class="text-center text-subtle py-8">No builds with cost data yet.</td></tr>
+        <% } %>
+        <% builds.forEach(function(b) { %>
+          <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+            <td class="px-4 py-2.5 text-gray-300"><%= b.app_name || '(unnamed)' %></td>
+            <td class="px-4 py-2.5"><span class="admin-badge admin-badge-<%= b.tier %>"><%= b.tier %></span></td>
+            <td class="px-4 py-2.5 text-gray-100 text-right font-semibold">
+              <% if (b.cost_breakdown && Object.keys(b.cost_breakdown).length > 0) { %>
+                <button data-click="toggleDetail" data-arg="<%= b.id %>" class="text-brand-sky hover:text-brand cursor-pointer"><%= fmtUsd(b.cost) %> &#x25B6;</button>
+              <% } else { %>
+                <%= fmtUsd(b.cost) %>
+              <% } %>
+            </td>
+            <td class="px-4 py-2.5"><span class="admin-badge admin-badge-<%= b.status %>"><%= b.status %></span></td>
+            <td class="px-4 py-2.5 text-muted whitespace-nowrap">
+              <% if (b.completed_at) { %>
+                <span data-ts="<%= new Date(b.completed_at).toISOString() %>" data-ts-fmt="datetime">
+                  <%= new Date(b.completed_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC
+                </span>
+              <% } else { %>
+                -
+              <% } %>
+            </td>
+          </tr>
+          <% if (b.cost_breakdown && Object.keys(b.cost_breakdown).length > 0) { %>
+            <tr class="hidden" data-detail-for="<%= b.id %>">
+              <td colspan="5" class="px-4 py-3 bg-surface-2">
+                <div class="text-xs space-y-1">
+                  <% Object.entries(b.cost_breakdown).forEach(function([stage, info]) { %>
+                    <div class="flex justify-between">
+                      <span class="text-subtle"><%= stage %></span>
+                      <span class="text-gray-300">
+                        Executor: <%= fmtUsd(info.executor_cost_usd, 4) %> (<%= info.executor_model %>)
+                        &middot;
+                        Advisor: <%= fmtUsd(info.advisor_cost_usd, 4) %> (<%= info.advisor_model %>, <%= info.advisor_input_tokens %>in/<%= info.advisor_output_tokens %>out)
+                      </span>
+                    </div>
+                  <% }); %>
+                </div>
+              </td>
+            </tr>
+          <% } %>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <!-- Mobile -->
+  <div class="lg:hidden space-y-3 mb-8">
+    <% if (builds.length === 0) { %>
+      <div class="text-center text-subtle py-8">No builds with cost data yet.</div>
+    <% } %>
+    <% builds.forEach(function(b) { %>
+      <div class="bg-surface rounded-lg p-4">
+        <div class="flex justify-between items-start mb-2">
+          <span class="text-gray-200 font-semibold text-sm"><%= b.app_name || '(unnamed)' %></span>
+          <span class="text-gray-100 font-semibold text-sm"><%= fmtUsd(b.cost) %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Tier</span>
+          <span><span class="admin-badge admin-badge-<%= b.tier %>"><%= b.tier %></span></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Status</span>
+          <span><span class="admin-badge admin-badge-<%= b.status %>"><%= b.status %></span></span>
+        </div>
+        <% if (b.completed_at) { %>
+        <div class="flex justify-between text-xs">
+          <span class="text-subtle">Completed</span>
+          <span class="text-muted"><span data-ts="<%= new Date(b.completed_at).toISOString() %>" data-ts-fmt="datetime"><%= new Date(b.completed_at).toISOString().slice(0, 16).replace('T', ' ') %> UTC</span></span>
+        </div>
+        <% } %>
+        <% if (b.cost_breakdown && Object.keys(b.cost_breakdown).length > 0) { %>
+          <div class="mt-2 pt-2 border-t border-surface-3">
+            <button data-toggle-next class="text-brand-sky text-xs hover:text-brand">Show breakdown &#x25B6;</button>
+            <div class="hidden mt-1 text-xs space-y-1">
+              <% Object.entries(b.cost_breakdown).forEach(function([stage, info]) { %>
+                <div class="text-gray-400">
+                  <span class="text-subtle"><%= stage %>:</span>
+                  Exec <%= fmtUsd(info.executor_cost_usd, 4) %> / Adv <%= fmtUsd(info.advisor_cost_usd, 4) %>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+
+  <!-- Agent Costs -->
+  <% if (per_agent.length > 0) { %>
+  <h2 class="text-lg font-semibold text-gray-200 mb-3">Agent Costs</h2>
+  <!-- Desktop -->
+  <div class="hidden lg:block bg-surface-3 rounded-[10px] mb-8">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border whitespace-nowrap">Agent</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Tasks</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Total Cost</th>
+          <th class="px-4 py-3 text-right text-subtle font-semibold border-b border-border whitespace-nowrap">Avg Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% per_agent.forEach(function(row) { %>
+          <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2">
+            <td class="px-4 py-2.5 text-gray-300"><%= row.agent %></td>
+            <td class="px-4 py-2.5 text-gray-300 text-right"><%= row.count %></td>
+            <td class="px-4 py-2.5 text-gray-300 text-right"><%= fmtUsd(row.total_cost) %></td>
+            <td class="px-4 py-2.5 text-gray-300 text-right"><%= fmtUsd(row.avg_cost) %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <!-- Mobile -->
+  <div class="lg:hidden space-y-3 mb-8">
+    <% per_agent.forEach(function(row) { %>
+      <div class="bg-surface rounded-lg p-4">
+        <div class="text-gray-200 font-semibold text-sm mb-2"><%= row.agent %></div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Tasks</span>
+          <span class="text-gray-300"><%= row.count %></span>
+        </div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-subtle">Total Cost</span>
+          <span class="text-gray-300"><%= fmtUsd(row.total_cost) %></span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-subtle">Avg Cost</span>
+          <span class="text-gray-300"><%= fmtUsd(row.avg_cost) %></span>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+  <% } %>
+
+  <p class="text-xs text-subtle mb-4">Platform costs come from the Anthropic Admin API; rows persist in <code>platform_costs</code> (source=anthropic_api) so historical days survive restarts. Recent 3 days are re-fetched once per UTC day to catch billing-lag updates. Claude Code estimate = platform total minus tracked (build + agent) costs.</p>
+
+  <div class="flex items-center gap-3 mb-4">
+    <form id="rebuild-anthropic-cache-form" method="post" action="/admin/api/costs/anthropic-rebuild" class="inline">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" id="rebuild-anthropic-cache-btn" class="text-xs px-3 py-1.5 rounded border border-gray-600 text-gray-300 hover:bg-gray-800">
+        Rebuild Anthropic cost cache
+      </button>
+    </form>
+    <span id="rebuild-anthropic-cache-status" class="text-xs text-subtle"></span>
+  </div>
+
+</section>
+
+<script nonce="<%= cspNonce %>">
+function toggleDetail(buildId) {
+  var row = document.querySelector('[data-detail-for="' + buildId + '"]');
+  if (row) row.classList.toggle('hidden');
+}
+(function() {
+  var POLL_INTERVAL = 30000;
+  var range = <%= range %>;
+  var timerId = null;
+
+  // Mirror of app.locals.fmtUsd (server-side helper) for the polling
+  // updates: returns "$1,234.56" with comma grouping for thousands.
+  function fmt(n) {
+    var v = Number(n);
+    if (!isFinite(v)) v = 0;
+    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function updateStats(summary) {
+    var stats = {
+      'period_total': fmt(summary.period_total),
+      'avg_per_build': fmt(summary.avg_per_build),
+      'avg_platform_per_day': fmt(summary.avg_platform_per_day),
+      'period_untracked': fmt(summary.period_untracked)
+    };
+    for (var key in stats) {
+      var el = document.querySelector('[data-stat="' + key + '"]');
+      if (el) el.textContent = stats[key];
+    }
+  }
+
+  function poll() {
+    if (document.visibilityState === 'hidden') {
+      schedule();
+      return;
+    }
+    fetch('/admin/api/costs?range=' + range, { credentials: 'same-origin' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (data && data.summary) updateStats(data.summary);
+        schedule();
+      })
+      .catch(function() { schedule(); });
+  }
+
+  function schedule() {
+    timerId = setTimeout(poll, POLL_INTERVAL);
+  }
+
+  // Pause polling when tab hidden, resume on focus
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && !timerId) {
+      poll();
+    }
+  });
+
+  schedule();
+})();
+
+// Rebuild Anthropic cost cache button. Sends a fetch POST so the page
+// stays put with status feedback, then reloads on success to show fresh data.
+(function() {
+  var form = document.getElementById('rebuild-anthropic-cache-form');
+  var btn = document.getElementById('rebuild-anthropic-cache-btn');
+  var status = document.getElementById('rebuild-anthropic-cache-status');
+  if (!form || !btn || !status) return;
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (!confirm('Wipe the persistent Anthropic cost cache and refetch the full 90 days from the API? This takes about 30 seconds.')) {
+      return;
+    }
+    btn.disabled = true;
+    status.textContent = 'Rebuilding... (may take 30s for the full 90d window)';
+    var fd = new FormData(form);
+    var csrf = fd.get('_csrf');
+    fetch(form.action, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'x-csrf-token': csrf, 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    }).then(function(r) {
+      return r.json().then(function(j) { return { ok: r.ok, body: j }; });
+    }).then(function(res) {
+      if (res.ok && res.body.ok) {
+        status.textContent = 'Rebuilt: ' + res.body.rowsFetched + ' rows fetched. Reloading...';
+        setTimeout(function() { window.location.reload(); }, 800);
+      } else {
+        btn.disabled = false;
+        status.textContent = 'Rebuild failed: ' + (res.body.error || 'unknown error');
+      }
+    }).catch(function(err) {
+      btn.disabled = false;
+      status.textContent = 'Rebuild failed: ' + err.message;
+    });
+  });
+})();
+</script>

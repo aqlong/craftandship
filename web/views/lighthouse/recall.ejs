@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>What <%= companionName %> remembers about you</title>
+  <link rel="icon" type="image/png" href="/brand-harbor/harbor-tab-icon.png">
+  <style>
+    /* Same warm-paper register as the keeper's table. Phase 2 brand
+       system will replace this. */
+    :root {
+      --color-oat:           #e8e0cd;
+      --color-clay:          #b89683;
+      --color-sage:          #7d8b6e;
+      --color-dusk-rose:     #c89595;
+      --color-ink-brown:     #3a2f24;
+      --color-lantern-amber: #f4d29a;
+      --color-slate-blue:    #5e7187;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--color-oat);
+      color: var(--color-ink-brown);
+      font-family: 'Tiempos Text', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    .recall {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 64px 32px 96px;
+    }
+    .recall-header {
+      border-bottom: 1px solid rgba(58, 47, 36, 0.12);
+      padding-bottom: 16px;
+      margin-bottom: 32px;
+    }
+    .recall-header h1 {
+      font-size: 28px;
+      font-weight: 500;
+      margin: 0 0 4px;
+      letter-spacing: -0.01em;
+    }
+    .recall-header .subtitle {
+      font-style: italic;
+      color: rgba(58, 47, 36, 0.85);
+      font-size: 15px;
+      margin: 0;
+    }
+    .recall-meta {
+      font-family: 'Söhne', 'Inter', system-ui, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: rgba(58, 47, 36, 0.85);
+      margin: 4px 0 0;
+    }
+    .recall-empty {
+      background: rgba(244, 210, 154, 0.32);
+      border-left: 2px solid var(--color-lantern-amber);
+      padding: 18px 22px;
+      border-radius: 4px;
+      line-height: 1.65;
+      color: rgba(58, 47, 36, 0.85);
+    }
+    .recall-mode-note {
+      font-family: 'Söhne', 'Inter', system-ui, sans-serif;
+      font-size: 13px;
+      color: rgba(58, 47, 36, 0.85);
+      background: rgba(125, 139, 110, 0.08);
+      border-left: 2px solid var(--color-sage);
+      padding: 12px 16px;
+      margin: 0 0 32px;
+      border-radius: 4px;
+      line-height: 1.5;
+    }
+    .recall-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .recall-item {
+      background: rgba(184, 150, 131, 0.10);
+      border: 1px solid rgba(184, 150, 131, 0.25);
+      border-radius: 4px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      line-height: 1.55;
+      transform: rotate(-0.15deg);
+    }
+    .recall-item:nth-child(even) { transform: rotate(0.15deg); }
+    .recall-item-meta {
+      font-family: 'Söhne', 'Inter', system-ui, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-slate-blue);
+      margin-bottom: 6px;
+    }
+    .recall-item-meta .partition {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: rgba(94, 113, 135, 0.12);
+      margin-right: 6px;
+      font-size: 10px;
+    }
+    .recall-item-meta .partition.sacred {
+      background: rgba(200, 149, 149, 0.20);
+      color: var(--color-ink-brown);
+    }
+    .recall-item-content {
+      font-size: 16px;
+      color: var(--color-ink-brown);
+    }
+    .recall-item-phrase {
+      margin-top: 8px;
+      font-style: italic;
+      color: rgba(58, 47, 36, 0.85);
+      font-size: 14px;
+      padding-left: 12px;
+      border-left: 2px solid rgba(184, 150, 131, 0.3);
+    }
+    .recall-back {
+      display: inline-block;
+      margin-top: 32px;
+      font-size: 13px;
+      color: rgba(58, 47, 36, 0.85);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
+    .recall-back:hover { color: var(--color-ink-brown); }
+  </style>
+</head>
+<body>
+  <%- include('../partials/_harbor-skip-link') %>
+  <main id="main" class="recall">
+    <header class="recall-header">
+      <h1>What <%= companionName %> remembers about you</h1>
+      <p class="subtitle">A private record of what you've shared so far. Yours to read, edit, or delete.</p>
+      <p class="recall-meta">
+        <% if (items && items.length > 0) { %>
+          <%= items.length %> item<%= items.length === 1 ? '' : 's' %>.
+        <% } %>
+        <%= modeNote %>
+      </p>
+    </header>
+
+    <% if (modeMessage) { %>
+      <div class="recall-mode-note"><%= modeMessage %></div>
+    <% } %>
+
+    <% if (!items || items.length === 0) { %>
+      <div class="recall-empty">
+        <p>Nothing here yet. As we talk, I'll start to notice phrases that sound like you, things about your audience, what your practice asks of you, and what you'd want a visitor to feel arriving at your lamp. I'll write small notes here as I go. You can read them any time.</p>
+      </div>
+    <% } else { %>
+      <ul class="recall-list">
+        <% items.forEach(function(item) { %>
+          <li class="recall-item">
+            <div class="recall-item-meta">
+              <span class="partition <%= item.partition === 'sacred' ? 'sacred' : '' %>"><%= item.partition %></span>
+              <span class="category"><%= item.category %></span>
+            </div>
+            <div class="recall-item-content"><%= item.content %></div>
+            <% if (item.keeper_phrase) { %>
+              <div class="recall-item-phrase">your words: &ldquo;<%= item.keeper_phrase %>&rdquo;</div>
+            <% } %>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+
+    <a href="/lighthouse/table<%= devTrialQuery %>" class="recall-back">back to your conversation with Haven</a>
+  </main>
+</body>
+</html>

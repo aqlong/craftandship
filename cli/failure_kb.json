@@ -1,0 +1,1385 @@
+{
+  "/videos/:id/edit returns 404 on valid video ID, /admin/videos/new also 404s, even though /videos/new and /videos/ list work: routing inconsistency only affects videos model": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776402387.7611551,
+    "fix_category": "routing",
+    "fix_description": "v15: investigate routes/videos.js vs routes/photos.js + routes/events.js to find why the edit handler isn't registered. Likely Claude forgot to emit the edit route or registered with wrong param name.",
+    "last_seen": 1776402387.7611551,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "/videos/:id/edit returns 404 on valid video ID, /admin/videos/new also 404s, even though /videos/new and /videos/ list work: routing inconsistency only affects videos model",
+    "success_count": 0
+  },
+  "500 errors on: /admin (checked 20 pages); Broken links: /admin (500)": {
+    "failure_count": 0,
+    "files_changed": [
+      "routes/admin.js"
+    ],
+    "first_seen": 1776362353.688916,
+    "fix_category": "routing",
+    "fix_description": "Fixed 1 file(s): routes/admin.js",
+    "last_seen": 1776362353.688919,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "500 errors on: /admin (checked 20 pages); Broken links: /admin (500)",
+    "success_count": 1
+  },
+  "500 errors on: /photos/new (checked 20 pages); Broken links: /photos/new (500)": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/photos/new.ejs",
+      "routes/photos.js"
+    ],
+    "first_seen": 1776436334.086805,
+    "fix_category": "routing",
+    "fix_description": "Fixed 2 file(s): views/photos/new.ejs, routes/photos.js",
+    "last_seen": 1776436334.086806,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "500 errors on: /photos/new (checked 20 pages); Broken links: /photos/new (500)",
+    "success_count": 1
+  },
+  "Admin CRUD *edit / *new views render stub text 'Content for {X} will appear here.' instead of a real form. Observed v16 on views/photos/edit.ejs and views/events/new.ejs. User cannot create or edit those items.": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776438146.783265,
+    "fix_category": "stub_views",
+    "fix_description": "v17: _ensure_crud_forms_complete post-processor detects stub 'Content for' literal in any view file AND any admin/*-edit.ejs or admin/*-new.ejs with zero <input> or <textarea> elements, then replaces with a canonical CRUD form template scaffolded from the model's field list.",
+    "last_seen": 1776438146.783265,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Admin CRUD *edit / *new views render stub text 'Content for {X} will appear here.' instead of a real form. Observed v16 on views/photos/edit.ejs and views/events/new.ejs. User cannot create or edit those items.",
+    "success_count": 0
+  },
+  "Admin list view CRUD links use /admin/events, /admin/photos, /admin/videos, /admin/contact-messages prefix but route files mount at /events, /photos, /videos: every Edit/New/Delete link 404s": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776392407.258312,
+    "fix_category": "routing",
+    "fix_description": "Fixed by _fix_admin_crud_link_prefix (cli/build.py:5013) which strips /admin/ from href/action attributes targeting data_model slugs. Added to pipeline + reapply_post_processors.",
+    "last_seen": 1776392407.258312,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Admin list view CRUD links use /admin/events, /admin/photos, /admin/videos, /admin/contact-messages prefix but route files mount at /events, /photos, /videos: every Edit/New/Delete link 404s",
+    "success_count": 0
+  },
+  "Admin settings form input values are near-unreadable: white text on white background or similar low-contrast combination. Breaks WCAG AA.": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776438146.783265,
+    "fix_category": "contrast",
+    "fix_description": "v17: Update cli/templates/views_admin_settings.ejs inputs to use dark-theme-friendly classes (bg-slate-900 text-slate-100 border-slate-700). Add contrast unit test that loads the rendered HTML and asserts computed color vs background for every input meets 4.5:1.",
+    "last_seen": 1776438146.783265,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Admin settings form input values are near-unreadable: white text on white background or similar low-contrast combination. Breaks WCAG AA.",
+    "success_count": 0
+  },
+  "Admin settings form rendered raw <input type=\"file\"> without the image-upload-zone wrapper, so no preview of currently-saved image and no hidden URL input to submit": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776392407.258312,
+    "fix_category": "upload_ui",
+    "fix_description": "Fixed by updating _UPLOAD_ZONE_HTML template to toggle .upload-preview visibility via <%= ({value_expr}) ? 'block' : 'none' %> and render <img src={value_expr}> inline when value is set. _replace_input extracts bare JS expression from the captured EJS value for re-use inside outer <%= ... %>.",
+    "last_seen": 1776392407.258312,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Admin settings form rendered raw <input type=\"file\"> without the image-upload-zone wrapper, so no preview of currently-saved image and no hidden URL input to submit",
+    "success_count": 0
+  },
+  "Admin settings form uses generic scaffold fields (business_name, support_email, phone, address) disconnected from spec site_settings keys (hero_tagline, hero_description, about_title, about_body, contact_email, contact_phone, contact_address, nav_logo_url, hero_image_url, about_photo_url)": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py",
+      "views/admin/settings.ejs"
+    ],
+    "first_seen": 1776384863.833643,
+    "fix_category": "admin_views",
+    "fix_description": "Admin settings page template must iterate spec.settings array and render one input per key; group by prefix (hero_*, about_*, contact_*, social, images). *_url keys matching logo|image|photo render as file upload, multi-line content keys render as textarea, else text input.",
+    "last_seen": 1776384863.833643,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Admin settings form uses generic scaffold fields (business_name, support_email, phone, address) disconnected from spec site_settings keys (hero_tagline, hero_description, about_title, about_body, contact_email, contact_phone, contact_address, nav_logo_url, hero_image_url, about_photo_url)",
+    "success_count": 0
+  },
+  "Admin view path convention drift: Claude generates views at admin/{slug}-index.ejs (v15), admin-{slug}.ejs (v13), or admin/{slug}.ejs (v12) but routes render 'admin/{slug}' (subdir no suffix). Result: Failed to lookup view errors or 500s on admin list pages.": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776435244.2126951,
+    "fix_category": "convention_drift",
+    "fix_description": "FIXED v16: _enforce_admin_view_path_convention post-processor uses route render calls as ground truth; renames drift variants to match. Integration test test_admin_view_path_convention verifies.",
+    "last_seen": 1776435244.2126951,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Admin view path convention drift: Claude generates views at admin/{slug}-index.ejs (v15), admin-{slug}.ejs (v13), or admin/{slug}.ejs (v12) but routes render 'admin/{slug}' (subdir no suffix). Result: Failed to lookup view errors or 500s on admin list pages.",
+    "success_count": 0
+  },
+  "Broken links: /contact-messages (404)": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776286138.227691,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776286138.2276962,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Broken links: /contact-messages (404)",
+    "success_count": 0
+  },
+  "Broken links: /contact-messages/messages/2 (404), /contact-messages/messages/12 (404), /contact-messages/messages/3 (404), /contact-messages/messages/5 (404), /contact-messages/messages/new (404)": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/contact-messages-list.ejs"
+    ],
+    "first_seen": 1776286176.69667,
+    "fix_category": "views",
+    "fix_description": "Fixed 1 file(s): views/contact-messages-list.ejs",
+    "last_seen": 1776286176.696671,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Broken links: /contact-messages/messages/2 (404), /contact-messages/messages/12 (404), /contact-messages/messages/3 (404), /contact-messages/messages/5 (404), /contact-messages/messages/new (404)",
+    "success_count": 1
+  },
+  "Button styles are inconsistent across the admin UI: Unfeature (white pill), Delete (red outline), Edit (plain text link), Get Tickets (gold fill), Save (cornflower fill), Update Event (cornflower fill). No canonical button design system.": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776438146.783265,
+    "fix_category": "design_system",
+    "fix_description": "v17: _ensure_button_design_system post-processor extends _fix_delete_button_styling. Canonical classes in public/style.css: .btn-primary, .btn-secondary, .btn-ghost, .btn-destructive, .btn-warm. Rewrite common inline Tailwind patterns to use these.",
+    "last_seen": 1776438146.783265,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Button styles are inconsistent across the admin UI: Unfeature (white pill), Delete (red outline), Edit (plain text link), Get Tickets (gold fill), Save (cornflower fill), Update Event (cornflower fill). No canonical button design system.",
+    "success_count": 0
+  },
+  "CAS admin build detail view has no preview_url link or button, making local preview builds unreachable from admin UI": {
+    "failure_count": 1,
+    "files_changed": [
+      "web/views/admin-build-detail.ejs",
+      "web/views/admin-builds.ejs"
+    ],
+    "first_seen": 1776384863.833643,
+    "fix_category": "cas_admin",
+    "fix_description": "admin-build-detail.ejs must render preview_url as a prominent button + visible text link when status is 'preview' and preview_url is set. Same fix needed in admin-builds.ejs list rows.",
+    "last_seen": 1776384863.833643,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "CAS admin build detail view has no preview_url link or button, making local preview builds unreachable from admin UI",
+    "success_count": 0
+  },
+  "CSS custom properties --color-cream and --color-surface are referenced in checkl; Nav logo image is h-8 w-8, well below the h-16 minimum specified in the design c; No active page indicator (bg-white/15 pill) is implemented on the nav links to s": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/login.ejs"
+    ],
+    "first_seen": 1776286073.710517,
+    "fix_category": "design",
+    "fix_description": "design_fix applied 1 file(s)",
+    "last_seen": 1776286073.710517,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "CSS custom properties --color-cream and --color-surface are referenced in checkl; Nav logo image is h-8 w-8, well below the h-16 minimum specified in the design c; No active page indicator (bg-white/15 pill) is implemented on the nav links to s",
+    "success_count": 1
+  },
+  "ContactMessage admin UI allows Add New + Delete when spec specifies read-only for admin": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776384863.833643,
+    "fix_category": "admin_crud",
+    "fix_description": "When a data_model has no admin.create/update action in spec, admin list view should not render 'Add New' button and per-row form should render 'View' only (no Delete or Edit). Add spec-aware CRUD gating to admin view scaffold.",
+    "last_seen": 1776384863.833643,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "ContactMessage admin UI allows Add New + Delete when spec specifies read-only for admin",
+    "success_count": 0
+  },
+  "ContactMessage admin view renders Add New + Edit buttons even when spec declares the model should be read-only for admin": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776392407.258312,
+    "fix_category": "admin_crud_gating",
+    "fix_description": "KNOWN FOLLOWUP (v14): needs a spec-aware admin scaffold that gates CRUD buttons based on whether the model has create/update actions defined in spec.actions. If no create action \u2192 hide Add New. If no update action \u2192 hide Edit. Default to read-only when actions array for the model is empty.",
+    "last_seen": 1776392407.258312,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "ContactMessage admin view renders Add New + Edit buttons even when spec declares the model should be read-only for admin",
+    "success_count": 0
+  },
+  "Delete buttons render as solid blue gradient (same as primary CTA) with no destructive-action indication": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/design_data.py",
+      "cli/build.py"
+    ],
+    "first_seen": 1776384863.833643,
+    "fix_category": "design_patterns",
+    "fix_description": "Destructive action buttons (Delete) must use destructive-outline pattern: border + red text on default, filled red bg on hover, trash icon prefix. Add to VISUAL_DESIGN_CHECKLIST and post-processor _ensure_delete_button_design().",
+    "last_seen": 1776384863.833643,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Delete buttons render as solid blue gradient (same as primary CTA) with no destructive-action indication",
+    "success_count": 0
+  },
+  "Delete confirmation dialog pops twice (double-bound) when form has both data-confirm attribute AND onsubmit='return confirm(...)'. Forms in admin/dashboard.ejs, admin/events.ejs, admin/messages.ejs, admin/photos.ejs.": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776438146.783265,
+    "fix_category": "ux",
+    "fix_description": "v17: _ensure_delete_confirm_single_handler strips the onsubmit inline when data-confirm is present (prefer JS-handler path; single source of truth). Alternatively strip data-confirm when onsubmit present. Also ensure global data-confirm handler registers on DOMContentLoaded OR is inline in <head> to avoid race where form submits before handler binds (causing NO dialog).",
+    "last_seen": 1776438146.783265,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Delete confirmation dialog pops twice (double-bound) when form has both data-confirm attribute AND onsubmit='return confirm(...)'. Forms in admin/dashboard.ejs, admin/events.ejs, admin/messages.ejs, admin/photos.ejs.",
+    "success_count": 0
+  },
+  "Expected 200, got <N>": {
+    "failure_count": 0,
+    "files_changed": [
+      "server.js"
+    ],
+    "first_seen": 1774291771.807358,
+    "fix_category": "unknown",
+    "fix_description": "Ensure all routes referenced in layout nav are registered in server.js with app.use() and have corresponding route files. Check that requireAuth is applied to protected routes and the route handler does not throw synchronously.",
+    "last_seen": 1774635036.0851882,
+    "seeded": true,
+    "signature": "Expected 200, got <N>",
+    "success_count": 69
+  },
+  "Expected redirect away from login, got http://localhost:<PORT>/login. Page text: Skip to content Book Tracker Login Join Club Login Join Club ; Expected redirect away from login, got http://localhost:<PORT>/login; Could not log in for logout test": {
+    "failure_count": 0,
+    "files_changed": [
+      "routes/auth.js",
+      "routes/books.js",
+      "routes/notes.js"
+    ],
+    "first_seen": 1776365234.0272589,
+    "fix_category": "auth",
+    "fix_description": "Fixed 3 file(s): routes/auth.js, routes/books.js, routes/notes.js",
+    "last_seen": 1776365234.0272589,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Expected redirect away from login, got http://localhost:<PORT>/login. Page text: Skip to content Book Tracker Login Join Club Login Join Club ; Expected redirect away from login, got http://localhost:<PORT>/login; Could not log in for logout test",
+    "success_count": 1
+  },
+  "Found invisible buttons: Logout (no background)": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776362280.665813,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776362280.665816,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Found invisible buttons: Logout (no background)",
+    "success_count": 0
+  },
+  "Home page video section renders empty iframe placeholder when videos table is empty or video is missing": {
+    "failure_count": 1,
+    "files_changed": [
+      "views/index.ejs",
+      "cli/build.py"
+    ],
+    "first_seen": 1776384863.833643,
+    "fix_category": "templates",
+    "fix_description": "Wrap home hero video section in <% if (videos && videos.length) { %> ... <% } %> so the entire 'Watch' heading + iframe is hidden when no videos exist.",
+    "last_seen": 1776384863.833643,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Home page video section renders empty iframe placeholder when videos table is empty or video is missing",
+    "success_count": 0
+  },
+  "Hotpatches on generated artifacts were not consistently fed back to the pipeline, causing bug recurrence across successive MW builds (v13\u2192v14\u2192v15 cycle). E.g., hotpatched admin view rename in v15 but pipeline wasn't updated; v16 would have regenerated the bug without the fix.": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776435244.2126951,
+    "fix_category": "process",
+    "fix_description": "RULE: every hotpatch session-end must have pipeline edit OR failure_kb entry with concrete acceptance criteria. Integration tests are the canonical gate.",
+    "last_seen": 1776435244.2126951,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Hotpatches on generated artifacts were not consistently fed back to the pipeline, causing bug recurrence across successive MW builds (v13\u2192v14\u2192v15 cycle). E.g., hotpatched admin view rename in v15 but pipeline wasn't updated; v16 would have regenerated the bug without the fix.",
+    "success_count": 0
+  },
+  "Image/photo/logo admin form fields rendered as <input type=url> text box instead of drag-and-drop file upload (_ensure_upload_form_ui did not fire)": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776384863.833643,
+    "fix_category": "upload_ui",
+    "fix_description": "Ensure _ensure_upload_form_ui() fires on all admin/*/new.ejs and admin/*/edit.ejs views where a field name matches the whitelist. Verify routes/upload.js exists (injected by _ensure_upload_route). Also ensure site_settings admin form includes upload zones for nav_logo_url, hero_image_url, about_photo_url.",
+    "last_seen": 1776384863.833643,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Image/photo/logo admin form fields rendered as <input type=url> text box instead of drag-and-drop file upload (_ensure_upload_form_ui did not fire)",
+    "success_count": 0
+  },
+  "Login page shows 'Register here' link to /signup even when spec has no signup/register route: produces dead 404 link": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776392407.258312,
+    "fix_category": "auth_views",
+    "fix_description": "Fixed by _strip_dead_signup_links (cli/build.py:1693) which detects whether any routes/*.js, server.js, or app.js registers a /signup, /register, or /sign-up route, and if not, removes the dead link block from login.ejs.",
+    "last_seen": 1776392407.258312,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Login page shows 'Register here' link to /signup even when spec has no signup/register route: produces dead 404 link",
+    "success_count": 0
+  },
+  "Missing route": {
+    "failure_count": 0,
+    "files_changed": [
+      "routes/auth.js"
+    ],
+    "first_seen": 1774291771.808995,
+    "fix_category": "auth",
+    "fix_description": "Register missing routes in server.js with app.use() mount. Verify the route file exists (routes/<slug>.js), exports a router, and GET / handler returns 200 with a valid EJS render call.",
+    "last_seen": 1774635036.088752,
+    "seeded": true,
+    "signature": "Missing route",
+    "success_count": 69
+  },
+  "Naive TIMESTAMP 'YYYY-MM-DD HH:MM:SS' seed literals + timestamp without time zone schema column \u2192 pg driver interprets as local TZ, app displays times shifted incorrectly across timezones. Sample Featured Event stored 00:00 intended as UTC \u2192 displayed as 12:00 AM CDT (wrong; should be 7:00 PM CDT the previous day).": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776435244.2126951,
+    "fix_category": "timezone",
+    "fix_description": "FIXED v16: _ensure_tz_aware_datetime_schema converts date_time/created_at/etc. columns to TIMESTAMPTZ in schema.sql and appends AT TIME ZONE 'UTC' to naive seed TIMESTAMP literals.",
+    "last_seen": 1776435244.2126951,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Naive TIMESTAMP 'YYYY-MM-DD HH:MM:SS' seed literals + timestamp without time zone schema column \u2192 pg driver interprets as local TZ, app displays times shifted incorrectly across timezones. Sample Featured Event stored 00:00 intended as UTC \u2192 displayed as 12:00 AM CDT (wrong; should be 7:00 PM CDT the previous day).",
+    "success_count": 0
+  },
+  "Nav links point to /messages but routes mount /contact-messages \u2192 404 when admin clicks 'Messages' nav item. Similar drift may exist for other model routes.": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776438146.783265,
+    "fix_category": "link_drift",
+    "fix_description": "v17: _fix_route_link_drift post-processor crawls href values in nav/card templates, resolves each against registered routes, rewrites to the canonical mount path. Integration test: crawl ALL href values from all views, each must return < 400 or be external.",
+    "last_seen": 1776438146.783265,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Nav links point to /messages but routes mount /contact-messages \u2192 404 when admin clicks 'Messages' nav item. Similar drift may exist for other model routes.",
+    "success_count": 0
+  },
+  "Nav logo uses a small inline SVG icon (w-7 h-7) instead of the required h-16+ (h; No font-brand (serif) font is loaded or configured; the checklist requires a ser; Footer uses bg-gray-50 instead of the specified .footer-gradient (dark gradient)": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/layout.ejs"
+    ],
+    "first_seen": 1776319216.090042,
+    "fix_category": "design",
+    "fix_description": "design_fix applied 1 file(s)",
+    "last_seen": 1776319216.090044,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Nav logo uses a small inline SVG icon (w-7 h-7) instead of the required h-16+ (h; No font-brand (serif) font is loaded or configured; the checklist requires a ser; Footer uses bg-gray-50 instead of the specified .footer-gradient (dark gradient)",
+    "success_count": 1
+  },
+  "No serif font-brand family is defined; both font-display and font-body use 'Plus; CSS custom properties are defined for primary/secondary/accent but missing --col; The left brand panel uses hexagon/honeycomb SVG overlays which the checklist exp": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/layout.ejs",
+      "public/style.css",
+      "public/premium-base.css"
+    ],
+    "first_seen": 1776362193.1201138,
+    "fix_category": "design",
+    "fix_description": "design_fix applied 3 file(s)",
+    "last_seen": 1776362193.120116,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "No serif font-brand family is defined; both font-display and font-body use 'Plus; CSS custom properties are defined for primary/secondary/accent but missing --col; The left brand panel uses hexagon/honeycomb SVG overlays which the checklist exp",
+    "success_count": 1
+  },
+  "Pipeline seed.sql leaves image_url NULL for all events and photos: events display no images, photos fail to insert due to NOT NULL constraint (0 photos in DB), gallery is empty on first boot. Observed on v16: Claude writes captions but never populates image_url, and the spec's _seed_events/_seed_photos arrays are not consumed by any post-processor.": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776437374.8245828,
+    "fix_category": "seed_data",
+    "fix_description": "v17 pipeline fix needed: _ensure_model_seed_images post-processor. If spec has _seed_events (or _seed_photos) arrays with image_url values, rewrite the db/seed.sql INSERT statements to use those values. Fallback: rotate through /images/stock/wellness/* paths by category when spec doesn't specify. Must handle both cases: NULL image_url in existing INSERT, missing image_url column in existing INSERT.",
+    "last_seen": 1776437374.8245828,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Pipeline seed.sql leaves image_url NULL for all events and photos: events display no images, photos fail to insert due to NOT NULL constraint (0 photos in DB), gallery is empty on first boot. Observed on v16: Claude writes captions but never populates image_url, and the spec's _seed_events/_seed_photos arrays are not consumed by any post-processor.",
+    "success_count": 0
+  },
+  "Posh/non-YouTube iframe src rewritten to https://www.youtube-nocookie.com/embed/<empty> by _privacy_safe_youtube post-processor": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776384863.833643,
+    "fix_category": "post_processor",
+    "fix_description": "cli/build.py _privacy_safe_youtube() rewrites ANY EJS iframe with a variable src to YouTube-nocookie without checking the variable name. Filter by variable name pattern (embed_url, youtube, yt_) before rewriting; skip posh_embed_url/vimeo_url/stripe_embed/etc.",
+    "last_seen": 1776384863.833643,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Posh/non-YouTube iframe src rewritten to https://www.youtube-nocookie.com/embed/<empty> by _privacy_safe_youtube post-processor",
+    "success_count": 0
+  },
+  "Post-processor ordering bug: _ensure_upload_form_ui runs before _ensure_site_settings injects admin/settings.ejs, so settings form image fields (nav_logo_url, hero_image_url, about_photo_url) render as <input type=url> text boxes instead of drag-and-drop upload zones": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776402387.7611551,
+    "fix_category": "pipeline_ordering",
+    "fix_description": "Fix: call _ensure_upload_form_ui a second time after _ensure_site_settings (or move _ensure_site_settings to run before _ensure_upload_form_ui). Defer to v15: event edit form still works via reapply path.",
+    "last_seen": 1776402387.7611551,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Post-processor ordering bug: _ensure_upload_form_ui runs before _ensure_site_settings injects admin/settings.ejs, so settings form image fields (nav_logo_url, hero_image_url, about_photo_url) render as <input type=url> text boxes instead of drag-and-drop upload zones",
+    "success_count": 0
+  },
+  "QA failed: Admin dashboard": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776379532.3355782,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776379532.335579,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin dashboard",
+    "success_count": 0
+  },
+  "QA failed: Admin dashboard access": {
+    "failure_count": 2,
+    "files_changed": [
+      "db/seed.sql"
+    ],
+    "first_seen": 1776394681.957527,
+    "fix_category": "qa",
+    "fix_description": "Fixed 1 file(s): db/seed.sql",
+    "last_seen": 1776453561.483286,
+    "recent_outcomes": [
+      false,
+      true,
+      false
+    ],
+    "signature": "QA failed: Admin dashboard access",
+    "success_count": 1
+  },
+  "QA failed: Admin dashboard access; Create event flow; Create photo flow; Create video flow": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776394524.942351,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776394524.942354,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin dashboard access; Create event flow; Create photo flow; Create video flow",
+    "success_count": 0
+  },
+  "QA failed: Admin dashboard access; Create event; Update event; Create video; Contact form": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776286409.828619,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776286409.828619,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin dashboard access; Create event; Update event; Create video; Contact form",
+    "success_count": 0
+  },
+  "QA failed: Admin dashboard access; Create event; Upload photo; Create video": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776286788.703795,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776286788.703802,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin dashboard access; Create event; Upload photo; Create video",
+    "success_count": 0
+  },
+  "QA failed: Admin dashboard access; Visitor admin access restriction": {
+    "failure_count": 0,
+    "files_changed": [
+      "routes/dashboard.js",
+      "routes/admin.js"
+    ],
+    "first_seen": 1776404328.160335,
+    "fix_category": "qa",
+    "fix_description": "Fixed 2 file(s): routes/dashboard.js, routes/admin.js",
+    "last_seen": 1776404328.1603358,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "QA failed: Admin dashboard access; Visitor admin access restriction",
+    "success_count": 1
+  },
+  "QA failed: Admin dashboard load; Admin events navigation; Visitor denied access to admin": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776453504.6072059,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776453504.607211,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin dashboard load; Admin events navigation; Visitor denied access to admin",
+    "success_count": 0
+  },
+  "QA failed: Admin dashboard loads for admin user; Create event CRUD flow": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/admin-dashboard.ejs",
+      "views/admin-events.ejs",
+      "views/admin-events-new.ejs",
+      "views/admin-events-edit.ejs",
+      "views/admin-photos.ejs",
+      "views/admin-videos.ejs",
+      "views/admin-messages.ejs",
+      "views/admin-settings.ejs"
+    ],
+    "first_seen": 1776390311.6326232,
+    "fix_category": "qa",
+    "fix_description": "Fixed 8 file(s): views/admin-dashboard.ejs, views/admin-events.ejs, views/admin-events-new.ejs, views/admin-events-edit.ejs, views/admin-photos.ejs, views/admin-videos.ejs, views/admin-messages.ejs, views/admin-settings.ejs",
+    "last_seen": 1776390311.6326258,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "QA failed: Admin dashboard loads for admin user; Create event CRUD flow",
+    "success_count": 1
+  },
+  "QA failed: Admin dashboard loads; Create event flow; Admin access restriction": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776444879.432153,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776444879.4321558,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin dashboard loads; Create event flow; Admin access restriction",
+    "success_count": 0
+  },
+  "QA failed: Admin dashboard loads; Visitor access restriction": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776445108.900645,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776445108.9006479,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin dashboard loads; Visitor access restriction",
+    "success_count": 0
+  },
+  "QA failed: Admin dashboard; Create event CRUD; Create photo CRUD; Create video CRUD": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776390061.258881,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776390061.258882,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin dashboard; Create event CRUD; Create photo CRUD; Create video CRUD",
+    "success_count": 0
+  },
+  "QA failed: Admin dashboard; Event creation flow; Admin photos management; Admin settings": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776395086.935592,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776395086.935596,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin dashboard; Event creation flow; Admin photos management; Admin settings",
+    "success_count": 0
+  },
+  "QA failed: Admin event creation": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776404232.633974,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776404232.633976,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Admin event creation",
+    "success_count": 0
+  },
+  "QA failed: Contact page": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776379941.215349,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776379941.21535,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Contact page",
+    "success_count": 0
+  },
+  "QA failed: Contact page loads with form; Event create and save; Photo create and save; Contact form submission": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776394886.941932,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776394886.941949,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Contact page loads with form; Event create and save; Photo create and save; Contact form submission",
+    "success_count": 0
+  },
+  "QA failed: Create Client flow; Create Invoice flow": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776319938.317128,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776319938.317128,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Create Client flow; Create Invoice flow",
+    "success_count": 0
+  },
+  "QA failed: Create book flow; Create note flow": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776365705.1737442,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776365705.173747,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Create book flow; Create note flow",
+    "success_count": 0
+  },
+  "QA failed: Create book form submits; Create note form submits": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776365427.834363,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776365427.834364,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Create book form submits; Create note form submits",
+    "success_count": 0
+  },
+  "QA failed: Create book; Create note": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776365558.885466,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776365558.885466,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Create book; Create note",
+    "success_count": 0
+  },
+  "QA failed: Create event; Create photo; Create video": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776379704.828863,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776379704.828864,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Create event; Create photo; Create video",
+    "success_count": 0
+  },
+  "QA failed: Create event; Events list contains records": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776286651.07819,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776286651.078194,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Create event; Events list contains records",
+    "success_count": 0
+  },
+  "QA failed: Create event; Photos management navigation; Create photo; Create video": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776379878.976275,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776379878.976275,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Create event; Photos management navigation; Create photo; Create video",
+    "success_count": 0
+  },
+  "QA failed: Dashboard access; Invoices access; Clients access; Create client flow; Reports access": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776319484.2283268,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776319484.228329,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Dashboard access; Invoices access; Clients access; Create client flow; Reports access",
+    "success_count": 0
+  },
+  "QA failed: Dashboard page access; Books page access; Notes page access; Create book flow; Create note flow": {
+    "failure_count": 0,
+    "files_changed": [
+      "db/seed.sql",
+      "views/books/index.ejs",
+      "views/books/new.ejs",
+      "views/books/detail.ejs",
+      "views/books/edit.ejs",
+      "views/notes/index.ejs",
+      "views/notes/new.ejs",
+      "views/notes/detail.ejs",
+      "views/notes/edit.ejs",
+      "views/dashboard.ejs"
+    ],
+    "first_seen": 1776362577.965515,
+    "fix_category": "qa",
+    "fix_description": "Fixed 11 file(s): db/seed.sql, views/books/index.ejs, views/books/new.ejs, views/books/detail.ejs, views/books/edit.ejs, views/notes/index.ejs, views/notes/new.ejs, views/notes/detail.ejs, views/notes/edit.ejs, views/dashboard.ejs, views/landing.ejs",
+    "last_seen": 1776362577.965515,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "QA failed: Dashboard page access; Books page access; Notes page access; Create book flow; Create note flow",
+    "success_count": 1
+  },
+  "QA failed: Dashboard page access; Invoices page access; Clients page access; Reports page access; Create client flow": {
+    "failure_count": 2,
+    "files_changed": [],
+    "first_seen": 1776319611.069482,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776319833.5599868,
+    "recent_outcomes": [
+      false,
+      false
+    ],
+    "signature": "QA failed: Dashboard page access; Invoices page access; Clients page access; Reports page access; Create client flow",
+    "success_count": 0
+  },
+  "QA failed: Dashboard page; Books list page; Notes list page; Create book flow; Create note flow": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776365846.145362,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776365846.145362,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Dashboard page; Books list page; Notes list page; Create book flow; Create note flow",
+    "success_count": 0
+  },
+  "QA failed: Dashboard page; Books list page; Notes list page; Page navigation": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776368186.7662961,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776368186.766297,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Dashboard page; Books list page; Notes list page; Page navigation",
+    "success_count": 0
+  },
+  "QA failed: Dashboard page; Books page; Notes page; Create Book flow; Create Note flow": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776368418.149909,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776368418.14991,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Dashboard page; Books page; Notes page; Create Book flow; Create Note flow",
+    "success_count": 0
+  },
+  "QA failed: Event CRUD access; Home public access": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776453800.6307762,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776453800.630782,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Event CRUD access; Home public access",
+    "success_count": 0
+  },
+  "QA failed: Event create": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776445270.422913,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776445270.4229178,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Event create",
+    "success_count": 0
+  },
+  "QA failed: Event creation; Photo creation; Video creation; Contact form submission; Visitor admin access restriction": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776436557.224119,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776436557.224125,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Event creation; Photo creation; Video creation; Contact form submission; Visitor admin access restriction",
+    "success_count": 0
+  },
+  "QA failed: Visitor admin access": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776453661.371302,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776453661.371306,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: Visitor admin access",
+    "success_count": 0
+  },
+  "QA failed: create_event_flow; newsletter_subscription; create_video_flow": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776286991.001697,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776286991.0017018,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: create_event_flow; newsletter_subscription; create_video_flow",
+    "success_count": 0
+  },
+  "QA failed: visitor cannot access admin page": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776444987.3344798,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776444987.3344839,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "QA failed: visitor cannot access admin page",
+    "success_count": 0
+  },
+  "Settings middleware populates res.locals.siteSettings but templates reference settings.X. Views silently fall back to default text when 'settings' is undefined. Hero/about/contact appear to render correctly only when default text matches DB value (coincidence). Empty fallbacks like hero_image_url \u2192 hero background missing.": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776435244.2126951,
+    "fix_category": "contract_mismatch",
+    "fix_description": "FIXED v16: _ensure_settings_middleware_contract injects res.locals.settings = result.rows.reduce(...) OR aliases from siteSettings. _verify_template_middleware_contract lint warns at build time.",
+    "last_seen": 1776435244.2126951,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Settings middleware populates res.locals.siteSettings but templates reference settings.X. Views silently fall back to default text when 'settings' is undefined. Hero/about/contact appear to render correctly only when default text matches DB value (coincidence). Empty fallbacks like hero_image_url \u2192 hero background missing.",
+    "success_count": 0
+  },
+  "Stored datetime values in 'timestamp without time zone' columns render inconsistently across views: some paths apply CDT conversion correctly (event detail), others label UTC as CDT (home page event cards, events list cards)": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776392407.258312,
+    "fix_category": "time_handling",
+    "fix_description": "KNOWN FOLLOWUP (v14): needs a _ensure_event_time_helper post-processor that injects locals.formatEventTime() using toLocaleString with explicit timeZone: 'America/Chicago' (configurable via site_settings.site_timezone) and updates all date display EJS to use the helper.",
+    "last_seen": 1776392407.258312,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Stored datetime values in 'timestamp without time zone' columns render inconsistently across views: some paths apply CDT conversion correctly (event detail), others label UTC as CDT (home page event cards, events list cards)",
+    "success_count": 0
+  },
+  "SyntaxError: Unexpected token in EJS template, template literal backtick parse failure": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/layout.ejs",
+      "views/dashboard.ejs"
+    ],
+    "first_seen": 1774297037.501438,
+    "fix_category": "views",
+    "fix_description": "Replaced template literals (backtick strings) with string concatenation in EJS files. EJS parser cannot handle backtick template literals inside <% %> blocks.",
+    "last_seen": 1774297037.511128,
+    "seeded": true,
+    "signature": "SyntaxError: Unexpected token in EJS template, template literal backtick parse failure",
+    "success_count": 3
+  },
+  "The hero widget (widgets<FILE>) is referenced but not provided; give; The nav uses glassmorphism with rgba(primary-rgb, 0.92) which technically meets ; No effective colors (palette) were provided in the spec, so it is impossible to": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776809207.268266,
+    "fix_category": "unknown",
+    "fix_description": "",
+    "last_seen": 1776809207.2682738,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "The hero widget (widgets<FILE>) is referenced but not provided; give; The nav uses glassmorphism with rgba(primary-rgb, 0.92) which technically meets ; No effective colors (palette) were provided in the spec, so it is impossible to",
+    "success_count": 0
+  },
+  "The hero widget is referenced in home.ejs but its source is not provided; given ; Nav widget source is not provided but layout-public.ejs defines .nav-glass with ; The hero uses a centered layout widget (hero<FILE>) but the checklist req": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/login.ejs",
+      "views/layout-public.ejs",
+      "views/widgets/shell/nav-public.ejs"
+    ],
+    "first_seen": 1776809153.473387,
+    "fix_category": "design",
+    "fix_description": "design_fix applied 3 file(s)",
+    "last_seen": 1776809153.473388,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "The hero widget is referenced in home.ejs but its source is not provided; given ; Nav widget source is not provided but layout-public.ejs defines .nav-glass with ; The hero uses a centered layout widget (hero<FILE>) but the checklist req",
+    "success_count": 1
+  },
+  "Timezone display inconsistent across views: same UTC timestamp shown as local-tz-converted on one page and UTC-labeled-as-local on another": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py",
+      "views/events/index.ejs",
+      "views/events/detail.ejs",
+      "views/index.ejs"
+    ],
+    "first_seen": 1776384863.833643,
+    "fix_category": "templates",
+    "fix_description": "All date displays must use a single consistent helper (e.g. locals.formatEventTime) that applies timeZone: 'America/Chicago' (or site setting) uniformly. Never emit raw date.toString() + 'CDT' suffix.",
+    "last_seen": 1776384863.833643,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Timezone display inconsistent across views: same UTC timestamp shown as local-tz-converted on one page and UTC-labeled-as-local on another",
+    "success_count": 0
+  },
+  "Two admin-settings view templates coexist (views/admin/settings.ejs AND views/admin-settings.ejs) and the admin-dashboard router renders the hyphen-named one, shadowing the canonical template with raw file inputs and no upload UI": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776392407.258312,
+    "fix_category": "view_duplication",
+    "fix_description": "KNOWN FOLLOWUP (v14): needs a post-processor that detects when views/admin-settings.ejs exists AND views/admin/settings.ejs exists, and either removes the hyphen version or forces all render('admin-settings') calls to use render('admin/settings').",
+    "last_seen": 1776392407.258312,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "Two admin-settings view templates coexist (views/admin/settings.ejs AND views/admin-settings.ejs) and the admin-dashboard router renders the hyphen-named one, shadowing the canonical template with raw file inputs and no upload UI",
+    "success_count": 0
+  },
+  "TypeError: Cannot read properties of undefined (reading id)": {
+    "failure_count": 0,
+    "files_changed": [
+      "routes/items.js",
+      "routes/users.js"
+    ],
+    "first_seen": 1775199614.83671,
+    "fix_category": "null-safety",
+    "fix_description": "Add null guard before .rows[0] property access: check result.rows.length > 0 before accessing result.rows[0].id or destructuring from result.rows[0]. Add: if (!result.rows.length) return res.status(404).json({ error: \"Not found\" }); immediately before the access.",
+    "last_seen": 1775199614.83671,
+    "recent_outcomes": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "signature": "TypeError: Cannot read properties of undefined (reading id)",
+    "success_count": 5
+  },
+  "UnknownWidgetError: spec declares a field type not registered in cli/widgets/widgets.py": {
+    "failure_count": 0,
+    "files_changed": [],
+    "first_seen": 1776474181.896189,
+    "fix_category": "widgets",
+    "fix_description": "Spec declares a field type not in cli/widgets/widgets.py's registered types. Fix: add the type to VALID_FIELD_TYPES in cli/validate.py AND register a Widget subclass in cli/widgets/widgets.py via @register('type'). See docs/internals/WIDGETS_AND_CONTRACTS.md. Introduced in b-plus-c-phase-1.",
+    "introduced_in": "b-plus-c-phase-1",
+    "last_seen": 1776474181.896189,
+    "recent_outcomes": [],
+    "signature": "UnknownWidgetError: spec declares a field type not registered in cli/widgets/widgets.py",
+    "success_count": 0
+  },
+  "YouTube iframe post-processor applied inconsistently: rewrites events/detail.ejs (where it shouldn't) but skips videos/index.ejs (where it should)": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776384863.833643,
+    "fix_category": "post_processor",
+    "fix_description": "Ensure _privacy_safe_youtube() walks ALL EJS files and either rewrites or skips consistently based on variable-name heuristic. Current bug: skips some video templates, over-applies to event templates.",
+    "last_seen": 1776384863.833643,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "YouTube iframe post-processor applied inconsistently: rewrites events/detail.ejs (where it shouldn't) but skips videos/index.ejs (where it should)",
+    "success_count": 0
+  },
+  "_ensure_event_time_helper injects app.locals.formatEventTime into server.js, but the view rewrite regex only caught 1 out of N date_time display sites. Home hero + events list cards still format UTC as local, showing Sample Featured Event as 12:00 AM CDT instead of 7:00 PM CDT the previous day": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776402387.7611551,
+    "fix_category": "regex_scope",
+    "fix_description": "Fix: broaden date_time_var_re to also match patterns like `new Date(event.date_time).toLocaleString(...)` AND forEach-scoped iterator vars (`e.date_time`, `evt.date_time`, `item.date_time`). v15.",
+    "last_seen": 1776402387.7611551,
+    "recent_outcomes": [
+      false
+    ],
+    "signature": "_ensure_event_time_helper injects app.locals.formatEventTime into server.js, but the view rewrite regex only caught 1 out of N date_time display sites. Home hero + events list cards still format UTC as local, showing Sample Featured Event as 12:00 AM CDT instead of 7:00 PM CDT the previous day",
+    "success_count": 0
+  },
+  "buttons have visible backgrounds: Found invisible buttons: Save Changes (no background)": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/layout.ejs",
+      "public/style.css"
+    ],
+    "first_seen": 1774297037.477163,
+    "fix_category": "styling",
+    "fix_description": "Changed button classes from outline/transparent to solid bg-primary text-white for all submit and action buttons. Delete buttons use bg-red-600 text-white.",
+    "last_seen": 1774297037.492844,
+    "seeded": true,
+    "signature": "buttons have visible backgrounds: Found invisible buttons: Save Changes (no background)",
+    "success_count": 3
+  },
+  "cannot access admin-only pages: Expected <N> or redirect, got 200": {
+    "failure_count": 0,
+    "files_changed": [
+      "middleware/auth.js",
+      "server.js"
+    ],
+    "first_seen": 1743566400.0,
+    "fix_category": "auth",
+    "fix_description": "Non-admin users can access admin-restricted pages because requireAuth or role-check middleware is not applied to those routes. Fix: ensure every route that should be admin-only uses requireAdmin middleware (checks req.session.userRole === 'admin' or req.session.userId === 1). Apply requireAuth to all non-public routes in server.js route mounting. Check that middleware/auth.js exports requireAdmin and that it returns 403 or redirects to /login for non-admin users.",
+    "last_seen": 1743566400.0,
+    "recent_outcomes": [],
+    "seeded": true,
+    "signature": "cannot access admin-only pages: Expected <N> or redirect, got 200",
+    "success_count": 0
+  },
+  "custom action button in view has no matching route handler": {
+    "failure_count": 1,
+    "first_seen": 1774805081.070636,
+    "fix_category": "routing",
+    "fix_description": "When a view includes a custom action button (toggle-status, approve, archive, activate, deactivate, etc.), the router file MUST include a matching POST handler: router.post(\"/:id/action-name\", requireAuth, async (req, res) => { ... res.redirect(\"back\") }). Never add an action button to a view without registering its route handler.",
+    "last_seen": 1774805081.070636,
+    "recent_outcomes": [
+      true,
+      true,
+      true,
+      false
+    ],
+    "signature": "custom action button in view has no matching route handler",
+    "success_count": 3
+  },
+  "failed; Error: listen EADDRINUSE: address already in use :::8080": {
+    "failure_count": 0,
+    "files_changed": [
+      "server.js"
+    ],
+    "first_seen": 1774291766.417206,
+    "fix_category": "routing",
+    "fix_description": "Use process.env.PORT for app.listen(): never hardcode a port number. Pattern: app.listen(process.env.PORT || 3000). Railway sets PORT dynamically at container start.",
+    "last_seen": 1774637461.881542,
+    "seeded": true,
+    "signature": "failed; Error: listen EADDRINUSE: address already in use :::8080",
+    "success_count": 71
+  },
+  "form submit without CSRF returns 403: Expected 403 or re-render, CSRF validation failed": {
+    "failure_count": 0,
+    "files_changed": [
+      "views/login.ejs",
+      "views/register.ejs",
+      "views/dashboard.ejs"
+    ],
+    "first_seen": 1774297037.5249841,
+    "fix_category": "csrf",
+    "fix_description": "Added <input type=\"hidden\" name=\"_csrf\" value=\"<%= csrfToken %>\"> to all POST forms. Every form that POSTs must include the CSRF hidden field.",
+    "last_seen": 1774297037.526485,
+    "seeded": true,
+    "signature": "form submit without CSRF returns 403: Expected 403 or re-render, CSRF validation failed",
+    "success_count": 3
+  },
+  "login as admin redirects away from login: Expected redirect away from login, bcrypt hash mismatch": {
+    "failure_count": 0,
+    "files_changed": [
+      "db/seed.sql"
+    ],
+    "first_seen": 1774297037.4942951,
+    "fix_category": "seed_data",
+    "fix_code": "",
+    "fix_description": "Fixed db/seed.sql admin user setup. When USE_MAGIC_LINK_AUTH is true, admin user should have password_set=FALSE and password=NULL. The magic link token in magic_link_tokens table handles first login. When USE_MAGIC_LINK_AUTH is false, ensure seed.sql has a valid bcrypt hash for the admin password.",
+    "last_seen": 1774297037.499757,
+    "seeded": true,
+    "signature": "login as admin redirects away from login: Expected redirect away from login, bcrypt hash mismatch",
+    "success_count": 3
+  },
+  "login as user redirects away from login: Expected redirect away from login, got http://localhost:<PORT>/login": {
+    "failure_count": 0,
+    "files_changed": [
+      "routes/auth.js"
+    ],
+    "first_seen": 1774297037.4271848,
+    "fix_category": "session",
+    "fix_description": "Added req.session.save(() => res.redirect(\"/dashboard\")) after setting session fields in POST /login and POST /register. Without explicit save(), the redirect races ahead of the async session write to connect-pg-simple.",
+    "last_seen": 1774297037.453917,
+    "seeded": true,
+    "signature": "login as user redirects away from login: Expected redirect away from login, got http://localhost:<PORT>/login",
+    "success_count": 4
+  },
+  "login sets session but cookie not persisted, secure cookie requires HTTPS": {
+    "failure_count": 0,
+    "files_changed": [
+      "server.js"
+    ],
+    "first_seen": 1774297037.52822,
+    "fix_category": "session",
+    "fix_description": "Added app.set(\"trust proxy\", 1) BEFORE session middleware in server.js. Required for secure cookies behind Railway edge proxy.",
+    "last_seen": 1774297037.532125,
+    "seeded": true,
+    "signature": "login sets session but cookie not persisted, secure cookie requires HTTPS",
+    "success_count": 3
+  },
+  "mw_v17_a_seed_image_null": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "seed-data",
+    "fix_description": "v17 FIX A: _ensure_model_seed_images post-processor fills NULL image_url from spec._seed_<plural>[i].image_url or stock-photo rotation",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "seed.sql events/photos INSERTs have image_url=NULL; photos table has NOT NULL so all rows silently fail"
+  },
+  "mw_v17_b_stub_crud_form": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "template",
+    "fix_description": "v17 FIX B: _ensure_crud_forms_complete detects stubs and regenerates canonical form from spec.data_models field list",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "views/<model>/edit.ejs or new.ejs renders 'Content for X will appear here' or heading-only (no <form>)"
+  },
+  "mw_v17_c_route_link_drift": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "routing",
+    "fix_description": "v17 FIX C: _fix_route_link_drift rewrites drifted hrefs when there's a single close-match mounted route",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "admin nav links to /messages returns 404; route is mounted at /contact-messages"
+  },
+  "mw_v17_d_delete_confirm_double": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "template",
+    "fix_description": "v17 FIX D: _ensure_delete_confirm_single_handler strips per-element forEach wiring and removes onsubmit=confirm when data-confirm is set",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "delete confirm popup fires twice (layout querySelectorAll + _ensure_submit_guard both wire submit handlers)"
+  },
+  "mw_v17_e_button_system_missing": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "css",
+    "fix_description": "v17 FIX E: _ensure_button_design_system appends .btn-primary/.btn-secondary/.btn-ghost/.btn-destructive/.btn-warm with hover/focus states",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "Inconsistent button styling across UI: no canonical .btn-* class system"
+  },
+  "mw_v17_f_settings_input_contrast": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "css",
+    "fix_description": "v17 FIX F: cli/templates/views_admin_settings.ejs extended with dark-theme overrides for .input-premium/input/textarea/select on body.bg-slate-950 + [data-theme=dark]",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "admin settings inputs render with white bg + light text (inherits .input-premium) on dark-primary apps: unreadable"
+  },
+  "mw_v17_g_home_video_error_153": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "template",
+    "fix_description": "v17 FIX G: _ensure_home_video_click_to_play replaces inline iframe on home/index with thumbnail click-through via /api/video-thumb proxy; widened _INDEX_PATTERNS to include 'home'/'landing'",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "home page inline YouTube iframe displays 'Error 153: Video player configuration error'"
+  },
+  "mw_v17_h_register_link_vs_spec": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "template",
+    "fix_description": "v17 FIX H: _strip_dead_signup_links now consults spec.pages first; spec intent wins over route existence",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "login page shows 'Register here' link even when spec.pages has no /register entry"
+  },
+  "mw_v17_i_stat_card_variety_weak": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "template",
+    "fix_description": "v17 FIX I: _ensure_stat_card_accent_variety upgrades border-t-2 to border-t-4 and colorizes stat number text to match accent",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "admin dashboard 4 stat cards look uniformly blue despite varied accent border classes (2px border too subtle)"
+  },
+  "mw_v17_j_about_photo_tiny_svg": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "template",
+    "fix_description": "v17 FIX J: _ensure_about_photo_fallback picks a stock photo (portrait/ocean-keyword preferred) and swaps into the else branch",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "about page fallback when about_photo_url empty is a 20px music-note SVG at 20% opacity: feels like a stub"
+  },
+  "mw_v17_k_nav_logo_unseeded": {
+    "failure_count": 1,
+    "files_changed": [],
+    "first_seen": 1776443230.714609,
+    "fix_category": "seed-data",
+    "fix_description": "v17 FIX K: _ensure_nav_logo_default_seed inspects build for bundled logo (SVG/PNG/WebP) and seeds nav_logo_url accordingly",
+    "last_seen": 1776443230.714609,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "nav shows text-only brand on fresh boot because site_settings.nav_logo_url='' even when the build has public/logo.png"
+  },
+  "routes/dashboard.js missing /admin/{slug} handler for specific models despite the model's own routes/{slug}.js having full CRUD. Observed v15: videos handler missing, photos + events present.": {
+    "failure_count": 1,
+    "files_changed": [
+      "cli/build.py"
+    ],
+    "first_seen": 1776435244.2126951,
+    "fix_category": "generation_incompleteness",
+    "fix_description": "FIXED v16: _ensure_admin_model_handlers auto-injects missing dashboard.js GET handlers for every data_model. Integration test test_admin_dashboard_has_all_model_handlers verifies.",
+    "last_seen": 1776435244.2126951,
+    "recent_outcomes": [
+      true
+    ],
+    "signature": "routes/dashboard.js missing /admin/{slug} handler for specific models despite the model's own routes/{slug}.js having full CRUD. Observed v15: videos handler missing, photos + events present.",
+    "success_count": 0
+  },
+  "views use singular slug in href or action instead of plural": {
+    "failure_count": 1,
+    "first_seen": 1774805081.070636,
+    "fix_category": "views",
+    "fix_description": "In EJS views, ALL href and action attributes must use the PLURAL slug path. For a model with slug \"recipe\", use /recipes/1 not /recipe/1. Use correct English plurals: batch\u2192batches, inventory\u2192inventories, category\u2192categories, recipe\u2192recipes. Every link and form action in list, detail, and edit views must reference the plural path.",
+    "last_seen": 1774805081.070636,
+    "recent_outcomes": [
+      true,
+      true,
+      true,
+      false
+    ],
+    "signature": "views use singular slug in href or action instead of plural",
+    "success_count": 3
+  }
+}

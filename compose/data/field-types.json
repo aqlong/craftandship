@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "updated_at": "2026-04-21",
+  "description": "Standardized form-field type registry. Every data model field references a field_type (or falls back to raw sql_type). Each field_type defines: html_input (the input element kind), sql_type (Postgres column), pattern (HTML5 regex for client validation), inputmode (mobile keyboard hint), autocomplete (browser autocomplete token), sanitize (server-side normalization: trim|lowercase|digits_only|null_if_empty|trim_multiline), maxlength, and placeholder. Widgets read from this registry at emit time so forms look, validate, and store consistently across every archetype.",
+  "field_types": {
+    "text": {
+      "html_input": "input:text",
+      "sql_type": "VARCHAR(255)",
+      "maxlength": 255,
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": ""
+    },
+    "long_text": {
+      "html_input": "textarea",
+      "sql_type": "TEXT",
+      "maxlength": 10000,
+      "sanitize": ["trim_multiline", "null_if_empty"],
+      "placeholder": ""
+    },
+    "email": {
+      "html_input": "input:email",
+      "sql_type": "VARCHAR(255)",
+      "maxlength": 255,
+      "inputmode": "email",
+      "autocomplete": "email",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "sanitize": ["trim", "lowercase", "null_if_empty"],
+      "placeholder": "you@example.com"
+    },
+    "phone_us": {
+      "html_input": "input:tel",
+      "sql_type": "VARCHAR(20)",
+      "maxlength": 20,
+      "inputmode": "tel",
+      "autocomplete": "tel",
+      "pattern": "^[\\d\\s\\(\\)+.\\-]{7,20}$",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": "(555) 555-5555"
+    },
+    "url": {
+      "html_input": "input:url",
+      "sql_type": "TEXT",
+      "inputmode": "url",
+      "autocomplete": "url",
+      "pattern": "^https?:\\/\\/.+",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": "https://example.com"
+    },
+    "slug": {
+      "html_input": "input:text",
+      "sql_type": "VARCHAR(255)",
+      "maxlength": 255,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "sanitize": ["trim", "lowercase", "null_if_empty"],
+      "placeholder": "my-post-slug"
+    },
+    "zip_us": {
+      "html_input": "input:text",
+      "sql_type": "VARCHAR(10)",
+      "maxlength": 10,
+      "inputmode": "numeric",
+      "autocomplete": "postal-code",
+      "pattern": "^\\d{5}(-\\d{4})?$",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": "12345"
+    },
+    "state_us": {
+      "html_input": "select:state-us",
+      "sql_type": "VARCHAR(2)",
+      "maxlength": 2,
+      "autocomplete": "address-level1",
+      "sanitize": ["trim", "upper", "null_if_empty"],
+      "placeholder": "Select state"
+    },
+    "address_line": {
+      "html_input": "input:text",
+      "sql_type": "VARCHAR(255)",
+      "maxlength": 255,
+      "autocomplete": "street-address",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": "123 Main St"
+    },
+    "city": {
+      "html_input": "input:text",
+      "sql_type": "VARCHAR(100)",
+      "maxlength": 100,
+      "autocomplete": "address-level2",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": "Sample City"
+    },
+    "country_us": {
+      "html_input": "input:hidden",
+      "sql_type": "VARCHAR(2)",
+      "maxlength": 2,
+      "sanitize": ["upper"],
+      "default_value": "US",
+      "placeholder": "US"
+    },
+    "date": {
+      "html_input": "input:date",
+      "sql_type": "DATE",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": ""
+    },
+    "time": {
+      "html_input": "input:time",
+      "sql_type": "TIME",
+      "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": ""
+    },
+    "datetime": {
+      "html_input": "input:datetime-local",
+      "sql_type": "TIMESTAMPTZ",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": ""
+    },
+    "integer": {
+      "html_input": "input:number",
+      "sql_type": "INTEGER",
+      "inputmode": "numeric",
+      "pattern": "^-?\\d+$",
+      "step": "1",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": "0"
+    },
+    "decimal": {
+      "html_input": "input:number",
+      "sql_type": "NUMERIC(10,2)",
+      "inputmode": "decimal",
+      "pattern": "^-?\\d+(\\.\\d{1,2})?$",
+      "step": "0.01",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": "0.00"
+    },
+    "currency_usd": {
+      "html_input": "input:number",
+      "sql_type": "NUMERIC(10,2)",
+      "inputmode": "decimal",
+      "pattern": "^\\d+(\\.\\d{1,2})?$",
+      "min": "0",
+      "step": "0.01",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": "0.00"
+    },
+    "boolean": {
+      "html_input": "input:checkbox",
+      "sql_type": "BOOLEAN",
+      "sanitize": ["checkbox_bool"],
+      "placeholder": ""
+    },
+    "select": {
+      "html_input": "select:options",
+      "sql_type": "VARCHAR(100)",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": "Select..."
+    },
+    "image": {
+      "html_input": "upload:image",
+      "sql_type": "TEXT",
+      "sanitize": ["trim", "null_if_empty"],
+      "placeholder": ""
+    },
+    "color_hex": {
+      "html_input": "input:color",
+      "sql_type": "VARCHAR(7)",
+      "maxlength": 7,
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "sanitize": ["trim", "lowercase", "null_if_empty"],
+      "placeholder": "#000000"
+    },
+    "password": {
+      "html_input": "input:password",
+      "sql_type": "VARCHAR(255)",
+      "maxlength": 255,
+      "minlength": 8,
+      "autocomplete": "new-password",
+      "sanitize": ["bcrypt_hash"],
+      "placeholder": "Minimum 8 characters"
+    }
+  },
+  "us_states": [
+    ["AL", "Alabama"], ["AK", "Alaska"], ["AZ", "Arizona"], ["AR", "Arkansas"],
+    ["CA", "California"], ["CO", "Colorado"], ["CT", "Connecticut"], ["DE", "Delaware"],
+    ["DC", "District of Columbia"], ["FL", "Florida"], ["GA", "Georgia"], ["HI", "Hawaii"],
+    ["ID", "Idaho"], ["IL", "Illinois"], ["IN", "Indiana"], ["IA", "Iowa"],
+    ["KS", "Kansas"], ["KY", "Kentucky"], ["LA", "Louisiana"], ["ME", "Maine"],
+    ["MD", "Maryland"], ["MA", "Massachusetts"], ["MI", "Michigan"], ["MN", "Minnesota"],
+    ["MS", "Mississippi"], ["MO", "Missouri"], ["MT", "Montana"], ["NE", "Nebraska"],
+    ["NV", "Nevada"], ["NH", "New Hampshire"], ["NJ", "New Jersey"], ["NM", "New Mexico"],
+    ["NY", "New York"], ["NC", "North Carolina"], ["ND", "North Dakota"], ["OH", "Ohio"],
+    ["OK", "Oklahoma"], ["OR", "Oregon"], ["PA", "Pennsylvania"], ["RI", "Rhode Island"],
+    ["SC", "South Carolina"], ["SD", "South Dakota"], ["TN", "Tennessee"], ["TX", "Texas"],
+    ["UT", "Utah"], ["VT", "Vermont"], ["VA", "Virginia"], ["WA", "Washington"],
+    ["WV", "West Virginia"], ["WI", "Wisconsin"], ["WY", "Wyoming"]
+  ]
+}

@@ -1,0 +1,80 @@
+<!-- compose:widget content/video-embed-nocookie -->
+<%
+// Privacy-safe YouTube/Vimeo embed, first built for a long-form
+// event page. Used
+// by Event detail views and any other surface that needs a video embed.
+//
+// Locals expected:
+//   - video_url: raw URL string entered by the customer. Accepts the
+//     common formats: youtube.com/watch?v=ID, youtu.be/ID,
+//     youtube.com/embed/ID, vimeo.com/ID. Anything else falls back to
+//     a plain "Watch the video ↗" link with target=_blank.
+//   - caption: (optional) caption text below the embed.
+//   - eyebrow: (optional) small uppercase eyebrow above the embed,
+//     defaults to "Watch".
+//
+// Output: 16:9 responsive iframe via padding-bottom trick. iframe src
+// is the nocookie variant (youtube-nocookie.com / player.vimeo.com)
+// so tracking cookies are not set until the visitor presses play.
+function _ytSrc(raw) {
+  if (!raw) return '';
+  var s = String(raw);
+  var m = s.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/);
+  if (m) return 'https://www.youtube-nocookie.com/embed/' + m[1];
+  m = s.match(/[?&]v=([A-Za-z0-9_-]{6,})/);
+  if (m) return 'https://www.youtube-nocookie.com/embed/' + m[1];
+  m = s.match(/\/embed\/([A-Za-z0-9_-]{6,})/);
+  if (m) return 'https://www.youtube-nocookie.com/embed/' + m[1];
+  return '';
+}
+function _vimeoSrc(raw) {
+  if (!raw) return '';
+  var s = String(raw);
+  var m = s.match(/vimeo\.com\/(\d+)/);
+  if (m) return 'https://player.vimeo.com/video/' + m[1];
+  return '';
+}
+// Scheme guard: only http(s) URLs are safe for an external <a href>.
+// Filters out javascript:, data:, vbscript:, etc. The escaping output tag
+// HTML-escapes the value but does NOT block dangerous schemes, so the guard
+// is needed. (Do not write an EJS tag inside this comment: EJS scans for
+// its closing delimiter as plain text, even here, and the literal tag that
+// used to be on this line ended the script block and broke the widget.)
+function _isSafeHttpUrl(u) {
+  if (!u) return false;
+  return /^https?:\/\//i.test(String(u));
+}
+var _raw = (typeof video_url !== 'undefined') ? video_url : '';
+var _ytEmbed = _ytSrc(_raw);
+var _vimeoEmbed = _vimeoSrc(_raw);
+var _embedSrc = _ytEmbed || _vimeoEmbed;
+var _safeRawHref = _isSafeHttpUrl(_raw) ? _raw : '';
+var _caption = (typeof caption !== 'undefined') ? caption : '';
+var _eyebrow = (typeof eyebrow !== 'undefined' && eyebrow) ? eyebrow : 'Watch';
+%>
+<% if (_embedSrc) { %>
+  <div style="margin: 2rem 0 2.5rem 0;">
+    <% if (_eyebrow) { %>
+      <div class="font-body" style="text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.875rem; font-weight: 700; color: var(--color-accent-earth, var(--color-primary)); margin-bottom: 0.875rem;"><%= _eyebrow %></div>
+    <% } %>
+    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 1rem; box-shadow: 0 6px 24px rgba(42,28,20,0.14); background: #000;">
+      <iframe src="<%= _embedSrc %>"
+              title="<%= _caption || 'Video' %>"
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen></iframe>
+    </div>
+    <% if (_caption) { %>
+      <p class="font-body" style="color: var(--color-foreground-muted); font-style: italic; font-size: 1rem; margin-top: 0.875rem; text-align: center;"><%= _caption %></p>
+    <% } %>
+  </div>
+<% } else if (_safeRawHref) { %>
+  <div style="margin: 2rem 0 2.5rem 0;">
+    <a href="<%= _safeRawHref %>" target="_blank" rel="noopener"
+       class="font-body inline-flex items-center"
+       style="color: var(--color-primary); font-size: 1.125rem; font-weight: 500; border-bottom: 1px solid var(--color-accent-warm, var(--color-primary)); text-decoration: none;">
+      ▶ Watch the video<% if (_caption) { %>: <%= _caption %><% } %>
+    </a>
+  </div>
+<% } %>

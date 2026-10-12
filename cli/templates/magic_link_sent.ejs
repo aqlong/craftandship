@@ -1,0 +1,18 @@
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="w-full max-w-md">
+    <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+      <div class="text-5xl mb-4">&#9993;</div>
+      <h1 class="text-2xl font-bold mb-2">Check Your Email</h1>
+      <p class="text-gray-600 mb-6">We sent a login link to your email address. Click the link to sign in.</p>
+      <p class="text-sm text-gray-500 mb-6">The link expires in 24 hours.</p>
+      <form action="/request-magic-link" method="POST" class="mt-4">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="email" value="<%= typeof email !== 'undefined' ? email : '' %>">
+        <button type="submit" class="text-sm text-primary hover:text-primary/80 underline">
+          Didn't receive it? Send another link
+        </button>
+      </form>
+      <a href="/login" class="block mt-4 text-sm text-gray-500 hover:text-gray-700">Back to login</a>
+    </div>
+  </div>
+</div>

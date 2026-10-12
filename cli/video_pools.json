@@ -1,0 +1,22 @@
+{
+  "_comment": "Public YouTube video ids used as sample background videos by the legacy v1 engine (cli/build.py reads this file; the v2 engine does not). Hand-curated and frozen: categorization is approximate, some ids are music videos, and at least one id no longer resolves (found in a pre-release audit). Ids were not re-verified and the videos are not owned by this project.",
+  "wellness": ["lFcSrYw-ARY", "1ZYbU82GVz4", "hlWiI4xVXKY", "2OEL4P1Rz04", "aEqlQvczMJQ", "77ZozI0rw7w", "inpok4MKVLM"],
+  "fitness": ["ml6cT4AZdqI", "UBMk30rjy0o", "gC_L9qAHVJ8", "2pLT-olgUJs", "IT94xC35u6k"],
+  "food": ["bJUiWdM__Qw", "41N6bKO-NVI", "qWAagS_MANg", "3AAdKl1UYZs", "rz5TGN7eUcM"],
+  "business": ["TQMbvJNRpLE", "dsUXAEzaC3Q", "nKIu9yen5nc", "A5w-dEgIU1M"],
+  "education": ["WtKJrB5rOKs", "rhgwIhB58PA", "tYa6OLQHrEc", "GEmuEWjHr5c", "uvbKmyp9WI0"],
+  "nature": ["BHACKCNDMW8", "CjB_oVeq8Lo", "IUN664s7N-c", "nn8YGPZdCvA", "8plwv25NYRo"],
+  "tech": ["qz0aGYrrlhU", "rfscVS0vtbw", "PkZNo7MFNFg", "DHjqpvDnNGE", "YJVmu6yttiw", "aircAruvnKk", "QXjU9qTsYCc"],
+  "childcare": ["e_04ZrNroTo", "pkYVOmU3MgA", "9pmPa_KxsAM", "75p-N9YKqNo", "Imhi98dHa5w"],
+  "sports": ["zYKupOsaJmk", "nxXcuDAv7Ss", "kgaO45SyaO4"],
+  "arts": ["36Y_ztEW1NE", "aMcjxSThD54", "YLO7tCdBVrA"],
+  "legal": ["uqH_Y1TupoQ", "8TttI60-mjQ", "dDYFiq1l5Dg", "E4NMZyfao2c"],
+  "pets": ["j5a0jTc9S10", "nHXw4mGoqiE", "qXo3NFqkaRM", "cqF6M25kqq4", "Z-BbpaNXbxg", "G4Sn91t1V4g", "4SZl1r2O_bY", "hY7m5jjJ9mM"],
+  "people": ["8KkKuTCFvzI", "BQqzfHQkREo", "IPvYjXCsTg8", "3tmd-ClpJxA", "6Af6b_wyiwI", "ZXsQAXx_ao0"],
+  "hospitality": ["LXb3EKWsInQ"],
+  "medical": ["C0DPdy98e4c", "K3odScka55A"],
+  "construction": ["XRd6Ddn4ZSY"],
+  "automotive": ["IkMFLUXTEwM"],
+  "beauty": ["GGhKPm18E48"],
+  "real_estate": ["0xbSHn4Fbu4"]
+}

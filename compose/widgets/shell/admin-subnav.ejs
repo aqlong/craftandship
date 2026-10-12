@@ -1,0 +1,12 @@
+<!-- compose:widget shell/admin-subnav -->
+<% var _cp = (typeof currentPath !== 'undefined' ? currentPath : (typeof locals !== 'undefined' && locals.currentPath) || '/admin'); %>
+<div style="background-color: var(--color-surface); border-bottom: 1px solid var(--color-border);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="flex items-center gap-1 overflow-x-auto" style="scrollbar-width: thin;">
+      <% (typeof admin_nav_items !== 'undefined' ? admin_nav_items : []).forEach(function(item) { %>
+        <% var isActive = (item.href === '/admin' ? _cp === '/admin' : _cp.indexOf(item.href) === 0); %>
+        <a href="<%= item.href %>" class="font-body text-sm font-medium px-3 py-3 transition-opacity hover:opacity-70 whitespace-nowrap" style="color: <% if (isActive) { %>var(--color-primary)<% } else { %>var(--color-foreground-muted)<% } %>; text-decoration: none; border-bottom: <% if (isActive) { %>2px solid var(--color-primary)<% } else { %>2px solid transparent<% } %>;"><%= item.label %></a>
+      <% }); %>
+    </div>
+  </div>
+</div>

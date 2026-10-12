@@ -1,0 +1,35 @@
+<%#
+  CAS Harbor skip-to-main-content link.
+  WCAG 2.1 AA section 2.4.1 (Bypass Blocks). Shared partial for the
+  standalone /lighthouse/* HTML docs which each carry their own inline
+  <style> block (no layout-based partial inheritance). Self-contained
+  so any standalone view can drop it in as the first child of <body>.
+
+  Pair on the same page with a <main id="main"> wrapper around primary
+  content. Place this include as the first child of <body> so it is
+  the first focusable element on tab. Visually hidden until focused,
+  then revealed at the top-left of the viewport.
+%>
+<style>
+  .cas-skip-link {
+    position: absolute;
+    top: -100px;
+    left: 8px;
+    background: #3a2f24;
+    color: #e8e0cd;
+    padding: 12px 18px;
+    border-radius: 4px;
+    font-family: 'Söhne', 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.2;
+    text-decoration: none;
+    z-index: 100;
+    transition: top 120ms ease;
+  }
+  .cas-skip-link:focus {
+    top: 8px;
+    outline: 2px solid #f4d29a;
+    outline-offset: 2px;
+  }
+</style>
+<a href="#main" class="cas-skip-link">Skip to main content</a>

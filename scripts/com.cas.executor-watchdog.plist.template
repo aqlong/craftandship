@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd template for the CAS executor watchdog (scripts/cas-executor-watchdog.sh).
+
+  The placeholders __REPO_ROOT__ and __HOME__ are filled in at install time.
+  Run from the repo root:
+
+    mkdir -p logs/executor
+    sed -e "s|__REPO_ROOT__|$(pwd)|g" -e "s|__HOME__|$HOME|g" \
+        scripts/com.cas.executor-watchdog.plist.template \
+        > ~/Library/LaunchAgents/com.cas.executor-watchdog.plist
+    launchctl load ~/Library/LaunchAgents/com.cas.executor-watchdog.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.cas.executor-watchdog</string>
+
+    <!-- Deterministic self-healing sweep for the CAS roadmap executor.
+         Auto-fixes mechanical blocks (stale locks, orphan worktrees, dead
+         PIDs) and alerts on ambiguous ones. Runs every 30 min = 2x/hour. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__REPO_ROOT__/scripts/cas-executor-watchdog.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO_ROOT__</string>
+
+    <key>StartInterval</key>
+    <integer>1800</integer>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Don't respawn on exit; wait for the next 30-min StartInterval tick.
+         The watchdog always exits 0, so RunAtLoad + StartInterval is the
+         only cadence we need. -->
+    <key>KeepAlive</key>
+    <false/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>__HOME__</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>__REPO_ROOT__/logs/executor/watchdog.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__REPO_ROOT__/logs/executor/watchdog.log</string>
+</dict>
+</plist>

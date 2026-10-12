@@ -1,0 +1,80 @@
+<!-- compose:widget shell/footer-grid-five-col -->
+<%
+   // Directory-rich footer: full sitemap, 5 columns on lg, 2 on md, 1 on sm.
+   //
+   // Cols:
+   //   1. Brand + tagline + address
+   //   2. Quick links (nav_items first half)
+   //   3. Services / pages (nav_items second half)
+   //   4. Contact (email + phone)
+   //   5. Hours / social
+   //
+   // Reads same data contract as shell/footer plus settings.business_hours
+   // (optional). Designed for businesses with many places to go and lots
+   // of trust signals to surface (hours, address, phone, multiple service
+   // categories).
+   var _items = (typeof nav_items !== 'undefined' ? nav_items : []);
+   var _half = Math.ceil(_items.length / 2);
+   var _quickLinks = _items.slice(0, _half);
+   var _morePages = _items.slice(_half);
+   var _hours = settings.business_hours || '';
+   var _year = new Date().getFullYear();
+%>
+<footer class="cas-footer-grid-five-col" style="background-color: var(--color-foreground); color: var(--color-background);">
+  <div style="max-width: 1280px; margin: 0 auto; padding: 3rem 1.5rem;">
+    <div style="display: grid; gap: 2rem;" class="grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
+      <div>
+        <div class="font-display" style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.75rem; letter-spacing: -0.01em;"><%= settings.site_name %></div>
+        <% var _ft = settings.footer_tagline || settings.site_description || ''; %>
+        <% if (_ft) { %>
+          <% if (_ft.length > 140) { _ft = _ft.substring(0, 137).replace(/\s+\S*$/, '') + '…'; } %>
+          <div class="font-body" style="font-size: 0.8125rem; line-height: 1.55; opacity: 0.7; margin-bottom: 0.75rem;"><%= _ft %></div>
+        <% } %>
+        <% if (settings.contact_address) { %>
+          <div class="font-body" style="font-size: 0.75rem; opacity: 0.6; line-height: 1.5;"><%= settings.contact_address %></div>
+        <% } %>
+      </div>
+      <div>
+        <div class="font-body" style="font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; opacity: 0.5; margin-bottom: 0.875rem;">Quick Links</div>
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+          <% _quickLinks.forEach(function(item) { %>
+            <li><a href="<%= item.href %>" class="font-body" style="color: inherit; text-decoration: none; font-size: 0.8125rem; opacity: 0.85;"><%= item.label %></a></li>
+          <% }); %>
+        </ul>
+      </div>
+      <% if (_morePages.length > 0) { %>
+      <div>
+        <div class="font-body" style="font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; opacity: 0.5; margin-bottom: 0.875rem;">More Pages</div>
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+          <% _morePages.forEach(function(item) { %>
+            <li><a href="<%= item.href %>" class="font-body" style="color: inherit; text-decoration: none; font-size: 0.8125rem; opacity: 0.85;"><%= item.label %></a></li>
+          <% }); %>
+        </ul>
+      </div>
+      <% } %>
+      <div>
+        <div class="font-body" style="font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; opacity: 0.5; margin-bottom: 0.875rem;">Contact</div>
+        <% if (settings.contact_email) { %>
+          <a href="mailto:<%= settings.contact_email %>" class="font-body cas-wrap-anywhere" style="display: block; color: inherit; text-decoration: none; font-size: 0.8125rem; opacity: 0.85; margin-bottom: 0.5rem;"><%= settings.contact_email %></a>
+        <% } %>
+        <% if (settings.contact_phone) { %>
+          <a href="tel:<%= settings.contact_phone.replace(/[^0-9+]/g, '') %>" class="font-body" style="display: block; color: inherit; text-decoration: none; font-size: 0.8125rem; opacity: 0.85; margin-bottom: 0.5rem;"><%= settings.contact_phone %></a>
+        <% } %>
+        <a href="/login" class="font-body" style="display: inline-block; margin-top: 0.5rem; color: inherit; text-decoration: none; font-size: 0.75rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.12em;">Login</a>
+      </div>
+      <div>
+        <div class="font-body" style="font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; opacity: 0.5; margin-bottom: 0.875rem;">Hours</div>
+        <% if (_hours) { %>
+          <div class="font-body" style="font-size: 0.8125rem; opacity: 0.85; line-height: 1.6; white-space: pre-line;"><%= _hours %></div>
+        <% } else { %>
+          <div class="font-body" style="font-size: 0.8125rem; opacity: 0.6; line-height: 1.6;">Mon-Fri 9am-5pm<br />By appointment</div>
+        <% } %>
+      </div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.12); font-size: 0.75rem; opacity: 0.7;">
+      <span class="font-body" style="opacity: 0.7;">&copy; <%= _year %> <%= settings.site_name %></span>
+      <%- include('./cas-attribution.ejs', { settings: settings }) %>
+      <span class="font-body" style="opacity: 0.7;">All rights reserved</span>
+    </div>
+  </div>
+</footer>

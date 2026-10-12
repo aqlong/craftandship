@@ -1,0 +1,81 @@
+<!-- compose:widget shell/nav-sanctuary -->
+<%
+   // Sanctuary nav. Italic Cormorant
+   // wordmark + italic Cormorant nav links + sage rounded-pill on the
+   // last (CTA) item, on a paper-cream background.
+   //
+   // Visual contract:
+   //   - Background: paper / surface (cream); 1px hairline bottom border.
+   //   - Wordmark left-aligned in italic Cormorant. Optional small
+   //     circular logo before it.
+   //   - Nav links right-aligned, italic Cormorant, sentence-case (NOT
+   //     uppercase tracked-out the way nav-thin-statement is).
+   //   - Last nav item rendered as a sage pill button (Contact-as-CTA).
+   //   - Mobile: hamburger pulls down a centered italic stack.
+   //
+   // Same data contract as the other shells (settings, nav_items, user,
+   // csrfToken, currentPath).
+   var _cp = (typeof currentPath !== 'undefined' ? currentPath : (typeof locals !== 'undefined' && locals.currentPath) || '/');
+   var _user = (typeof user !== 'undefined' && user) ? user : (typeof locals !== 'undefined' ? locals.user : null);
+   var _isAdmin = !!(_user && _user.role === 'admin');
+   var _items = (typeof nav_items !== 'undefined' && nav_items) ? nav_items : [];
+   var _logo = settings.nav_logo_url || '';
+   // Mirror nav-public.ejs placeholder detection so GoDaddy wsimg.com
+   // default-globe URLs + picsum/placeholder fallbacks don't render
+   // a globe icon next to the wordmark.
+   var _isPlaceholderLogo = /picsum|placeholder|loremflickr|via\.placeholder|lorempixel|wsimg\.com.*\/logo\//i.test(_logo);
+   if (_isPlaceholderLogo) { _logo = ''; }
+%>
+<nav class="cas-nav-sanctuary" style="background-color: var(--color-surface); border-bottom: 1px solid var(--color-border); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+  <div class="max-w-6xl mx-auto" style="padding: 0 2rem; height: 72px; display: flex; align-items: center; justify-content: space-between;">
+    <a href="/" class="cas-sanctuary-wordmark font-display" style="display: inline-flex; align-items: center; gap: 0.625rem; color: var(--color-foreground); text-decoration: none; font-style: italic; font-weight: 400; font-size: 1.5rem; letter-spacing: 0.01em; line-height: 1;">
+      <% if (_logo) { %>
+        <img src="<%= _logo %>" alt="" class="cas-sanctuary-mark" style="width: 38px; height: 38px; border-radius: 50%; display: block;" />
+      <% } %>
+      <span><%= settings.site_name %></span>
+    </a>
+    <div class="cas-sanctuary-links hidden md:flex items-center" style="gap: 0.25rem;">
+      <% _items.forEach(function(item, idx) { %>
+        <% var isActive = (item.href === '/' ? _cp === '/' : _cp.indexOf(item.href) === 0); %>
+        <% var isLast = idx === _items.length - 1; %>
+        <% if (isLast) { %>
+          <a href="<%= item.href %>" class="cas-sanctuary-cta font-display" style="font-style: italic; font-size: 1.0625rem; font-weight: 500; background-color: var(--color-accent-earth); color: var(--color-on-primary); padding: 0.5rem 1.25rem; border-radius: 999px; text-decoration: none; letter-spacing: 0.01em; transition: background-color 0.25s ease, transform 0.25s ease; <% if (isActive) { %>background-color: var(--color-primary);<% } %>"><%= item.label %></a>
+        <% } else { %>
+          <a href="<%= item.href %>" class="cas-sanctuary-link font-display" style="font-style: italic; font-size: 1.0625rem; font-weight: 400; color: var(--color-foreground); opacity: <% if (isActive) { %>1<% } else { %>0.78<% } %>; text-decoration: none; padding: 0.5rem 0.875rem; border-radius: 6px; <% if (isActive) { %>background-color: color-mix(in oklab, var(--color-primary) 8%, transparent);<% } %>"><%= item.label %></a>
+        <% } %>
+      <% }); %>
+      <% if (_isAdmin) { %>
+        <a href="/admin" class="cas-sanctuary-link font-display" style="font-style: italic; font-size: 1.0625rem; font-weight: 400; color: var(--color-accent); opacity: 0.85; text-decoration: none; padding: 0.5rem 0.875rem;">Admin</a>
+        <form action="/logout" method="POST" style="display:inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="font-display" style="background: transparent; border: 0; cursor: pointer; color: var(--color-foreground-muted); font-style: italic; font-size: 1.0625rem; font-weight: 400; padding: 0.5rem 0.875rem;">Logout</button>
+        </form>
+      <% } %>
+    </div>
+    <button id="mobileMenuBtn" class="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent border-0 cursor-pointer" style="color: var(--color-foreground);" aria-label="Toggle menu" aria-expanded="false">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+  <div class="md:hidden hidden" id="mobileMenu" style="background-color: var(--color-surface); border-top: 1px solid var(--color-border); padding: 1rem 2rem 1.5rem;">
+    <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+      <% _items.forEach(function(item) { %>
+        <% var isActive = (item.href === '/' ? _cp === '/' : _cp.indexOf(item.href) === 0); %>
+        <a href="<%= item.href %>" class="font-display" style="font-style: italic; font-size: 1.25rem; font-weight: 400; color: var(--color-foreground); opacity: <% if (isActive) { %>1<% } else { %>0.78<% } %>; text-decoration: none; padding: 0.625rem 0.5rem; min-height: 44px; display: flex; align-items: center;"><%= item.label %></a>
+      <% }); %>
+      <% if (_isAdmin) { %>
+        <a href="/admin" class="font-display" style="font-style: italic; font-size: 1.25rem; font-weight: 400; color: var(--color-accent); opacity: 0.85; text-decoration: none; padding: 0.625rem 0.5rem; min-height: 44px; display: flex; align-items: center;">Admin</a>
+      <% } %>
+    </div>
+  </div>
+</nav>
+<script<% if (typeof cspNonce !== 'undefined' && cspNonce) { %> nonce="<%= cspNonce %>"<% } %>>
+  (function(){
+    var btn = document.getElementById('mobileMenuBtn');
+    var menu = document.getElementById('mobileMenu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function(){
+      var open = menu.classList.toggle('hidden') === false;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  })();
+</script>

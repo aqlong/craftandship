@@ -1,0 +1,7 @@
+# Real Playwright screenshots of each template family land here, one
+# subdirectory per family-id (matches templates.json). Generate with:
+#
+#   python3 scripts/regen-template-thumbnails.py
+#
+# /lighthouse/preview renders these when present and falls back to
+# CSS-only mocks when missing.

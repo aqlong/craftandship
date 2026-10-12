@@ -1,0 +1,56 @@
+{
+  "spec_version": "v1",
+  "app_name": "sample-yoga-studio-v1",
+  "description": "Neighborhood yoga studio running morning, noon, and evening classes with a small team of instructors",
+  "admin_email": "studio@example.com",
+  "user_roles": [
+    {"role": "admin", "description": "Studio owner; manages classes, bookings, contact inquiries"},
+    {"role": "instructor", "description": "Licensed instructor; can see own upcoming classes"}
+  ],
+  "data_models": [
+    {
+      "name": "Instructor",
+      "fields": [
+        {"name": "name", "type": "string", "required": true},
+        {"name": "bio", "type": "text"},
+        {"name": "specialty", "type": "string"},
+        {"name": "photo_url", "type": "url"}
+      ]
+    },
+    {
+      "name": "Class",
+      "belongs_to": "Instructor",
+      "fields": [
+        {"name": "title", "type": "string", "required": true},
+        {"name": "class_date", "type": "date", "required": true},
+        {"name": "start_time", "type": "time", "required": true},
+        {"name": "duration_minutes", "type": "integer"},
+        {"name": "room", "type": "string"},
+        {"name": "description", "type": "text"},
+        {"name": "published", "type": "boolean"}
+      ]
+    },
+    {
+      "name": "Booking",
+      "belongs_to": "Class",
+      "fields": [
+        {"name": "name", "type": "string", "required": true},
+        {"name": "email", "type": "email", "required": true},
+        {"name": "phone", "type": "phone"},
+        {"name": "notes", "type": "text"}
+      ]
+    }
+  ],
+  "pages": [
+    {"path": "/classes", "title": "Our Classes", "purpose": "Browse upcoming classes"},
+    {
+      "path": "/book",
+      "title": "Book a Class",
+      "purpose": "Reserve your spot in an upcoming session",
+      "form_target": "Booking",
+      "allowed_fields": ["name", "email", "phone", "notes"],
+      "submit_text": "Reserve My Spot",
+      "success_message": "Booked. Expect a confirmation email within an hour."
+    }
+  ]
+}

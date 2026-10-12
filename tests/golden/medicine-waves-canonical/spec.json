@@ -1,0 +1,514 @@
+{
+  "_provenance": {
+    "source_build": "medicine-waves-v19",
+    "captured_at": "2026-04-17T00:00:00Z",
+    "finalized_via": "coordinator._finalize_spec",
+    "note": "Canonical MW spec. Regenerate via scripts/bless_golden.py (see section-07)."
+  },
+  "tier": "build",
+  "pages": [
+    {
+      "path": "/",
+      "title": "Home",
+      "purpose": "Hero with tagline and description, upcoming events preview cards, one featured video embed, CTA to events page",
+      "allowed_roles": [
+        "visitor",
+        "admin"
+      ],
+      "auth_required": false
+    },
+    {
+      "path": "/events",
+      "title": "Events",
+      "purpose": "Two sections: Upcoming Events (future dates ascending) and Past Events (past dates descending). Each event card shows title, date, location, image, and a Get Tickets button linking to rsvp_link. Event detail page shows full description, image, Posh ticket embed iframe (when posh_embed_url is set, height controlled by posh_embed_height), and RSVP link.",
+      "allowed_roles": [
+        "visitor",
+        "admin"
+      ],
+      "auth_required": false
+    },
+    {
+      "path": "/gallery",
+      "title": "Gallery",
+      "purpose": "Responsive photo grid showing all gallery photos with captions, ordered by display_order",
+      "allowed_roles": [
+        "visitor",
+        "admin"
+      ],
+      "auth_required": false
+    },
+    {
+      "path": "/videos",
+      "title": "Videos",
+      "purpose": "Video cards with title, description, and embedded YouTube player, ordered by display_order",
+      "allowed_roles": [
+        "visitor",
+        "admin"
+      ],
+      "auth_required": false
+    },
+    {
+      "path": "/about",
+      "title": "About",
+      "purpose": "Ocean's story, the dome description, and the Medicine Waves mission. All content reads from site_settings keys: about_title, about_body, about_photo_url. Photo displayed with text.",
+      "allowed_roles": [
+        "visitor",
+        "admin"
+      ],
+      "auth_required": false
+    },
+    {
+      "path": "/contact",
+      "title": "Contact",
+      "purpose": "Public page. Get In Touch block showing contact_email, contact_phone, contact_address from site_settings. Contact form with name, email, message fields. GET and POST both public, no login required. Form saves to contact_messages table.",
+      "allowed_roles": [
+        "visitor",
+        "admin"
+      ],
+      "auth_required": false
+    },
+    {
+      "path": "/admin",
+      "title": "Admin Dashboard",
+      "purpose": "Manage events (full CRUD), photos (full CRUD), videos (full CRUD), view contact messages (read-only), edit all site_settings keys including file uploads for nav_logo_url, hero_image_url, about_photo_url",
+      "allowed_roles": [
+        "admin"
+      ],
+      "auth_required": true
+    }
+  ],
+  "design": {
+    "style": "modern dark",
+    "font_body": "DM Sans",
+    "accent_color": "#5a80c0",
+    "font_display": "Cormorant Garamond",
+    "primary_color": "#070924",
+    "accent_2_color": "#c9a84c",
+    "accent_3_color": "#a87850",
+    "secondary_color": "#1a2456"
+  },
+  "actions": [
+    {
+      "name": "create_event",
+      "role": "visitor",
+      "steps": [
+        "Validate event fields",
+        "Save event to database",
+        "Redirect to event list"
+      ],
+      "trigger": "form_submit",
+      "description": "Create a new Event"
+    },
+    {
+      "name": "update_event",
+      "role": "visitor",
+      "steps": [
+        "Validate event fields",
+        "Update event in database",
+        "Redirect to event detail"
+      ],
+      "trigger": "form_submit",
+      "description": "Update an existing Event"
+    },
+    {
+      "name": "delete_event",
+      "role": "visitor",
+      "steps": [
+        "Confirm deletion",
+        "Delete event from database",
+        "Redirect to event list"
+      ],
+      "trigger": "button_click",
+      "description": "Delete a Event"
+    },
+    {
+      "name": "create_photo",
+      "role": "visitor",
+      "steps": [
+        "Validate photo fields",
+        "Save photo to database",
+        "Redirect to photo list"
+      ],
+      "trigger": "form_submit",
+      "description": "Create a new Photo"
+    },
+    {
+      "name": "update_photo",
+      "role": "visitor",
+      "steps": [
+        "Validate photo fields",
+        "Update photo in database",
+        "Redirect to photo detail"
+      ],
+      "trigger": "form_submit",
+      "description": "Update an existing Photo"
+    },
+    {
+      "name": "delete_photo",
+      "role": "visitor",
+      "steps": [
+        "Confirm deletion",
+        "Delete photo from database",
+        "Redirect to photo list"
+      ],
+      "trigger": "button_click",
+      "description": "Delete a Photo"
+    },
+    {
+      "name": "create_video",
+      "role": "visitor",
+      "steps": [
+        "Validate video fields",
+        "Save video to database",
+        "Redirect to video list"
+      ],
+      "trigger": "form_submit",
+      "description": "Create a new Video"
+    },
+    {
+      "name": "update_video",
+      "role": "visitor",
+      "steps": [
+        "Validate video fields",
+        "Update video in database",
+        "Redirect to video detail"
+      ],
+      "trigger": "form_submit",
+      "description": "Update an existing Video"
+    },
+    {
+      "name": "delete_video",
+      "role": "visitor",
+      "steps": [
+        "Confirm deletion",
+        "Delete video from database",
+        "Redirect to video list"
+      ],
+      "trigger": "button_click",
+      "description": "Delete a Video"
+    },
+    {
+      "name": "create_contactmessage",
+      "role": "visitor",
+      "steps": [
+        "Validate contactmessage fields",
+        "Save contactmessage to database",
+        "Redirect to contactmessage list"
+      ],
+      "trigger": "form_submit",
+      "description": "Create a new ContactMessage"
+    },
+    {
+      "name": "update_contactmessage",
+      "role": "visitor",
+      "steps": [
+        "Validate contactmessage fields",
+        "Update contactmessage in database",
+        "Redirect to contactmessage detail"
+      ],
+      "trigger": "form_submit",
+      "description": "Update an existing ContactMessage"
+    },
+    {
+      "name": "delete_contactmessage",
+      "role": "visitor",
+      "steps": [
+        "Confirm deletion",
+        "Delete contactmessage from database",
+        "Redirect to contactmessage list"
+      ],
+      "trigger": "button_click",
+      "description": "Delete a ContactMessage"
+    }
+  ],
+  "app_name": "medicine-waves",
+  "settings": {
+    "auth": true,
+    "seed_data": true
+  },
+  "user_roles": [
+    {
+      "can": "view and edit own data",
+      "role": "visitor",
+      "description": "Public visitor"
+    },
+    {
+      "can": "manage all",
+      "role": "admin",
+      "description": "Site administrator"
+    }
+  ],
+  "admin_email": "admin@medicinewaves.example",
+  "data_models": [
+    {
+      "name": "Event",
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "date_time",
+          "type": "timestamp",
+          "required": true
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "image_url",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "rsvp_link",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "posh_embed_url",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "posh_embed_height",
+          "type": "integer",
+          "default": 700,
+          "required": false
+        },
+        {
+          "name": "is_featured",
+          "type": "boolean",
+          "default": false,
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "Photo",
+      "fields": [
+        {
+          "name": "image_url",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "caption",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "display_order",
+          "type": "integer",
+          "default": 0,
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "Video",
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "embed_url",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "display_order",
+          "type": "integer",
+          "default": 0,
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "ContactMessage",
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "required": false
+        }
+      ],
+      "belongs_to": "Event",
+      "read_only": true
+    }
+  ],
+  "description": "Medicine Waves is a somatic sound journey held inside a dome. Bass frequencies move through your body. Live vocals guide the way. An intentionally small gathering for people ready to feel something real.",
+  "_seed_events": [
+    {
+      "title": "Sample Sound Journey",
+      "location": "Example Venue, 100 Example Road, Sample City, ST 00001",
+      "date_time": "2030-01-12T00:00:00Z",
+      "image_url": "/images/stock/wellness/dome-venue-02.jpg",
+      "rsvp_link": "https://tickets.example/e/sample-sound-journey",
+      "description": "An ocean-themed somatic bass journey with live vocals inside the dome. Limited capacity for an intentionally small gathering.",
+      "is_featured": false,
+      "posh_embed_url": "",
+      "posh_embed_height": 700
+    },
+    {
+      "title": "Sample Grounding Session",
+      "location": "Example Venue, 100 Example Road, Sample City, ST 00001",
+      "date_time": "2030-02-09T23:30:00Z",
+      "image_url": "/images/stock/wellness/dome-venue-01.jpg",
+      "rsvp_link": "https://tickets.example/e/sample-grounding-session",
+      "description": "A somatic sound journey inside the dome. Bass frequencies move through your body. Limited tickets available.",
+      "is_featured": false,
+      "posh_embed_url": "",
+      "posh_embed_height": 700
+    },
+    {
+      "title": "Medicine Waves: Sample Featured Event",
+      "location": "Example Venue, 100 Example Road, Sample City, ST 00001",
+      "date_time": "2030-03-16T00:00:00Z",
+      "image_url": "/images/stock/wellness/dome-venue-02.jpg",
+      "rsvp_link": "https://tickets.example/e/sample-featured-event",
+      "description": "All-inclusive pass for Medicine Waves. This event includes a somatic dance journey, bass massage, and live vocals inside the dome.",
+      "is_featured": true,
+      "posh_embed_url": "https://tickets.example/embed/checkout/sample-featured-event",
+      "posh_embed_height": 700
+    },
+    {
+      "title": "Full Moon Sound Bath",
+      "location": "Example Venue, 100 Example Road, Sample City, ST 00001",
+      "date_time": "2030-04-13T00:00:00Z",
+      "image_url": "/images/stock/wellness/sound-healing-01.jpg",
+      "rsvp_link": "https://tickets.example/e/full-moon-sound-bath",
+      "description": "Crystal singing bowls, gongs, and live vocals under the full moon. Bring a mat, a blanket, and an open heart.",
+      "is_featured": false,
+      "posh_embed_url": "",
+      "posh_embed_height": 700
+    },
+    {
+      "title": "Breathwork and Ceremony",
+      "location": "Example Venue, 100 Example Road, Sample City, ST 00001",
+      "date_time": "2030-05-04T15:00:00Z",
+      "image_url": "/images/stock/wellness/ceremony-01.jpg",
+      "rsvp_link": "https://tickets.example/e/breathwork-and-ceremony",
+      "description": "A morning breathwork journey followed by a ceremony circle. No experience needed, just willingness.",
+      "is_featured": false,
+      "posh_embed_url": "",
+      "posh_embed_height": 700
+    },
+    {
+      "title": "Sample Community Gathering",
+      "location": "Example Venue, 100 Example Road, Sample City, ST 00001",
+      "date_time": "2030-06-08T22:00:00Z",
+      "image_url": "/images/stock/wellness/event-gathering-01.jpg",
+      "rsvp_link": "https://tickets.example/e/sample-community-gathering",
+      "description": "Gather for a sunset sound journey, a community potluck, and a fire ceremony.",
+      "is_featured": false,
+      "posh_embed_url": "",
+      "posh_embed_height": 700
+    }
+  ],
+  "spec_version": "0.1",
+  "_seed_settings": [
+    {
+      "key": "site_name",
+      "value": "Medicine Waves"
+    },
+    {
+      "key": "site_url",
+      "value": "https://medicinewaves.example"
+    },
+    {
+      "key": "hero_tagline",
+      "value": "A somatic sound journey held inside a dome"
+    },
+    {
+      "key": "hero_description",
+      "value": "Medicine Waves is a somatic sound journey held inside a dome. Bass frequencies move through your body. Live vocals guide the way. An intentionally small gathering for people ready to feel something real."
+    },
+    {
+      "key": "about_title",
+      "value": "About Medicine Waves"
+    },
+    {
+      "key": "about_body",
+      "value": "Medicine Waves is a series of small sound-journey events created and guided by Ocean Longnion.\n\nEvents are held inside a dome at a sample venue. The room is kept small on purpose so every gathering stays personal.\n\nEvery experience is co-created by the community that shows up."
+    },
+    {
+      "key": "about_photo_url",
+      "value": ""
+    },
+    {
+      "key": "contact_email",
+      "value": "mw-admin@craftandship.example"
+    },
+    {
+      "key": "contact_phone",
+      "value": "(555) 555-0100"
+    },
+    {
+      "key": "contact_address",
+      "value": "Sample City, ST"
+    },
+    {
+      "key": "instagram_url",
+      "value": "https://www.instagram.com/example_handle"
+    },
+    {
+      "key": "facebook_url",
+      "value": "https://www.facebook.com/example.handle"
+    },
+    {
+      "key": "youtube_url",
+      "value": ""
+    },
+    {
+      "key": "tiktok_url",
+      "value": ""
+    },
+    {
+      "key": "linkedin_url",
+      "value": ""
+    },
+    {
+      "key": "twitter_url",
+      "value": ""
+    },
+    {
+      "key": "nav_logo_url",
+      "value": ""
+    },
+    {
+      "key": "hero_image_url",
+      "value": ""
+    }
+  ]
+}

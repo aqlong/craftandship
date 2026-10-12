@@ -1,0 +1,233 @@
+<section style="padding:48px 0 96px;">
+  <div class="max-site" style="max-width:1100px;">
+    <div class="revision-head">
+      <span class="eyebrow" style="font-size:14px; display:block; margin-bottom:8px;">A revision,</span>
+      <h1 class="display revision-title">Tell us what to <em style="color:var(--color-clay);">change.</em></h1>
+      <p class="revision-lede">
+        Describe what needs to change. We'll confirm the scope before queuing the rebuild.
+        <span class="revision-lede__count">Revisions and rebuilds are unlimited.</span>
+      </p>
+    </div>
+
+    <div class="revision-grid">
+      <div class="revision-chat">
+        <div class="revision-chat__head">
+          <span class="caps revision-chat__head-text">Revision chat</span>
+          <span class="revision-chat__head-meta">Describe your changes</span>
+        </div>
+
+        <div id="chat-messages" class="revision-chat__messages" role="log" aria-live="polite">
+          <% messages.forEach(function(msg) { %>
+            <div class="harbor-chat-row harbor-chat-row--<%= msg.role %>">
+              <div class="harbor-chat-bubble harbor-chat-bubble--<%= msg.role %>">
+                <pre class="harbor-chat-text"><%= msg.content %></pre>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+
+        <div id="chat-input-area" class="revision-chat__input" <%- revisionReady ? 'style="display:none;"' : '' %>>
+          <textarea id="message-input" class="revision-chat__textarea" placeholder="Describe what needs to change." aria-label="Type your message" rows="3"></textarea>
+          <button id="send-btn" class="btn btn-primary">Send</button>
+        </div>
+      </div>
+
+      <aside class="revision-aside">
+        <div class="revision-spec">
+          <span class="caps revision-spec__head">Current website</span>
+          <h2 class="display revision-spec__title">What's there now.</h2>
+          <p class="revision-spec__lede">Here's what your website currently includes.</p>
+
+          <div class="revision-spec__content">
+            <% if (build.spec) { %>
+              <div class="revision-spec__row">
+                <span class="caps revision-spec__row-head">Website name</span>
+                <span class="revision-spec__row-body"><%= build.spec.app_name || build.app_name %></span>
+              </div>
+              <div class="revision-spec__row">
+                <span class="caps revision-spec__row-head">Description</span>
+                <span class="revision-spec__row-body"><%= build.spec.description %></span>
+              </div>
+              <% if (build.spec.pages && build.spec.pages.length > 0) { %>
+                <div class="revision-spec__row">
+                  <span class="caps revision-spec__row-head">Pages (<%= build.spec.pages.length %>)</span>
+                  <ul class="revision-spec__list">
+                    <% build.spec.pages.forEach(function(page) { %>
+                      <li><%= page.title %></li>
+                    <% }); %>
+                  </ul>
+                </div>
+              <% } %>
+              <% if (build.spec.data_models && build.spec.data_models.length > 0) { %>
+                <div class="revision-spec__row">
+                  <span class="caps revision-spec__row-head">Data models (<%= build.spec.data_models.length %>)</span>
+                  <ul class="revision-spec__list">
+                    <% build.spec.data_models.forEach(function(model) { %>
+                      <li><%= model.name %></li>
+                    <% }); %>
+                  </ul>
+                </div>
+              <% } %>
+            <% } %>
+          </div>
+
+          <div id="confirm-section" <%- revisionReady ? '' : 'style="display:none;"' %>>
+            <form action="/builds/<%= build.id %>/revision/confirm" method="POST">
+              <%- include('_csrf-field') %>
+              <button type="submit" class="btn btn-primary revision-spec__cta">Confirm and queue revision &rarr;</button>
+            </form>
+            <p class="revision-spec__note">Revisions and rebuilds are unlimited. We rebuild it, email you the new preview address, and it will need a recorded review approval again before it goes live.</p>
+          </div>
+
+          <div id="back-link" class="revision-spec__back">
+            <a href="/builds/<%= build.id %>" class="revision-spec__back-link">&larr; Back to build status</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script nonce="<%= cspNonce %>">
+  window.REVISION_BUILD_ID = <%- safeJSON(build.id) %>;
+  window.REVISION_CSRF_TOKEN = <%- safeJSON(csrfToken) %>;
+  window.REVISION_READY = <%= revisionReady ? 'true' : 'false' %>;
+</script>
+<script nonce="<%= cspNonce %>" src="/revision.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+
+<style>
+  .revision-head { margin-bottom: 32px; text-align: center; }
+  .revision-title {
+    font-size: 44px; line-height: 1.05; margin: 0 0 12px;
+    letter-spacing: -0.012em;
+  }
+  @media (max-width: 600px) { .revision-title { font-size: 30px; } }
+  .revision-lede {
+    font-size: 16px; color: var(--color-ink-soft); line-height: 1.55;
+    margin: 0 auto; max-width: 600px;
+  }
+  .revision-lede__count { color: var(--color-clay); font-weight: 600; }
+
+  .revision-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .revision-grid { grid-template-columns: 1fr; gap: 20px; } }
+
+  .revision-chat {
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    box-shadow: var(--shadow-slip);
+    display: flex; flex-direction: column;
+    height: clamp(440px, 70vh, 660px);
+  }
+  .revision-chat__head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--color-rule);
+    background: var(--color-companion-paper);
+    border-radius: 5px 5px 0 0;
+  }
+  .revision-chat__head-text { color: var(--color-clay); }
+  .revision-chat__head-meta {
+    font-family: var(--font-display); font-style: italic;
+    font-size: 14px; color: var(--color-ink-soft);
+  }
+  .revision-chat__messages {
+    flex: 1; overflow-y: auto;
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 14px;
+    scroll-behavior: smooth;
+    background-image:
+      radial-gradient(rgba(126, 100, 72, 0.04) 1px, transparent 1px),
+      radial-gradient(rgba(126, 100, 72, 0.03) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+  }
+
+  .harbor-chat-row { display: flex; max-width: 82%; }
+  .harbor-chat-row--user { align-self: flex-end; }
+  .harbor-chat-row--assistant { align-self: flex-start; }
+  .harbor-chat-bubble {
+    padding: 14px 18px;
+    border-radius: 5px;
+    border: 1px solid var(--color-rule);
+    box-shadow: 0 1px 0 rgba(255, 250, 235, 0.40) inset, 0 2px 6px rgba(58, 42, 31, 0.06);
+  }
+  .harbor-chat-bubble--user { background: var(--color-ink); color: var(--color-vellum); border-color: var(--color-ink); }
+  .harbor-chat-bubble--assistant { background: var(--color-companion-paper); color: var(--color-ink); }
+  .harbor-chat-text {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 15px; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .harbor-chat-bubble--user .harbor-chat-text { color: var(--color-vellum); }
+
+  .revision-chat__input {
+    display: flex; gap: 10px;
+    padding: 14px;
+    border-top: 1px solid var(--color-rule);
+    background: var(--color-companion-paper);
+    border-radius: 0 0 5px 5px;
+  }
+  .revision-chat__textarea {
+    flex: 1;
+    font-family: var(--font-body); font-size: 15px;
+    color: var(--color-ink);
+    background: var(--color-vellum);
+    border: 1px solid var(--color-rule);
+    border-radius: 5px;
+    padding: 10px 14px;
+    resize: none;
+    line-height: 1.55;
+    outline: none;
+    transition: border-color .15s ease;
+  }
+  .revision-chat__textarea:focus { border-color: var(--color-ink); }
+
+  .revision-aside { position: sticky; top: 96px; }
+  @media (max-width: 900px) { .revision-aside { position: static; } }
+
+  .revision-spec {
+    background: var(--color-companion-paper);
+    border: 1px solid var(--color-rule);
+    border-top: 3px solid var(--color-lantern);
+    border-radius: 5px;
+    box-shadow: var(--shadow-slip);
+    padding: 24px;
+  }
+  .revision-spec__head { color: var(--color-clay); display: block; margin-bottom: 8px; }
+  .revision-spec__title { font-size: 24px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.005em; }
+  .revision-spec__lede {
+    font-family: var(--font-display); font-style: italic;
+    font-size: 14px; color: var(--color-ink-soft);
+    margin: 0 0 18px; line-height: 1.5;
+  }
+  .revision-spec__content { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+  .revision-spec__row { display: flex; flex-direction: column; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid var(--color-rule-soft); }
+  .revision-spec__row:last-child { border-bottom: none; padding-bottom: 0; }
+  .revision-spec__row-head { color: var(--color-ink-faded); }
+  .revision-spec__row-body { font-size: 14px; color: var(--color-ink); line-height: 1.5; }
+  .revision-spec__list {
+    list-style: none; padding: 0; margin: 4px 0 0;
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 14px; color: var(--color-ink);
+  }
+  .revision-spec__list li::before { content: '· '; color: var(--color-clay); }
+
+  .revision-spec__cta { width: 100%; justify-content: center; }
+  .revision-spec__note {
+    font-family: var(--font-display); font-style: italic;
+    font-size: 12px; color: var(--color-ink-faded);
+    margin: 8px 0 0; text-align: center;
+  }
+  .revision-spec__back { margin-top: 18px; text-align: center; }
+  .revision-spec__back-link {
+    font-size: 14px; color: var(--color-ink-soft); text-decoration: none;
+  }
+  .revision-spec__back-link:hover { color: var(--color-clay); }
+</style>

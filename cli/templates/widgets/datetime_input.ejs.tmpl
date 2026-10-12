@@ -1,0 +1,7 @@
+<%# datetime_input widget: HTML5 datetime-local input. ISO-format value
+    serialization happens in the widget's render() method (strips seconds/tz
+    to the "YYYY-MM-DDTHH:MM" shape datetime-local expects). Uses the same
+    `.input-premium` + `w-full` classes as text_input for consistent
+    dark-theme styling. %>
+<label for="{field_id}" class="block text-sm font-medium mb-1">{label}</label>
+<input type="datetime-local" id="{field_id}" name="{field_name}" value="<%= {value_expr} %>" class="input-premium w-full"{required_attr}>

@@ -1,0 +1,55 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(jq -r '.tool_input.command // \"\"'); echo \"$CMD\" | grep -qE '(^|&&|;|\\|\\|)\\s*git push' || exit 0; cd \"$CLAUDE_PROJECT_DIR\" || exit 0; CHANGED=$(git diff origin/master..HEAD --name-only 2>/dev/null); echo \"$CHANGED\" | grep -qE '^(cli/|compose/|queue/|coordinator/|monitor/|ops/|Dockerfile\\.worker|requirements\\.worker\\.txt|railway\\.toml)' || exit 0; ACTIVE=$(python3 scripts/wait_for_worker.py --once 2>&1); STATUS=$?; if [ $STATUS -ne 0 ]; then echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"additionalContext\\\":\\\"WARNING: $ACTIVE Pushing will redeploy the worker and kill the active build. Only proceed if the build is stuck.\\\"}}\"; fi",
+            "statusMessage": "Checking worker status before push..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | grep -qE 'web/src/.*\\.(ts|js)$' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"web/src/ file changed: check whether tests in web/tests/unit/ need updating. Run: cd web && npm test\"}}' || true",
+            "statusMessage": "Checking if tests need updating..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | grep -qE '(queue|cli|compose)/.*\\.py$' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Pipeline Python file changed. Run the scoped pytest file for it before claiming done.\"}}' || true",
+            "statusMessage": "Checking Python test reminder..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | grep -qE 'web/src/routes/(admin|ops-api)\\.ts$' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Admin or ops-api route changed. Verify: (1) requireAdmin or bearer auth middleware present, (2) validateCsrfToken on every POST route, (3) no data exposure without auth.\"}}' || true",
+            "statusMessage": "Checking admin route safety..."
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/scripts/doc_update_check.sh\"",
+            "statusMessage": "Checking if docs need updating..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/honest_completion_audit.py\"",
+            "statusMessage": "Auditing completion claim..."
+          }
+        ]
+      }
+    ]
+  }
+}

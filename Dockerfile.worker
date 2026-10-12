@@ -1,0 +1,80 @@
+# Dockerfile.worker
+# Build worker image for Railway deployment (see railway.toml).
+#
+# Base: mcr.microsoft.com/playwright/python:v1.42.0-jammy
+#   - Python + Playwright + Chromium pre-installed (versions per the image tag).
+#     The Playwright version here must match `playwright==` in
+#     requirements.worker.txt.
+#
+# We add Node.js 20, the PostgreSQL 15 client and the Railway CLI on top:
+#   - Node.js/npm: the worker installs and tests the generated customer apps.
+#   - postgresql-client-15: createdb/dropdb/psql for the customer-app test step
+#     (cli/test.py), and pg_dump for the nightly backups and the monitor's
+#     pre-fix snapshots (monitor/backup.py). Customer databases are
+#     `postgres:15` (POSTGRES_IMAGE in cli/deploy.py) and pg_dump refuses a
+#     server newer than itself, so the client must be at least that major;
+#     Ubuntu 22.04's own `postgresql-client` is the 14 series.
+#   - Railway CLI: `railway up` in cli/deploy.py.
+#
+# Known limitations (not changed blind, since this image cannot be built in
+# CI here, and the PostgreSQL client below has never been built into it either;
+# the commands that prove a built image is right are in tests/test_postgres_client_version.py):
+#   - Node.js 20 reached end-of-life on 2026-04-30. Moving to an LTS line means
+#     changing the NodeSource setup script below and re-running a full build.
+#   - NodeSource's setup script is fetched with `curl | bash` at build time.
+#   - The base image tag is pinned but not a digest, and the container runs as
+#     root (the image default). Everything the worker starts (npm install, the
+#     app under test, generated QA tests, the Railway CLI) runs as that same
+#     user; their environments are scrubbed of secrets (cli/deploy.py
+#     env_without_secrets) but they are not isolated from the worker.
+#   - Playwright 1.42.0 and the Chromium it bundles date from early 2024 and get
+#     no security updates at this pin. That browser loads deployed customer
+#     sites for the review screenshots (cli/deploy.py verify_render). Moving it
+#     means changing the tag below and `playwright==` together.
+#
+# The build context is the repo root and `COPY . .` copies all of it. What stays
+# out of the image is decided by .dockerignore (env files, .git, node_modules,
+# local tool state).
+
+FROM mcr.microsoft.com/playwright/python:v1.42.0-jammy
+
+# The PostgreSQL client, from the PostgreSQL project's own apt repository
+# (PGDG). The major is pinned by the package name and must be at least
+# POSTGRES_SERVER_MAJOR in cli/deploy.py; tests/test_postgres_client_version.py
+# compares the two files. The minor follows the repository: it keeps one build
+# per major and suite, so an exact version pin would break the build the day a
+# minor is superseded. The repository's signing key is downloaded to a file (no
+# pipe into a shell) and used only if its fingerprint is the one pinned here;
+# apt then trusts that key alone for this repository (signed-by). The suite name
+# is the base image's Ubuntu release (jammy = 22.04).
+ARG POSTGRES_CLIENT_MAJOR=15
+ARG PGDG_KEY_FINGERPRINT=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+RUN set -eux \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+    && curl -fsSL -o /tmp/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    && test "$(gpg --show-keys --with-colons /tmp/pgdg.asc | awk -F: '$1 == "fpr" { print $10; exit }')" = "${PGDG_KEY_FINGERPRINT}" \
+    && gpg --dearmor --yes -o /usr/share/keyrings/postgresql-archive-keyring.gpg /tmp/pgdg.asc \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends "postgresql-client-${POSTGRES_CLIENT_MAJOR}" \
+    && rm -f /tmp/pgdg.asc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 via NodeSource, then the Railway CLI. The CLI is pinned so
+# a rebuild cannot silently pick up a new major version; bump it deliberately
+# and re-check the `railway up --detach --service` call in cli/deploy.py.
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g @railway/cli@4.31.0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.worker.txt /tmp/requirements.worker.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.worker.txt
+
+# Copy project source
+WORKDIR /app
+COPY . .
+
+CMD ["python", "queue/worker_pg.py"]

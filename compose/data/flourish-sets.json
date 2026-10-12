@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "updated_at": "2026-04-29",
+  "comment": "Flourish-sets are opt-in CSS-only design accents bundled per template family. Each set declares CSS rules that get injected into layout-public.ejs's <style> block when the family declares `flourish_set: <id>`. Pure CSS, no JS, no fonts, no layout shifts. All sets honor `prefers-reduced-motion` so accessibility is preserved by default.\n\nSet selection: families opt in via `flourish_set` field in templates.json. 'none' = no flourishes (default). Sets are deliberately small + composable.",
+  "sets": [
+    {
+      "id": "none",
+      "name": "None",
+      "summary": "No flourishes. Used by simple-statement and any family that wants paper-like stillness.",
+      "css": ""
+    },
+    {
+      "id": "subtle",
+      "name": "Subtle",
+      "summary": "Quiet accents: soft hover-lift on cards, fade-in on first paint, gentle underline-on-hover for links. Default for classic-business.",
+      "css": "@media (prefers-reduced-motion: no-preference) {\n  body.cas-flourish-subtle .family-card,\n  body.cas-flourish-subtle .resource-card,\n  body.cas-flourish-subtle figure {\n    transition: transform 0.18s ease, box-shadow 0.18s ease;\n  }\n  body.cas-flourish-subtle .family-card:hover,\n  body.cas-flourish-subtle .resource-card:hover,\n  body.cas-flourish-subtle figure:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 6px 20px rgba(0,0,0,0.06);\n  }\n  body.cas-flourish-subtle main {\n    animation: cas-fade-in 0.5s ease-out;\n  }\n  body.cas-flourish-subtle a:not(.btn):not(.brand):hover {\n    text-decoration-color: var(--color-primary);\n    text-decoration-thickness: 2px;\n    text-underline-offset: 3px;\n  }\n}\n@keyframes cas-fade-in {\n  from { opacity: 0; transform: translateY(4px); }\n  to { opacity: 1; transform: translateY(0); }\n}"
+    },
+    {
+      "id": "literary",
+      "name": "Literary",
+      "summary": "Editorial accents: drop-cap on first paragraph of long-text sections (via global .cas-drop-cap class), slow underline grow on links, italic-shift on hover. Pairs with editorial-statement / fraunces-inter.",
+      "css": "@media (prefers-reduced-motion: no-preference) {\n  /* The drop-cap rule itself lives in global style.css under\n     `.cas-drop-cap::first-letter` so any flourish set + any widget that\n     opts in via `drop_cap: true` (currently the about-page hero) gets\n     the editorial first-letter. The literary flourish layer adds an\n     italic-display tilt to make the cap feel more book-like. */\n  body.cas-flourish-literary .cas-drop-cap::first-letter {\n    font-style: italic;\n    font-weight: 700;\n  }\n  body.cas-flourish-literary a:not(.btn):not(.brand) {\n    background-image: linear-gradient(to right, var(--color-primary), var(--color-primary));\n    background-position: 0 100%;\n    background-repeat: no-repeat;\n    background-size: 0% 1px;\n    transition: background-size 0.28s ease;\n    text-decoration: none;\n    padding-bottom: 1px;\n  }\n  body.cas-flourish-literary a:not(.btn):not(.brand):hover {\n    background-size: 100% 1px;\n  }\n}"
+    },
+    {
+      "id": "expressive",
+      "name": "Expressive",
+      "summary": "Dialed-up accents: gradient-text on hero h1, glow-on-hover for CTAs, soft animated background gradient on hero section. Use sparingly. Pairs with directory-rich or event-led families that want presence.",
+      "css": "@media (prefers-reduced-motion: no-preference) {\n  body.cas-flourish-expressive section:first-of-type h1 {\n    background: linear-gradient(120deg, var(--color-primary), var(--color-primary-dark, var(--color-primary)));\n    -webkit-background-clip: text;\n    background-clip: text;\n    -webkit-text-fill-color: transparent;\n    color: transparent;\n  }\n  body.cas-flourish-expressive .btn,\n  body.cas-flourish-expressive a.btn,\n  body.cas-flourish-expressive button[type=\"submit\"] {\n    transition: box-shadow 0.22s ease, transform 0.18s ease;\n  }\n  body.cas-flourish-expressive .btn:hover,\n  body.cas-flourish-expressive a.btn:hover,\n  body.cas-flourish-expressive button[type=\"submit\"]:hover {\n    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 22%, transparent);\n    transform: translateY(-1px);\n  }\n  body.cas-flourish-expressive section:first-of-type {\n    position: relative;\n    overflow: hidden;\n  }\n  body.cas-flourish-expressive section:first-of-type::before {\n    content: \"\";\n    position: absolute;\n    inset: 0;\n    background: radial-gradient(ellipse at 30% 30%, color-mix(in oklab, var(--color-primary) 8%, transparent) 0%, transparent 60%);\n    pointer-events: none;\n    z-index: 0;\n  }\n  body.cas-flourish-expressive section:first-of-type > * {\n    position: relative;\n    z-index: 1;\n  }\n}"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+[build]
+dockerfilePath = "Dockerfile.worker"
+# Only redeploy the worker when worker-relevant code changes.
+# Web-only pushes (views, CSS, scripts) skip worker deploy entirely,
+# preventing builds from being interrupted by unrelated deployments.
+# A roadmap mark does not skip it: coordinator/roadmap.json is under
+# coordinator/**, and every push the roadmap executor makes carries one.
+watchPatterns = [
+    "cli/**",
+    "compose/**",
+    "queue/**",
+    "coordinator/**",
+    "monitor/**",
+    "ops/**",
+    "Dockerfile.worker",
+    "requirements.worker.txt",
+    "railway.toml",
+]
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+# Grace period before SIGKILL after SIGTERM on redeploy.
+# Railway waits the FULL duration (not early-exit), so keep it short.
+# On SIGTERM the worker only stops claiming new builds (_handle_sigterm in
+# queue/worker_pg.py sets a stop flag). A build still running after the grace
+# period is cut off; the next worker process requeues it and resumes from the
+# build artifact that was stored in the database after the build step.
+# watchPatterns (Layer 1) is the primary defense against unnecessary restarts.
+drainingSeconds = 60

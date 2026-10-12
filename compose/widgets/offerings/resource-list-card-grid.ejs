@@ -1,0 +1,151 @@
+<!-- compose:widget offerings/resource-list-card-grid -->
+<%
+function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); }
+// Tolerant column-name reads so the same widget renders db:blog_posts (title,
+// excerpt, image_url, published_at), db:case_studies (title, summary, body,
+// image_url, client_name), and the legacy spec.<page>.items shape (title,
+// description, date, detail_href). When item.detail_href is absent (the
+// model has no public detail page), the card renders as plain text + body
+// excerpt without a link wrapper.
+function _firstStr() {
+  for (var i = 0; i < arguments.length; i++) {
+    var v = arguments[i];
+    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v);
+  }
+  return '';
+}
+// Date display is locale-formatted in the BROWSER's timezone via
+// public/js/cas-fmt.js (.cas-fmt-date-long). The server emits a parseable
+// ISO string in the datetime attribute and a server-side fallback as
+// textContent so the date stays visible if JS doesn't run.
+function _isIsoDate(raw) {
+  if (raw == null) return false;
+  if (raw instanceof Date) return true;
+  return typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}/.test(raw);
+}
+function _isoAttr(raw) {
+  if (raw == null) return '';
+  if (raw instanceof Date) return raw.toISOString();
+  return String(raw);
+}
+function _shortBody(raw, max) {
+  if (!raw) return '';
+  var s = String(raw).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  if (s.length <= max) return s;
+  return s.slice(0, max).replace(/\s+\S*$/, '') + '...';
+}
+// Past-content de-emphasis for date-based items (events, appointments,
+// scheduled classes). Honors the standard `date_time` field, the v2 Event
+// default `event_date` + `event_time` pair (combined to end-of-day when no
+// time is set so a same-day event isn't flagged as past from the morning),
+// and common alternative names. Items without any date field render normally.
+// CSS styling lives in compose/build.py CSS generator under .cas-past.
+function _isPast(item) {
+  if (!item) return false;
+  var raw = item.date_time;
+  if (!raw && item.event_date) {
+    var d = item.event_date;
+    var t = item.event_time;
+    raw = t ? (String(d) + 'T' + String(t)) : (String(d) + 'T23:59:59');
+  }
+  if (!raw) raw = item.start_at || item.starts_at || item.scheduled_for || item.scheduled_at || item.start_time_iso;
+  if (!raw) return false;
+  try {
+    var when = new Date(raw);
+    if (isNaN(when.getTime())) return false;
+    return when.getTime() < Date.now();
+  } catch (e) { return false; }
+}
+%>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-12">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= eyebrow %></div>
+        <% } %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+      </div>
+    <% } %>
+    <% if ((typeof items !== 'undefined' ? items : []).length === 0) { %>
+      <p class="font-body text-center" style="color: var(--color-foreground-muted);">Nothing here yet.</p>
+    <% } else { %>
+      <div class="cas-card-grid">
+        <% items.forEach(function(item) { %>
+          <%
+            var _title = _firstStr(item.title, item.name, '(untitled)');
+            var _description = _firstStr(item.description, item.excerpt, item.summary, _shortBody(item.body, 220));
+            var _rawDate = item.date || item.published_at || item.created_at;
+            var _imageUrl = _firstStr(item.image_url, item.photo_url, item.cover_url);
+            var _detailHref = _firstStr(item.detail_href);
+            // Direct outbound links for press/podcast/interview cards:
+            // when the record carries external_url the card
+            // links straight to the source in a new tab; the internal
+            // detail page is the fallback when no link exists.
+            var _externalHref = _firstStr(item.external_url);
+            var _primaryHref = _externalHref || _detailHref;
+            var _linkAttrs = _externalHref ? ' target="_blank" rel="noopener"' : '';
+            var _linkLabel = _externalHref ? 'Go to the source →' : 'Read more →';
+            var _byline = _firstStr(item.client_name, item.author, item.author_name);
+            var _isPastItem = _isPast(item);
+            // Mirrors offerings/grid-3col image_aspect support. Default is
+            // landscape+cover (backward compat); portrait images (book
+            // covers, headshots) get aspect-[2/3] + object-contain + a
+            // neutral pad-background so they display completely instead
+            // of being clipped to the middle band.
+            var _imgAspect = item.image_aspect === 'portrait' ? 'aspect-[2/3]'
+                           : (item.image_aspect === 'square' ? 'aspect-square' : 'aspect-[16/9]');
+            var _imgFit = (item.image_fit === 'contain' ||
+                           (!item.image_fit && item.image_aspect === 'portrait'))
+                          ? 'object-contain' : 'object-cover';
+            var _padPortrait = (item.image_aspect === 'portrait' && _imgFit === 'object-contain');
+            var _imgClass = 'w-full ' + _imgAspect + ' ' + _imgFit;
+            // focal_y: optional vertical focal point for
+            // object-cover crops; the subject is not always centered.
+            var _focalY = (item.focal_y !== undefined && item.focal_y !== null && item.focal_y !== '' && Number(item.focal_y) >= 0 && Number(item.focal_y) <= 100) ? Number(item.focal_y) : null;
+            var _imgStyleParts = [];
+            if (_padPortrait) _imgStyleParts.push('background-color: var(--color-secondary); padding: 1.25rem;');
+            if (_focalY !== null && _imgFit === 'object-cover') _imgStyleParts.push('object-position: center ' + _focalY + '%;');
+            var _imgStyle = _imgStyleParts.length ? ' style="' + _imgStyleParts.join(' ') + '"' : '';
+          %>
+          <article class="rounded-xl border overflow-hidden transition-all hover:shadow-md<%= _isPastItem ? ' cas-past' : '' %>" style="background-color: var(--color-surface); border-color: var(--color-border);">
+            <% if (_imageUrl) { %>
+              <% if (_primaryHref) { %>
+                <a href="<%= _primaryHref %>"<%- _linkAttrs %>>
+                  <img loading="lazy" src="<%= _imageUrl %>" alt="<%= _title %>" class="<%= _imgClass %>"<%- _imgStyle %> />
+                </a>
+              <% } else { %>
+                <img loading="lazy" src="<%= _imageUrl %>" alt="<%= _title %>" class="<%= _imgClass %>"<%- _imgStyle %> />
+              <% } %>
+            <% } %>
+            <div class="p-6">
+              <% if (_rawDate) { %>
+                <% if (_isIsoDate(_rawDate)) { %>
+                  <div class="font-body text-xs uppercase tracking-widest mb-2" style="color: var(--color-foreground-muted);"><time class="cas-fmt-date-long" datetime="<%= _isoAttr(_rawDate) %>"><%= _rawDate %></time></div>
+                <% } else { %>
+                  <div class="font-body text-xs uppercase tracking-widest mb-2" style="color: var(--color-foreground-muted);"><%= _rawDate %></div>
+                <% } %>
+              <% } %>
+              <h3 class="font-display text-xl font-bold mb-2" style="color: var(--color-foreground);">
+                <% if (_primaryHref) { %>
+                  <a href="<%= _primaryHref %>"<%- _linkAttrs %> style="color: inherit; text-decoration: none;"><%= _title %></a>
+                <% } else { %>
+                  <%= _title %>
+                <% } %>
+              </h3>
+              <% if (_byline) { %>
+                <div class="font-body text-sm italic mb-3" style="color: var(--color-foreground-muted);">- <%= _byline %></div>
+              <% } %>
+              <% if (_description) { %>
+                <p class="font-body text-sm leading-relaxed mb-4" style="color: var(--color-foreground-muted);"><%= _description %></p>
+              <% } %>
+              <% if (_primaryHref) { %>
+                <a href="<%= _primaryHref %>"<%- _linkAttrs %> class="inline-flex items-center font-body text-sm font-medium transition-opacity hover:opacity-70" style="color: var(--color-primary);"><%= _linkLabel %></a>
+              <% } %>
+            </div>
+          </article>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>

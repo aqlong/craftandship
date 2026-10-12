@@ -1,0 +1,5 @@
+# No trailing slash, for the reason given in the root .gitignore: with one, a
+# node_modules that is a symlink is not ignored and `git add -A` stages it.
+node_modules
+dist/
+*.js.map

@@ -1,0 +1,48 @@
+<!-- compose:widget offerings/weekly-schedule-grid -->
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-10">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--color-foreground-muted);"><%= eyebrow %></div>
+        <% } %>
+        <h2 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h2>
+      </div>
+    <% } %>
+    <% var _slots = (typeof items !== 'undefined' && items) ? items : (typeof rows !== 'undefined' ? rows : []); %>
+    <% var _days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']; %>
+    <% function _fmtTime(t){ if(!t)return ''; var p=String(t).split(':'); var h=parseInt(p[0]||0,10); var m=p[1]||'00'; var ap=h>=12?'PM':'AM'; var hh=h%12||12; return hh+':'+m+' '+ap; } %>
+    <% if (_slots.length === 0) { %>
+      <p class="font-body text-center" style="color: var(--color-foreground-muted);">Schedule coming soon.</p>
+    <% } else { %>
+      <div class="rounded-xl border overflow-hidden" style="background-color: var(--color-surface); border-color: var(--color-border);">
+        <% _days.forEach(function(day) { %>
+          <% var _daySlots = _slots.filter(function(s){ return (s.day_of_week === day || s.day === day); }).sort(function(a,b){ return String(a.start_time||'').localeCompare(String(b.start_time||'')); }); %>
+          <% if (_daySlots.length > 0) { %>
+            <div class="border-b last:border-b-0" style="border-color: var(--color-border);">
+              <div class="px-5 py-3 font-body text-xs font-bold uppercase tracking-widest" style="background-color: var(--color-secondary); color: var(--color-primary);"><%= day %></div>
+              <div class="px-5 py-2">
+                <% _daySlots.forEach(function(slot) { %>
+                  <div class="flex items-center justify-between py-2 border-b last:border-b-0" style="border-color: var(--color-border);">
+                    <div>
+                      <div class="font-body font-semibold text-sm" style="color: var(--color-foreground);"><%= slot.class_name || slot.title || 'Class' %></div>
+                      <% if (slot.instructor_name) { %>
+                        <div class="font-body text-xs" style="color: var(--color-foreground-muted);">with <%= slot.instructor_name %><% if (slot.room) { %> · <%= slot.room %><% } %></div>
+                      <% } else if (slot.room) { %>
+                        <div class="font-body text-xs" style="color: var(--color-foreground-muted);"><%= slot.room %></div>
+                      <% } %>
+                    </div>
+                    <div class="font-body text-sm font-medium whitespace-nowrap" style="color: var(--color-primary);">
+                      <%= _fmtTime(slot.start_time) %><% if (slot.end_time) { %> – <%= _fmtTime(slot.end_time) %><% } %>
+                    </div>
+                  </div>
+                <% }); %>
+              </div>
+            </div>
+          <% } %>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>

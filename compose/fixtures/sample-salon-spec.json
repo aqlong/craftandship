@@ -1,0 +1,142 @@
+{
+  "app_name": "sample-salon",
+  "archetype": "salon-spa",
+  "palette": "blush-bronze",
+  "font_pair": "playfair-source-sans",
+  "admin_email": "admin@sample-salon.example",
+  "settings": {
+    "site_name": "Thornwood Salon",
+    "site_description": "Independent hair salon. Color, cuts, extensions, bridal.",
+    "hero_tagline": "Intentional Hair",
+    "hero_description": "A quiet, independent salon. Six stylists. Color, cuts, extensions, bridal.",
+    "hero_image_url": "https://picsum.photos/seed/salon-hero/1600/900",
+    "nav_logo_url": "",
+    "about_title": "About Thornwood",
+    "about_body": "Founded by Emory Thorn. A small, independent salon focused on craft, not volume.",
+    "about_photo_url": "https://picsum.photos/seed/salon-about/800/1000",
+    "contact_email": "hello@thornwoodsalon.example",
+    "contact_phone": "(555) 555-0188",
+    "contact_address": "100 Example St, Sample City, ST",
+    "business_name": "Thornwood Salon LLC",
+    "support_email": "hello@thornwoodsalon.example",
+    "instagram_url": "https://instagram.example/thornwoodsalon",
+    "facebook_url": "", "twitter_url": "", "linkedin_url": "", "youtube_url": "", "tiktok_url": ""
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "eyebrow": "THORNWOOD SALON",
+        "heading": "Intentional Hair",
+        "description": "Quiet independent salon. Six stylists. Color, cuts, extensions, bridal.",
+        "image_url": "https://picsum.photos/seed/salon-hero/1200/900",
+        "image_alt": "Thornwood studio",
+        "cta_primary": {"text": "Book a consultation", "href": "/contact"},
+        "cta_secondary": {"text": "See services", "href": "/services"}
+      },
+      "services": {
+        "eyebrow": "SERVICES",
+        "heading": "Featured Services",
+        "items": [
+          {"title": "Women's Cut", "description": "Consultation + wash + cut + blow-dry.", "price_display": "from $85", "category": "Cuts"},
+          {"title": "Men's Cut", "description": "Consultation + wash + cut.", "price_display": "from $55", "category": "Cuts"},
+          {"title": "Single Process Color", "description": "Roots + all-over color + gloss.", "price_display": "from $140", "category": "Color"},
+          {"title": "Balayage", "description": "Hand-painted highlights + tone.", "price_display": "from $240", "category": "Color"}
+        ]
+      },
+      "team": {
+        "eyebrow": "STYLISTS",
+        "heading": "Meet the Team",
+        "items": [
+          {"name": "Emory Thorn", "role": "OWNER / MASTER STYLIST", "bio": "Ten years of color + cutting. Balayage specialist.", "photo_url": "https://picsum.photos/seed/stylist-emory/800/1000", "booking_url": "/contact"},
+          {"name": "Vera Okonkwo", "role": "SENIOR STYLIST", "bio": "Textured hair + natural color specialist.", "photo_url": "https://picsum.photos/seed/stylist-vera/800/1000", "booking_url": "/contact"},
+          {"name": "Kit Alvarez", "role": "STYLIST", "bio": "Bridal + updos + special occasion.", "photo_url": "https://picsum.photos/seed/stylist-kit/800/1000", "booking_url": "/contact"}
+        ]
+      },
+      "testimonials": {
+        "eyebrow": "CLIENTS",
+        "heading": "What Clients Say",
+        "items": [
+          {"quote": "Emory transformed my hair and my confidence. Worth every minute of the drive.", "author_name": "Marina C.", "service": "Balayage"},
+          {"quote": "Vera finally understood my 4c hair. I've been searching for years.", "author_name": "Zara E.", "service": "Natural Hair"}
+        ]
+      },
+      "cta": {
+        "heading": "Ready for a consultation?",
+        "description": "Book a free 15-minute consultation with the stylist that's right for you.",
+        "cta_text": "Book now",
+        "cta_href": "/contact"
+      }
+    },
+    "services": {
+      "hero": {"eyebrow": "OFFERINGS", "heading": "Full Service Menu"},
+      "items": {
+        "heading": "Services",
+        "items": [
+          {"title": "Women's Cut", "description": "Consultation + wash + cut + blow-dry.", "price_display": "from $85", "duration_min": 75, "category": "Cuts"},
+          {"title": "Men's Cut", "description": "Consultation + wash + cut.", "price_display": "from $55", "duration_min": 45, "category": "Cuts"},
+          {"title": "Kids' Cut (under 12)", "description": "Cut + style.", "price_display": "from $35", "duration_min": 30, "category": "Cuts"},
+          {"title": "Single Process Color", "description": "Roots + all-over color + gloss.", "price_display": "from $140", "duration_min": 120, "category": "Color"},
+          {"title": "Balayage", "description": "Hand-painted highlights + tone.", "price_display": "from $240", "duration_min": 180, "category": "Color"},
+          {"title": "Partial Highlight", "description": "Face-framing highlights + tone.", "price_display": "from $180", "duration_min": 150, "category": "Color"},
+          {"title": "Gloss / Toner", "description": "Refresh existing color.", "price_display": "from $65", "duration_min": 45, "category": "Color"},
+          {"title": "Hand-Tied Extensions", "description": "Consultation, installation, blend cut.", "price_display": "from $800", "duration_min": 180, "category": "Extensions"},
+          {"title": "Bridal Trial", "description": "Consultation + trial style.", "price_display": "$150", "duration_min": 90, "category": "Bridal"},
+          {"title": "Day-of Bridal", "description": "On-site styling included.", "price_display": "$350", "duration_min": 120, "category": "Bridal"}
+        ]
+      }
+    },
+    "team": {
+      "hero": {"eyebrow": "OUR TEAM", "heading": "Stylists"},
+      "items": {
+        "heading": "Meet the Team",
+        "items": [
+          {"name": "Emory Thorn", "role": "Owner / Master Stylist", "bio": "Ten years of color and cutting. Balayage specialist.", "photo_url": "https://picsum.photos/seed/stylist-emory/800/1000", "specialties": ["Balayage", "Cuts"], "booking_url": "/contact"},
+          {"name": "Vera Okonkwo", "role": "Senior Stylist", "bio": "Textured hair and natural color specialist. Seven years in the chair.", "photo_url": "https://picsum.photos/seed/stylist-vera/800/1000", "specialties": ["Textured hair", "Natural color"], "booking_url": "/contact"},
+          {"name": "Kit Alvarez", "role": "Stylist", "bio": "Bridal, updos, and special occasion styling.", "photo_url": "https://picsum.photos/seed/stylist-kit/800/1000", "specialties": ["Bridal", "Updos"], "booking_url": "/contact"}
+        ]
+      }
+    },
+    "about": {
+      "hero": {"eyebrow": "ABOUT", "heading": "About Thornwood", "description": "Founded by Emory Thorn. Craft-first salon.", "image_url": "https://picsum.photos/seed/salon-about/800/1000", "image_alt": "Emory Thorn"},
+      "cta": {"heading": "Book now", "description": "Consultations are free.", "cta_text": "Book", "cta_href": "/contact"}
+    },
+    "gallery": {"hero": {"eyebrow": "WORK", "heading": "Gallery"}},
+    "contact": {
+      "hero": {"eyebrow": "REACH OUT", "heading": "Book a Consultation"},
+      "form": {
+        "heading": "Send a Message",
+        "service_options": ["Cut", "Color", "Balayage", "Extensions", "Bridal", "Not sure yet"]
+      }
+    }
+  },
+  "seed_content": {
+    "services": [
+      {"title": "Women's Cut", "description": "Consultation + wash + cut + blow-dry.", "price_display": "from $85", "image_url": "https://picsum.photos/seed/svc-wcut/800/600"},
+      {"title": "Single Process Color", "description": "Roots + all-over color + gloss.", "price_display": "from $140", "image_url": "https://picsum.photos/seed/svc-color/800/600"},
+      {"title": "Balayage", "description": "Hand-painted highlights + tone.", "price_display": "from $240", "image_url": "https://picsum.photos/seed/svc-balayage/800/600"},
+      {"title": "Hand-Tied Extensions", "description": "Consultation, installation, blend cut.", "price_display": "from $800", "image_url": "https://picsum.photos/seed/svc-ext/800/600"},
+      {"title": "Bridal Trial", "description": "Consultation + trial style.", "price_display": "$150", "image_url": "https://picsum.photos/seed/svc-bridal/800/600"}
+    ],
+    "staff": [
+      {"name": "Emory Thorn", "role": "Owner / Master Stylist", "bio": "Ten years of color and cutting. Balayage specialist.", "photo_url": "https://picsum.photos/seed/stylist-emory/800/1000", "specialties": "Balayage, Cuts, Bridal", "booking_url": "/contact", "sort_order": 1},
+      {"name": "Vera Okonkwo", "role": "Senior Stylist", "bio": "Textured hair and natural color specialist.", "photo_url": "https://picsum.photos/seed/stylist-vera/800/1000", "specialties": "Textured hair, Natural color", "booking_url": "/contact", "sort_order": 2},
+      {"name": "Kit Alvarez", "role": "Stylist", "bio": "Bridal, updos, and special occasion styling.", "photo_url": "https://picsum.photos/seed/stylist-kit/800/1000", "specialties": "Bridal, Updos", "booking_url": "/contact", "sort_order": 3}
+    ],
+    "photos": [
+      {"title": "Balayage, Marina", "caption": "6-hour session, full transformation.", "image_url": "https://picsum.photos/seed/g-balayage1/1200/1200", "category": "color", "featured": true},
+      {"title": "Textured cut", "caption": "Curl pattern honored.", "image_url": "https://picsum.photos/seed/g-textured/1200/1200", "category": "cuts", "featured": true},
+      {"title": "Bridal updo", "caption": "Spring wedding.", "image_url": "https://picsum.photos/seed/g-bridal/1200/1200", "category": "bridal", "featured": true},
+      {"title": "Copper balayage", "caption": "Hand-painted highlights.", "image_url": "https://picsum.photos/seed/g-copper/1200/1200", "category": "color", "featured": false},
+      {"title": "Short bob", "caption": "Classic lines.", "image_url": "https://picsum.photos/seed/g-bob/1200/1200", "category": "cuts", "featured": false},
+      {"title": "Extensions", "caption": "Hand-tied installation.", "image_url": "https://picsum.photos/seed/g-ext/1200/1200", "category": "extensions", "featured": false}
+    ],
+    "reviews": [
+      {"author_name": "Marina C.", "rating": 5, "body": "Emory transformed my hair and my confidence. Worth every minute of the drive.", "service": "Balayage"},
+      {"author_name": "Zara E.", "rating": 5, "body": "Vera finally understood my 4c hair. I've been searching for years.", "service": "Natural Hair"},
+      {"author_name": "Luna P.", "rating": 5, "body": "Kit did my wedding hair. Stayed perfect all day.", "service": "Bridal"}
+    ],
+    "contact_inquiries": [
+      {"name": "Aspen Reyes", "email": "aspen@example.com", "service_interest": "Balayage", "message": "First-time balayage, looking for consultation."}
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+<!-- compose:widget shell/footer-single-line -->
+<%
+   // Simple-statement footer: literally one line. Goes with
+   // nav-centered-minimal. The whole site is meant to feel like one
+   // piece of paper; the footer should not break that feeling.
+   //
+   // Output: ©YYYY · <site_name> · <contact_email> · Login
+   //
+   // No nav links, no columns, no decoration. Centered.
+   //
+   // Same data contract as shell/footer (only settings.site_name +
+   // settings.contact_email used).
+   var _year = new Date().getFullYear();
+   var _email = settings.contact_email || '';
+%>
+<footer class="cas-footer-single-line" style="padding: 2rem 1.5rem; border-top: 1px solid var(--color-border); text-align: center;">
+  <div class="font-body" style="color: var(--color-foreground-muted); font-size: 0.8125rem; line-height: 1.7;">
+    &copy; <%= _year %>
+    &nbsp;&middot;&nbsp;<span style="color: var(--color-foreground); font-weight: 500;"><%= settings.site_name %></span>
+    <% if (_email) { %>
+      &nbsp;&middot;&nbsp;<a href="mailto:<%= _email %>" class="cas-wrap-anywhere" style="color: inherit; text-decoration: none; border-bottom: 1px solid currentColor;"><%= _email %></a>
+    <% } %>
+    &nbsp;&middot;&nbsp;<a href="/login" style="color: inherit; text-decoration: none; opacity: 0.7;">Login</a>
+  </div>
+  <div style="margin-top: 1rem;">
+    <%- include('./cas-attribution.ejs', { settings: settings }) %>
+  </div>
+</footer>

@@ -1,0 +1,1658 @@
+{
+ "about": "Awkward SQL for the two readers of schema.sql: scripts/check_destructive_ddl.py (tests/test_destructive_ddl_corpus.py) and web/tests/unit/schema-sql-scan.ts (web/tests/unit/schema.idempotency.test.ts). Both must report the same number of statements and the same unacknowledged findings for every case. Expectations are written by hand from PostgreSQL's lexical rules.",
+ "cases": [
+  {
+   "group": "split",
+   "name": "two plain statements",
+   "sql": "SELECT 1; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "no final semicolon",
+   "sql": "SELECT 1; SELECT 2",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "empty statements",
+   "sql": ";;; SELECT 1;; ;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "only whitespace and comments",
+   "sql": "-- nothing\n/* here */\n",
+   "statements": 0,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a semicolon in a string",
+   "sql": "SELECT 'a;b'; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a doubled quote in a string",
+   "sql": "SELECT 'it''s; fine'; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "an E string with an escaped quote",
+   "sql": "SELECT E'it\\'s; here'; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a plain string that ends in a backslash",
+   "sql": "SELECT 'a\\'; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "an E string holding a backslash pair",
+   "sql": "SELECT E'\\\\'; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "B and X strings",
+   "sql": "SELECT B'101;', X'1F;'; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a letter that is not a string prefix",
+   "sql": "SELECT a'b;c'; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a dollar body with semicolons",
+   "sql": "DO $$ BEGIN NULL; NULL; END $$; SELECT 1;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a tagged body",
+   "sql": "DO $body$ BEGIN NULL; END $body$; SELECT 1;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a tag with an underscore and digits",
+   "sql": "DO $_t1$ BEGIN NULL; END $_t1$; SELECT 1;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a tag with a non-ASCII letter",
+   "sql": "DO $\u00e9$ BEGIN NULL; END $\u00e9$; SELECT 1;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "$$ inside a tagged body",
+   "sql": "DO $a$ BEGIN PERFORM $$x;$$; END $a$; SELECT 1;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "two different tags nested",
+   "sql": "DO $a$ BEGIN EXECUTE $b$ SELECT 1; $b$; END $a$; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "tags that differ only in case",
+   "sql": "SELECT $A$ x; $a$ y; $A$; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a parameter is not a quote",
+   "sql": "SELECT $1; SELECT $2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a dollar sign inside a word",
+   "sql": "SELECT a$b$c; SELECT 1;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a tag cannot start with a digit",
+   "sql": "SELECT $1a$ x; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a line comment with a quote and a semicolon",
+   "sql": "SELECT 1; -- it's; here\nSELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a block comment with semicolons",
+   "sql": "/* a; b; */ SELECT 1;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a nested block comment",
+   "sql": "/* a /* b; */ c; */ SELECT 1;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a double dash inside a string",
+   "sql": "SELECT '--;'; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a block comment opener inside a string",
+   "sql": "SELECT '/*'; SELECT 2; SELECT '*/';",
+   "statements": 3,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a quoted identifier with a semicolon",
+   "sql": "SELECT \"a;b\" FROM t; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a doubled quote in a quoted identifier",
+   "sql": "SELECT \"a\"\";b\"; SELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "non-ASCII text",
+   "sql": "SELECT '\u00e9;\u00fc'; -- caf\u00e9;\nSELECT 2;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "CRLF line ends",
+   "sql": "SELECT 1;\r\nSELECT 2;\r\n",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a string never closed",
+   "sql": "SELECT 'a; SELECT 2;",
+   "unreadable": true
+  },
+  {
+   "group": "split",
+   "name": "an E string whose last quote is escaped",
+   "sql": "SELECT E'a\\'; SELECT 2;",
+   "unreadable": true
+  },
+  {
+   "group": "split",
+   "name": "a dollar quote never closed",
+   "sql": "DO $$ BEGIN NULL; END;",
+   "unreadable": true
+  },
+  {
+   "group": "split",
+   "name": "a tagged quote closed by another tag",
+   "sql": "DO $a$ BEGIN NULL; END $b$;",
+   "unreadable": true
+  },
+  {
+   "group": "split",
+   "name": "a block comment never closed",
+   "sql": "SELECT 1; /* a /* b */",
+   "unreadable": true
+  },
+  {
+   "group": "split",
+   "name": "a quoted identifier never closed",
+   "sql": "SELECT \"a; SELECT 2;",
+   "unreadable": true
+  },
+  {
+   "group": "split",
+   "name": "a statement of 2000 tokens is read",
+   "sql": "SELECT a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "split",
+   "name": "a statement of 2002 tokens is refused, not skipped",
+   "sql": "SELECT a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a;",
+   "unreadable": true
+  },
+  {
+   "group": "rows",
+   "name": "UPDATE",
+   "sql": "UPDATE builds SET status = 'failed';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "INSERT",
+   "sql": "INSERT INTO t (a) VALUES (1);",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "INSERT"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "DELETE with a WHERE",
+   "sql": "DELETE FROM t WHERE id = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "DELETE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "DELETE without a WHERE",
+   "sql": "DELETE FROM t;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "DELETE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "TRUNCATE",
+   "sql": "TRUNCATE t;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "TRUNCATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "MERGE",
+   "sql": "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "MERGE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "COPY FROM",
+   "sql": "COPY t FROM '/tmp/x';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "COPY FROM"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "COPY FROM with a column list",
+   "sql": "COPY t (a, b) FROM STDIN;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "COPY FROM"
+    ]
+   ]
+  },
+  {
+   "group": "rows",
+   "name": "COPY TO",
+   "sql": "COPY t TO '/tmp/x';",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "COPY of a query",
+   "sql": "COPY (SELECT a FROM t) TO STDOUT;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "UPDATE in a WITH query",
+   "sql": "WITH x AS (UPDATE t SET a = 1 RETURNING id) SELECT * FROM x;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "INSERT in a WITH query",
+   "sql": "WITH x AS (INSERT INTO t VALUES (1) RETURNING id) SELECT * FROM x;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "INSERT"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "DELETE in a WITH query",
+   "sql": "WITH x AS (DELETE FROM t WHERE id = 1 RETURNING id) SELECT * FROM x;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "DELETE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "a WITH query that only reads",
+   "sql": "WITH x AS (SELECT 1 AS a) SELECT * FROM x;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a recursive WITH that ends in an UPDATE",
+   "sql": "WITH RECURSIVE h AS (\n  SELECT 1\n)\nUPDATE builds b SET is_harbor = TRUE FROM h WHERE b.id = h.id;",
+   "statements": 1,
+   "findings": [
+    [
+     4,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "ON CONFLICT DO UPDATE",
+   "sql": "INSERT INTO t VALUES (1) ON CONFLICT (id) DO UPDATE SET a = 2;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "INSERT"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "rows",
+   "name": "ON CONFLICT DO NOTHING",
+   "sql": "INSERT INTO t VALUES (1) ON CONFLICT DO NOTHING;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "INSERT"
+    ]
+   ]
+  },
+  {
+   "group": "rows",
+   "name": "mixed case",
+   "sql": "uPdAtE t SeT a = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "rows",
+   "name": "the keyword on its own line",
+   "sql": "UPDATE\n  t\nSET a = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "rows",
+   "name": "a block comment between the words",
+   "sql": "DELETE /* all */ FROM t WHERE a = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "DELETE"
+    ]
+   ]
+  },
+  {
+   "group": "rows",
+   "name": "UPDATE ONLY",
+   "sql": "UPDATE ONLY t SET a = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "rows",
+   "name": "PREPARE ... AS UPDATE",
+   "sql": "PREPARE p AS UPDATE t SET a = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "rows",
+   "name": "EXECUTE of a prepared statement",
+   "sql": "EXECUTE p(1);",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "EXECUTE"
+    ]
+   ]
+  },
+  {
+   "group": "rows",
+   "name": "a quoted word is not the command",
+   "sql": "SELECT \"update\" FROM t;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "longer words are not the command",
+   "sql": "SELECT update_count, insert_at, delete_flag FROM t;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "INSERT without INTO is not the command",
+   "sql": "SELECT insert FROM t;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "trigger events",
+   "sql": "CREATE TRIGGER t BEFORE INSERT OR UPDATE OR DELETE ON builds FOR EACH ROW EXECUTE FUNCTION f();",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a trigger on a column",
+   "sql": "CREATE TRIGGER t BEFORE INSERT OR UPDATE OF parent_build_id ON builds FOR EACH ROW EXECUTE FUNCTION f();",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a trigger with EXECUTE PROCEDURE",
+   "sql": "CREATE TRIGGER t AFTER UPDATE ON builds FOR EACH ROW EXECUTE PROCEDURE f();",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "an INSTEAD OF trigger",
+   "sql": "CREATE TRIGGER t INSTEAD OF UPDATE ON v FOR EACH ROW EXECUTE FUNCTION f();",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "foreign key actions in a table",
+   "sql": "CREATE TABLE t (id int REFERENCES s(id) ON DELETE CASCADE ON UPDATE SET NULL);",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "foreign key actions in ALTER TABLE",
+   "sql": "ALTER TABLE t ADD FOREIGN KEY (a) REFERENCES s(id) ON UPDATE CASCADE ON DELETE SET NULL;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a list of privileges",
+   "sql": "GRANT SELECT, INSERT, UPDATE, DELETE ON t TO r;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "column privileges",
+   "sql": "GRANT UPDATE (a), INSERT (b) ON t TO r;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "REVOKE UPDATE",
+   "sql": "REVOKE UPDATE ON t FROM r;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "GRANT EXECUTE",
+   "sql": "GRANT EXECUTE ON FUNCTION f() TO r;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "FOR UPDATE",
+   "sql": "SELECT * FROM t FOR UPDATE;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "FOR NO KEY UPDATE",
+   "sql": "SELECT * FROM t FOR NO KEY UPDATE SKIP LOCKED;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "FOR UPDATE OF",
+   "sql": "SELECT * FROM t FOR UPDATE OF t NOWAIT;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a policy for UPDATE",
+   "sql": "CREATE POLICY p ON t FOR UPDATE USING (true);",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a policy for DELETE",
+   "sql": "CREATE POLICY p ON t FOR DELETE USING (true);",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a policy for INSERT",
+   "sql": "CREATE POLICY p ON t FOR INSERT WITH CHECK (true);",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a rule that does nothing",
+   "sql": "CREATE RULE r AS ON UPDATE TO t DO INSTEAD NOTHING;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a rule that updates",
+   "sql": "CREATE RULE r AS ON UPDATE TO t DO ALSO UPDATE u SET a = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "rows",
+   "name": "a publication with the words in a string",
+   "sql": "CREATE PUBLICATION p FOR TABLE t WITH (publish = 'insert, update, delete');",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a string that merely contains a command",
+   "sql": "SELECT 'UPDATE builds SET status = ''live''';",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a comment on a table that names commands",
+   "sql": "COMMENT ON TABLE builds IS 'run UPDATE builds SET a = 1 and INSERT INTO t VALUES (1) by hand';",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a line comment that holds a command",
+   "sql": "-- UPDATE builds SET status = 'live';\nSELECT 1;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a block comment that holds commands",
+   "sql": "/* INSERT INTO t VALUES (1); DELETE FROM t; */ SELECT 1;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a plain dollar string that holds a command",
+   "sql": "SELECT $$UPDATE builds SET status = 'live'$$;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "rows",
+   "name": "a string in a DO that is not executed",
+   "sql": "DO $$ BEGIN RAISE NOTICE 'UPDATE builds SET status = live'; END $$;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "bodies",
+   "name": "a one-line DO",
+   "sql": "DO $$ BEGIN UPDATE t SET a = 1; END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "a tagged DO under an IF",
+   "sql": "DO $m$\nBEGIN\n  IF true THEN\n    UPDATE t SET a = 1;\n  END IF;\nEND\n$m$;",
+   "statements": 1,
+   "findings": [
+    [
+     4,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "a block comment between DO and the tag",
+   "sql": "DO /* x */ $m$ BEGIN UPDATE t SET a = 1; END $m$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "a line comment between DO and the tag",
+   "sql": "DO -- c\n$m$ BEGIN\n  UPDATE t SET a = 1;\nEND $m$;",
+   "statements": 1,
+   "findings": [
+    [
+     3,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "a tag with an underscore",
+   "sql": "DO $_$ BEGIN UPDATE t SET a = 1; END $_$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "a tag with a non-ASCII letter",
+   "sql": "DO $\u00e9$ BEGIN UPDATE t SET a = 1; END $\u00e9$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "a DO inside a string handed to EXECUTE",
+   "sql": "DO $a$ BEGIN EXECUTE 'DO $b$ BEGIN UPDATE t SET a = 1; END $b$'; END $a$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "a function body",
+   "sql": "CREATE FUNCTION f() RETURNS void AS $$ BEGIN UPDATE t SET a = 1; END $$ LANGUAGE plpgsql;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "bodies",
+   "name": "a function body given as a plain string",
+   "sql": "CREATE FUNCTION f() RETURNS void AS 'UPDATE t SET a = 1' LANGUAGE sql;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "bodies",
+   "name": "a procedure body",
+   "sql": "CREATE PROCEDURE p() LANGUAGE sql AS $$ INSERT INTO t VALUES (1); $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "INSERT"
+    ]
+   ]
+  },
+  {
+   "group": "bodies",
+   "name": "a function that only reads",
+   "sql": "CREATE FUNCTION f() RETURNS int AS $$ SELECT 1 $$ LANGUAGE sql;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "bodies",
+   "name": "EXECUTE of a literal UPDATE",
+   "sql": "DO $$ BEGIN EXECUTE 'UPDATE t SET a = 1'; END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "EXECUTE of a literal that reads",
+   "sql": "DO $$ BEGIN EXECUTE 'SELECT 1' INTO x; END $$;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "bodies",
+   "name": "EXECUTE of a literal with USING",
+   "sql": "DO $$ BEGIN EXECUTE 'SELECT $1' USING 5; END $$;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "bodies",
+   "name": "EXECUTE format",
+   "sql": "DO $$ BEGIN EXECUTE format('SELECT %I', 'a'); END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "EXECUTE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "EXECUTE of a variable",
+   "sql": "DO $$ BEGIN EXECUTE v_sql; END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "EXECUTE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "EXECUTE of a concatenation",
+   "sql": "DO $$ BEGIN EXECUTE 'UP' || 'DATE t SET a = 1'; END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "EXECUTE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "EXECUTE format of an UPDATE",
+   "sql": "DO $$ BEGIN EXECUTE format('UPDATE %I SET a = 1', 'builds'); END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "EXECUTE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "bodies",
+   "name": "EXECUTE format under an IF",
+   "sql": "DO $$\nBEGIN\n  IF true THEN\n    EXECUTE format('SELECT %L', 'x');\n  END IF;\nEND $$;",
+   "statements": 1,
+   "findings": [
+    [
+     4,
+     "EXECUTE"
+    ]
+   ]
+  },
+  {
+   "group": "bodies",
+   "name": "a DECLARE and a PERFORM",
+   "sql": "DO $$ DECLARE s text := 'x'; BEGIN PERFORM 1; END $$;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE directly above",
+   "sql": "-- SAFE: a reason\nUPDATE t SET a = 1;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE at the end of the line",
+   "sql": "UPDATE t SET a = 1; -- SAFE: a reason",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE with a blank line between",
+   "sql": "-- SAFE: a reason\n\nUPDATE t SET a = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     3,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE in lower case without a space",
+   "sql": "--safe:a reason\nUPDATE t SET a = 1;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE inside a block comment",
+   "sql": "/* -- SAFE: a reason */\nUPDATE t SET a = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     2,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE inside a string",
+   "sql": "SELECT '-- SAFE: a reason';\nUPDATE t SET a = 1;",
+   "statements": 2,
+   "findings": [
+    [
+     2,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE after the statement, on the next line",
+   "sql": "UPDATE t SET a = 1;\n-- SAFE: a reason",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE above a DO does not cover a row change in it",
+   "sql": "-- SAFE: a reason\nDO $$ BEGIN UPDATE t SET a = 1; END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     2,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE above a multi-line DO does not cover a row change in it",
+   "sql": "-- SAFE: a reason\nDO $$\nBEGIN\n  UPDATE t SET a = 1;\nEND $$;",
+   "statements": 1,
+   "findings": [
+    [
+     4,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE above the row change inside the DO",
+   "sql": "DO $$\nBEGIN\n  -- SAFE: a reason\n  UPDATE t SET a = 1;\nEND $$;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE above the first of two row changes",
+   "sql": "DO $$\nBEGIN\n  -- SAFE: a reason\n  UPDATE t SET a = 1;\n  UPDATE u SET a = 1;\nEND $$;",
+   "statements": 1,
+   "findings": [
+    [
+     5,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE in a run of comment lines",
+   "sql": "-- SAFE: a reason\n-- more about it\nUPDATE t SET a = 1;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE at the end of the line of a row change inside an IF",
+   "sql": "DO $$\nBEGIN\n  IF true THEN UPDATE t SET a = 1; END IF; -- SAFE: a reason\nEND $$;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "acknowledged",
+   "name": "SAFE above TRUNCATE is accepted by this check",
+   "sql": "-- SAFE: a reason\nTRUNCATE t;",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "acknowledged",
+   "name": "a form feed does not start a line",
+   "sql": "SELECT 1;\f\n-- SAFE: a reason\nUPDATE t SET a = 1;",
+   "statements": 2,
+   "findings": []
+  },
+  {
+   "group": "acknowledged",
+   "name": "a form feed in a comment does not move the lines above a statement",
+   "sql": "-- SAFE: a reason\n-- a note\f-- more\nSELECT 2;\nUPDATE t SET a = 1;",
+   "statements": 2,
+   "findings": [
+    [
+     4,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "acknowledged",
+   "name": "a line separator and a carriage return do not start a line: the comment shares line 1 with code",
+   "sql": "SELECT 1;\u2028\r-- SAFE: a reason\nUPDATE t SET a = 1;",
+   "statements": 2,
+   "findings": [
+    [
+     2,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "live",
+   "name": "the reviewer's mutation: a tagged block that sets the status",
+   "sql": "DO $m$\nBEGIN\n  UPDATE builds SET status = 'live' WHERE id IS NOT NULL;\nEND\n$m$;",
+   "statements": 1,
+   "findings": [
+    [
+     3,
+     "LIVE"
+    ],
+    [
+     3,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "the same with a reason above it, which settles the UPDATE and not the status",
+   "sql": "DO $m$\nBEGIN\n  -- SAFE: a reason\n  UPDATE builds SET status = 'live' WHERE id IS NOT NULL;\nEND\n$m$;",
+   "statements": 1,
+   "findings": [
+    [
+     4,
+     "LIVE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "at the top level",
+   "sql": "UPDATE builds SET status = 'live';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "at the top level with a reason above it",
+   "sql": "-- SAFE: a reason\nUPDATE builds SET status = 'live';",
+   "statements": 1,
+   "findings": [
+    [
+     2,
+     "LIVE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "upper case",
+   "sql": "UPDATE builds SET status = 'LIVE';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "mixed case with spaces",
+   "sql": "UPDATE builds SET status = ' Live ';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "an INSERT",
+   "sql": "INSERT INTO builds (status) VALUES ('live');",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "INSERT"
+    ],
+    [
+     1,
+     "LIVE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "a MERGE",
+   "sql": "MERGE INTO builds b USING s ON b.id = s.id WHEN MATCHED THEN UPDATE SET status = 'live';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "MERGE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "in a WITH query",
+   "sql": "WITH x AS (UPDATE builds SET status = 'live' RETURNING id) SELECT * FROM x;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "in a string handed to EXECUTE",
+   "sql": "DO $$ BEGIN EXECUTE 'UPDATE builds SET status = ''live'''; END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "EXECUTE format with the value as an argument",
+   "sql": "DO $$ BEGIN EXECUTE format('UPDATE %I SET status = %L', 'builds', 'live'); END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "EXECUTE"
+    ],
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "in a dollar-quoted string handed to EXECUTE",
+   "sql": "DO $a$ BEGIN EXECUTE $b$UPDATE builds SET status = 'live'$b$; END $a$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "in a DO inside a string handed to EXECUTE",
+   "sql": "DO $a$ BEGIN EXECUTE 'DO $b$ BEGIN UPDATE builds SET status = ''live''; END $b$'; END $a$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "in a function body",
+   "sql": "CREATE FUNCTION f() RETURNS void AS $$ BEGIN UPDATE builds SET status = 'live'; END $$ LANGUAGE plpgsql;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "the tag $m$",
+   "sql": "DO $m$ BEGIN UPDATE builds SET status = 'live'; END $m$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "the tag $_$",
+   "sql": "DO $_$ BEGIN UPDATE builds SET status = 'live'; END $_$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "the tag $a1$",
+   "sql": "DO $a1$ BEGIN UPDATE builds SET status = 'live'; END $a1$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "the tag $body$",
+   "sql": "DO $body$ BEGIN UPDATE builds SET status = 'live'; END $body$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "the tag $\u00e9$",
+   "sql": "DO $\u00e9$ BEGIN UPDATE builds SET status = 'live'; END $\u00e9$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "a block comment between DO and the tag",
+   "sql": "DO /* x */ $m$ BEGIN UPDATE builds SET status = 'live'; END $m$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "a line comment between DO and the tag",
+   "sql": "DO -- x\n$m$ BEGIN UPDATE builds SET status = 'live'; END $m$;",
+   "statements": 1,
+   "findings": [
+    [
+     2,
+     "LIVE"
+    ],
+    [
+     2,
+     "UPDATE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "a value carried through a variable is not followed",
+   "sql": "DO $$ DECLARE s text := 'live'; BEGIN UPDATE builds SET status = s; END $$;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "live",
+   "name": "a value built by concatenation is not followed",
+   "sql": "UPDATE builds SET status = 'li' || 've';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "live",
+   "name": "a string written with escapes is not decoded",
+   "sql": "UPDATE builds SET status = E'\\x6c\\x69ve';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "live",
+   "name": "live_url is not live",
+   "sql": "UPDATE builds SET live_url = 'https://x.example/page' WHERE id = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "live",
+   "name": "a string that holds live_url",
+   "sql": "UPDATE builds SET note = 'see live_url' WHERE id = 1;",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "live",
+   "name": "a WHERE that reads live is refused too",
+   "sql": "UPDATE builds SET is_harbor = true WHERE status = 'live';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ],
+    [
+     1,
+     "UPDATE"
+    ]
+   ]
+  },
+  {
+   "group": "live",
+   "name": "DELETE cannot write a status",
+   "sql": "DELETE FROM builds WHERE status = 'live';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "DELETE"
+    ]
+   ]
+  },
+  {
+   "group": "live",
+   "name": "SELECT may read it",
+   "sql": "SELECT * FROM builds WHERE status = 'live';",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "live",
+   "name": "a CHECK constraint may list it",
+   "sql": "ALTER TABLE builds ADD CONSTRAINT c CHECK (status IN ('queued', 'live'));",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "live",
+   "name": "a default of live",
+   "sql": "ALTER TABLE builds ALTER COLUMN status SET DEFAULT 'live';",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "a default of live in parentheses",
+   "sql": "ALTER TABLE builds ADD COLUMN IF NOT EXISTS s TEXT DEFAULT ('live');",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "a default of live in CREATE TABLE",
+   "sql": "CREATE TABLE IF NOT EXISTS t (status TEXT DEFAULT 'live');",
+   "statements": 1,
+   "findings": [
+    [
+     1,
+     "LIVE"
+    ]
+   ],
+   "splice": true
+  },
+  {
+   "group": "live",
+   "name": "another default",
+   "sql": "ALTER TABLE builds ALTER COLUMN status SET DEFAULT 'queued';",
+   "statements": 1,
+   "findings": []
+  },
+  {
+   "group": "live",
+   "name": "a comment that names the statement",
+   "sql": "COMMENT ON TABLE builds IS 'UPDATE builds SET status = live is done in application code';",
+   "statements": 1,
+   "findings": []
+  }
+ ]
+}

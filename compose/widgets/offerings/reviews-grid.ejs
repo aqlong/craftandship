@@ -1,0 +1,62 @@
+<!-- compose:widget offerings/reviews-grid - public reviews listing.
+<% function _accent(txt){ if(!txt) return ''; var _e=String(txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); return _e.replace(/\{([^}]+)\}/g, '<em style="font-style:italic;color:var(--color-primary);font-weight:inherit;">$1</em>'); } %>
+     Expects rows: [{author_name, rating (1-5), body, service, created_at}]
+     Renders a 2-up card grid with: top accent row showing stars + service
+     tag, the review body, a hairline divider, and the attribution.
+     Intentionally different from testimonials/stack (no decorative quote
+     glyph) so the two widgets read distinctly when both appear on one
+     site. -->
+<% var _rows = (typeof rows !== 'undefined' && rows) ? rows : (typeof items !== 'undefined' ? items : []); %>
+<%
+  // Content-integrity rule: render nothing when there are no real reviews.
+  // Prior version rendered the outer <section> chrome + heading + a "No
+  // reviews yet." message even on empty seeds, leaving an awkward empty
+  // band on home pages (e.g. local-service-home-reviews-rich) and an
+  // unnecessary placeholder on the dedicated /reviews page. The home
+  // layout reclaims its vertical rhythm naturally; the /reviews page
+  // returns empty content until the customer adds real reviews via
+  // /admin/reviews.
+%>
+<% if (_rows.length > 0) { %>
+<section class="py-10 md:py-14" style="background-color: var(--color-background);">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <% if (typeof heading !== 'undefined' && heading) { %>
+      <div class="text-center mb-10">
+        <% if (typeof eyebrow !== 'undefined' && eyebrow) { %>
+          <div class="font-body text-xs font-bold uppercase mb-3" style="color: var(--color-foreground-muted); letter-spacing: 0.15em;"><%= eyebrow %></div>
+        <% } %>
+        <h1 class="font-display text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--color-foreground);"><%- _accent(heading) %></h1>
+      </div>
+    <% } %>
+      <div class="cas-card-grid">
+        <% _rows.forEach(function(row) {
+             var _stars = Number(row.rating) || 5;
+             if (_stars < 1) _stars = 5;
+             if (_stars > 5) _stars = 5;
+        %>
+          <article class="p-6 md:p-7 rounded-xl border" style="background-color: var(--color-surface); border-color: var(--color-border);">
+            <div class="flex items-center justify-between mb-4">
+              <span style="color: var(--color-rating-star, #d4af37);">
+                <%- include('../utility/stars.ejs', { rating: _stars, size: 16, aria_hidden: false }) %>
+              </span>
+              <% if (row.service) { %>
+                <span class="font-body text-xs font-bold uppercase" style="color: var(--color-foreground-muted); letter-spacing: 0.12em;"><%= row.service %></span>
+              <% } %>
+            </div>
+            <% if (row.body) { %>
+              <p class="font-body text-base leading-relaxed mb-5" style="color: var(--color-foreground);"><%= row.body %></p>
+            <% } %>
+            <div style="padding-top: 12px; border-top: 1px solid var(--color-border); display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+              <span class="font-body font-semibold text-sm" style="color: var(--color-foreground);"><%= row.author_name %></span>
+              <% var _dt = row.created_at || row.review_date; %>
+              <% if (_dt) { %>
+                <% var _dtIso = (_dt instanceof Date) ? _dt.toISOString() : String(_dt); %>
+                <span class="font-body text-xs" style="color: var(--color-foreground-muted);"><time class="cas-fmt-date" datetime="<%= _dtIso %>"><%= _dtIso %></time></span>
+              <% } %>
+            </div>
+          </article>
+        <% }); %>
+      </div>
+  </div>
+</section>
+<% } %>

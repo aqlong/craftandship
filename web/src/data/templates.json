@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "updated_at": "2026-05-04",
+  "comment": "Template families bundle shell-nav variant + shell-footer variant + base typography scale + per-page layout overrides into a coherent design system. Pure data; v2 deterministic compose still applies. Six families: classic-business, editorial-statement, directory-rich, simple-statement, event-led and editorial-sanctuary (a Sanctuary palette with italic Cormorant typography for healer/coach/therapist sites that need to read truly high-end). The plan they came from is docs/internals/CAS_V2_TEMPLATE_FAMILIES_PLAN.md.",
+  "templates": [
+    {
+      "id": "classic-business",
+      "name": "Classic Business",
+      "summary": "Balanced multi-page layout with traditional top nav and three-column footer. The default; suits any archetype.",
+      "thumbnail_alt_summary": "Balanced multi-page layout with a top bar nav, medium display headlines, and a three-column footer.",
+      "compatible_archetypes": [
+        "*"
+      ],
+      "shell_nav_id": "shell-nav-public",
+      "shell_footer_id": "shell-footer",
+      "layout_overrides": {},
+      "typography_scale": {
+        "base_rem": 1.0,
+        "h1_rem": 3.0,
+        "h2_rem": 2.0,
+        "h3_rem": 1.5,
+        "section_y_rem": 4.0,
+        "letter_spacing_h1": "-0.02em",
+        "leading_h1": 1.1,
+        "leading_body": 1.65
+      },
+      "accent_density": "medium",
+      "tags": [
+        "balanced",
+        "default",
+        "professional"
+      ],
+      "complexity_band": "medium",
+      "flourish_set": "subtle"
+    },
+    {
+      "id": "editorial-statement",
+      "name": "Editorial Statement",
+      "summary": "Magazine-feeling site with thin minimal nav, oversized display headlines, very airy spacing, and a single-rule footer. Suits authors, coaches, healers, therapists who value typography over chrome.",
+      "thumbnail_alt_summary": "Magazine-feeling layout with a thin minimal nav, oversized display headlines, very airy spacing, and low chrome density.",
+      "compatible_archetypes": [
+        "healer-wellness",
+        "coach-consultant",
+        "therapist-counselor"
+      ],
+      "shell_nav_id": "shell-nav-thin-statement",
+      "shell_footer_id": "shell-footer-minimal-line",
+      "layout_overrides": {},
+      "typography_scale": {
+        "base_rem": 1.125,
+        "h1_rem": 5.0,
+        "h2_rem": 3.0,
+        "h3_rem": 1.875,
+        "section_y_rem": 8.0,
+        "letter_spacing_h1": "-0.025em",
+        "leading_h1": 1.05,
+        "leading_body": 1.7
+      },
+      "accent_density": "low",
+      "tags": [
+        "airy",
+        "editorial",
+        "quiet",
+        "literary",
+        "minimal",
+        "statement"
+      ],
+      "complexity_band": "simple",
+      "flourish_set": "literary"
+    },
+    {
+      "id": "directory-rich",
+      "name": "Directory Rich",
+      "summary": "Information-dense layout with a persistent left rail nav (lg+) and a full-sitemap footer. Suits multi-location, multi-service businesses where customers come back to find the right service or location.",
+      "thumbnail_alt_summary": "Information-dense layout with a persistent left sidebar rail, compact headlines, and a full-sitemap footer.",
+      "compatible_archetypes": [
+        "tradesperson-contractor",
+        "local-service",
+        "salon-spa",
+        "restaurant-cafe"
+      ],
+      "shell_nav_id": "shell-nav-side-rail",
+      "shell_footer_id": "shell-footer-grid-five-col",
+      "layout_overrides": {},
+      "typography_scale": {
+        "base_rem": 0.9375,
+        "h1_rem": 2.25,
+        "h2_rem": 1.5,
+        "h3_rem": 1.125,
+        "section_y_rem": 3.0,
+        "letter_spacing_h1": "-0.015em",
+        "leading_h1": 1.15,
+        "leading_body": 1.55
+      },
+      "accent_density": "high",
+      "tags": [
+        "dense",
+        "directory",
+        "structured",
+        "practical",
+        "local"
+      ],
+      "complexity_band": "rich",
+      "extra_body_css": "@media (min-width: 1024px) { body.cas-template-directory-rich { padding-left: 240px; } body.cas-template-directory-rich main { min-height: 100vh; } }",
+      "flourish_set": "subtle"
+    },
+    {
+      "id": "simple-statement",
+      "name": "Simple Statement",
+      "summary": "One-page focus with oversized type, no logo, and a single-line footer. For solo practitioners who want one big idea per page and minimal chrome.",
+      "thumbnail_alt_summary": "One-page focus with three centered nav links, very large display headlines, and almost no chrome.",
+      "compatible_archetypes": [
+        "healer-wellness",
+        "coach-consultant",
+        "therapist-counselor",
+        "salon-spa"
+      ],
+      "shell_nav_id": "shell-nav-centered-minimal",
+      "shell_footer_id": "shell-footer-single-line",
+      "layout_overrides": {},
+      "typography_scale": {
+        "base_rem": 1.1875,
+        "h1_rem": 6.0,
+        "h2_rem": 3.5,
+        "h3_rem": 2.25,
+        "section_y_rem": 10.0,
+        "letter_spacing_h1": "-0.03em",
+        "leading_h1": 1.0,
+        "leading_body": 1.7
+      },
+      "accent_density": "none",
+      "tags": [
+        "simple",
+        "minimal",
+        "statement",
+        "huge-type",
+        "one-page"
+      ],
+      "complexity_band": "simple",
+      "flourish_set": "none"
+    },
+    {
+      "id": "event-led",
+      "name": "Event Led",
+      "summary": "Image-banner nav strip across the top with hero photo, plus the classic three-column footer. Suits event producers, classes, and gatherings where dates and the visual hook are the offer.",
+      "thumbnail_alt_summary": "Image-banner hero across the top with nav overlaid, bold headlines, and medium chrome density.",
+      "compatible_archetypes": [
+        "event-producer",
+        "fitness-studio",
+        "restaurant-cafe"
+      ],
+      "shell_nav_id": "shell-nav-image-banner",
+      "shell_footer_id": "shell-footer",
+      "layout_overrides": {},
+      "typography_scale": {
+        "base_rem": 1.0625,
+        "h1_rem": 3.75,
+        "h2_rem": 2.25,
+        "h3_rem": 1.5,
+        "section_y_rem": 5.0,
+        "letter_spacing_h1": "-0.02em",
+        "leading_h1": 1.1,
+        "leading_body": 1.6
+      },
+      "accent_density": "medium",
+      "tags": [
+        "event",
+        "image-led",
+        "calendar",
+        "hero-banner",
+        "energetic"
+      ],
+      "complexity_band": "medium",
+      "extra_body_css": "body.cas-template-event-led main { padding-top: 0; }",
+      "flourish_set": "expressive"
+    },
+    {
+      "id": "editorial-sanctuary",
+      "name": "Editorial Sanctuary",
+      "summary": "Paper-cream sanctuary with deep-teal ink, sage + warm-gold accents, and italic Cormorant Garamond for every display heading. Suits healers, coaches, and therapists whose sites need to read like a quiet print piece, not a tech product.",
+      "thumbnail_alt_summary": "Paper-cream sanctuary layout with sage and warm-gold accents, italic serif display headlines, and quiet, low chrome density.",
+      "compatible_archetypes": [
+        "healer-wellness",
+        "coach-consultant",
+        "therapist-counselor"
+      ],
+      "shell_nav_id": "shell-nav-sanctuary",
+      "shell_footer_id": "shell-footer-minimal-line",
+      "layout_overrides": {},
+      "typography_scale": {
+        "base_rem": 1.125,
+        "h1_rem": 4.5,
+        "h2_rem": 2.75,
+        "h3_rem": 1.75,
+        "section_y_rem": 6.5,
+        "letter_spacing_h1": "-0.012em",
+        "leading_h1": 1.05,
+        "leading_body": 1.65
+      },
+      "accent_density": "low",
+      "tags": [
+        "sanctuary",
+        "editorial",
+        "paper",
+        "italic",
+        "quiet",
+        "warm",
+        "literary",
+        "still"
+      ],
+      "complexity_band": "simple",
+      "eyebrow_style": "italic_serif",
+      "extra_body_css": "body.cas-template-editorial-sanctuary { background-color: var(--color-background); } body.cas-template-editorial-sanctuary h1, body.cas-template-editorial-sanctuary h2, body.cas-template-editorial-sanctuary h3, body.cas-template-editorial-sanctuary h4, body.cas-template-editorial-sanctuary h5, body.cas-template-editorial-sanctuary h6 { font-style: italic; font-weight: 300; letter-spacing: -0.01em; line-height: 1.05; color: var(--color-foreground); } body.cas-template-editorial-sanctuary .cas-eyebrow, body.cas-template-editorial-sanctuary .eyebrow, body.cas-template-editorial-sanctuary .cas-eye { font-style: italic; font-weight: 400; font-size: 0.875rem; letter-spacing: 0.04em; text-transform: none; color: var(--color-foreground-muted); display: inline-flex; align-items: center; gap: 0.625rem; } body.cas-template-editorial-sanctuary .cas-eyebrow::before, body.cas-template-editorial-sanctuary .eyebrow::before, body.cas-template-editorial-sanctuary .cas-eye::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background-color: var(--color-accent-earth); box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-accent-earth) 22%, transparent); flex-shrink: 0; } body.cas-template-editorial-sanctuary .cas-paper-card, body.cas-template-editorial-sanctuary .resource-card, body.cas-template-editorial-sanctuary .family-card { background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; transition: transform 0.25s ease, box-shadow 0.25s ease; } body.cas-template-editorial-sanctuary .cas-paper-card:hover, body.cas-template-editorial-sanctuary .resource-card:hover, body.cas-template-editorial-sanctuary .family-card:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -18px color-mix(in oklab, var(--color-primary) 30%, transparent); } body.cas-template-editorial-sanctuary .cas-cta-strip { background-color: var(--color-primary); color: var(--color-on-primary); padding: 4rem 2rem; text-align: center; } body.cas-template-editorial-sanctuary .cas-cta-strip h2, body.cas-template-editorial-sanctuary .cas-cta-strip h3 { color: var(--color-on-primary); }",
+      "flourish_set": "literary"
+    }
+  ]
+}

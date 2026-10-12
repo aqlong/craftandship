@@ -1,0 +1,92 @@
+<!-- compose:widget admin/settings-form -->
+<section class="py-10" style="background-color: var(--color-surface); min-height: calc(100vh - 64px);">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="font-display text-3xl font-bold" style="color: var(--color-foreground);">Site Settings</h1>
+      <a href="/admin" class="font-body text-sm transition-opacity hover:opacity-70" style="color: var(--color-primary); text-decoration: none;">← Back to Dashboard</a>
+    </div>
+    <% if (locals.flashSuccess) { %>
+      <div class="mb-4 bg-green-50 text-green-800 border border-green-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= flashSuccess %></div>
+    <% } %>
+    <% if (locals.flashError) { %>
+      <div class="mb-4 bg-red-50 text-red-800 border border-red-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= flashError %></div>
+    <% } %>
+    <%
+      // Infer client-side validation attrs per setting key. Previously
+      // every input emitted raw type="text" with no pattern, so invalid
+      // emails/phones/URLs saved silently. Keyed off the canonical 24
+      // site_settings keys. cas-form-validate.js binds to the form via
+      // the cas-form class on submit + as-you-type validation.
+      function _settingsAttrs(key) {
+        var a = { type: 'text', pattern: '', inputmode: '', autocomplete: '', placeholder: '' };
+        if (/email$/i.test(key)) {
+          a.type = 'email';
+          a.pattern = '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$';
+          a.inputmode = 'email';
+          a.autocomplete = 'email';
+          a.placeholder = 'you@example.com';
+        } else if (key === 'phone' || /phone$/i.test(key)) {
+          a.type = 'tel';
+          a.pattern = '^[\\d\\s().+-]{7,20}$';
+          a.inputmode = 'tel';
+          a.autocomplete = 'tel';
+          a.placeholder = '(555) 555-5555';
+        } else if (/url$/i.test(key)) {
+          a.type = 'url';
+          a.pattern = '^https?:\\/\\/.+';
+          a.inputmode = 'url';
+          a.placeholder = 'https://…';
+        } else if (key === 'contact_address' || key === 'address') {
+          a.autocomplete = 'street-address';
+        }
+        return a;
+      }
+    %>
+    <form action="/admin/settings" method="POST" class="cas-form space-y-6">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% sections.forEach(function(section) { %>
+        <fieldset class="p-6 rounded-xl border" style="background: white; border-color: var(--color-border);">
+          <legend class="font-display text-lg font-bold px-2" style="color: var(--color-foreground);"><%= section.heading %></legend>
+          <div class="space-y-4 mt-2">
+            <% section.fields.forEach(function(field) {
+                 var _a = _settingsAttrs(field.key);
+                 var _help = '';
+                 // Teach admins about the italic-accent {Word} syntax on
+                 // hero fields: wrapping a word in {curly braces} renders
+                 // it in italic primary-color serif for editorial emphasis.
+                 if (field.key === 'hero_tagline' || field.key === 'hero_description') {
+                   _help = 'Tip: wrap one word in {curly braces} to render it in italic for editorial emphasis. Example: Reiki, Breathwork, and Quiet {Work}';
+                 }
+            %>
+              <div class="cas-field">
+                <label for="set-<%= field.key %>" class="block font-body text-sm font-medium mb-1" style="color: var(--color-foreground);"><%= field.label %></label>
+                <% if (field.type === 'textarea') { %>
+                  <textarea id="set-<%= field.key %>" name="<%= field.key %>" rows="3" class="w-full px-3 py-2 border rounded-md font-body text-sm" style="border-color: var(--color-border); background: white;"><%= field.value || '' %></textarea>
+                <% } else if (field.type === 'file') { %>
+                  <%- include('./upload-zone.ejs', { field_name: field.key, label: field.label, current_url: field.value || '', accept: 'PNG / JPG / WEBP' }) %>
+                <% } else { %>
+                  <input id="set-<%= field.key %>"
+                         type="<%= _a.type %>"
+                         name="<%= field.key %>"
+                         value="<%= field.value || '' %>"
+                         <% if (_a.pattern) { %>pattern="<%= _a.pattern %>"<% } %>
+                         <% if (_a.inputmode) { %>inputmode="<%= _a.inputmode %>"<% } %>
+                         <% if (_a.autocomplete) { %>autocomplete="<%= _a.autocomplete %>"<% } %>
+                         <% if (_a.placeholder) { %>placeholder="<%= _a.placeholder %>"<% } %>
+                         class="w-full px-3 py-2 border rounded-md font-body text-sm"
+                         style="border-color: var(--color-border); background: white;" />
+                <% } %>
+                <% if (_help) { %>
+                  <p class="font-body text-xs mt-1" style="color: var(--color-foreground-muted); line-height: 1.4;"><%= _help %></p>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+        </fieldset>
+      <% }); %>
+      <div class="flex justify-end pt-2">
+        <button type="submit" class="font-body font-medium px-6 py-3 rounded-md transition-opacity hover:opacity-90 min-h-[44px]" style="background-color: var(--color-primary); color: var(--color-on-primary);">Save Settings</button>
+      </div>
+    </form>
+  </div>
+</section>

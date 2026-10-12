@@ -1,0 +1,85 @@
+<%# Fixture source: builds/medicine-waves-v18-4a9e3e83/views/admin/event-form.ejs %>
+<%# Captured: 2026-04-17 (do not edit; regenerate via copy if upstream changes) %>
+<div class="max-w-2xl mx-auto px-4 py-8">
+  <h1 class="font-display text-3xl font-bold text-white mb-8"><%= title %></h1>
+
+  <% if (error) { %>
+  <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
+    <p class="text-red-300"><%= error %></p>
+  </div>
+  <% } %>
+
+  <form method="POST" action="<%= event && event.id ? '/admin/events/' + event.id : '/admin/events' %>" class="space-y-6">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">Title *</label>
+      <input type="text" name="title" value="<%= event ? event.title : '' %>" required class="w-full bg-primary border border-white/10 rounded-lg px-4 py-2 text-white">
+    </div>
+
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">Description</label>
+      <textarea name="description" rows="4" class="w-full bg-primary border border-white/10 rounded-lg px-4 py-2 text-white"><%= event ? event.description : '' %></textarea>
+    </div>
+
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">Date & Time *</label>
+      <input type="datetime-local" name="date_time" value="<%= event && event.date_time ? new Date(event.date_time).toISOString().slice(0,16) : '' %>" required class="w-full bg-primary border border-white/10 rounded-lg px-4 py-2 text-white">
+    </div>
+
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">Location</label>
+      <input type="text" name="location" value="<%= event ? event.location : '' %>" class="w-full bg-primary border border-white/10 rounded-lg px-4 py-2 text-white">
+    </div>
+
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">Image</label>
+      <input type="hidden" id="image_url" name="image_url" value="<%= event ? event.image_url : '' %>">
+<div class="image-upload-zone" data-target="image_url" data-required="false" style="border:2px dashed var(--color-border,#d1d5db);border-radius:0.75rem;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;">
+  <div class="upload-preview" style="display:<%= (event ? event.image_url : '') ? 'block' : 'none' %>;margin-bottom:0.75rem;">
+    <img src="<%= (event ? event.image_url : '') || '' %>" alt="Current image" style="max-height:12rem;margin:0 auto;border-radius:0.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+    <button type="button" class="upload-remove" style="display:block;margin:0.5rem auto 0;font-size:0.875rem;color:#ef4444;background:none;border:none;cursor:pointer;text-decoration:underline;">Remove</button>
+  </div>
+  <div class="upload-prompt" style="display:<%= (event ? event.image_url : '') ? 'none' : 'block' %>;">
+    <svg style="width:3rem;height:3rem;margin:0 auto 0.75rem;opacity:0.4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <p style="font-size:0.875rem;font-weight:500;color:var(--color-text-muted,#6b7280);">Drag &amp; drop an image or <span style="color:var(--color-accent,#d4a574);font-weight:600;">click to browse</span></p>
+    <p style="font-size:0.75rem;margin-top:0.25rem;color:var(--color-text-muted,#6b7280);">JPEG, PNG, WebP, or GIF &middot; max 5 MB</p>
+  </div>
+  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="upload-file-input" style="display:none;">
+  <div class="upload-progress" style="display:none;margin-top:0.75rem;">
+    <div style="width:100%;background:#e5e7eb;border-radius:9999px;height:0.5rem;">
+      <div class="upload-bar" style="height:0.5rem;border-radius:9999px;background:var(--color-accent,#d4a574);width:0%;transition:width 0.3s;"></div>
+    </div>
+  </div>
+  <div class="upload-error" style="display:none;margin-top:0.5rem;font-size:0.875rem;color:#ef4444;"></div>
+</div>
+    </div>
+
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">RSVP Link</label>
+      <input type="text" name="rsvp_link" value="<%= event ? event.rsvp_link : '' %>" class="w-full bg-primary border border-white/10 rounded-lg px-4 py-2 text-white">
+    </div>
+
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">Posh Embed URL</label>
+      <input type="text" name="posh_embed_url" value="<%= event ? event.posh_embed_url : '' %>" class="w-full bg-primary border border-white/10 rounded-lg px-4 py-2 text-white">
+    </div>
+
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">Posh Embed Height</label>
+      <input type="number" name="posh_embed_height" value="<%= event ? event.posh_embed_height : 700 %>" class="w-full bg-primary border border-white/10 rounded-lg px-4 py-2 text-white">
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input type="checkbox" name="is_featured" id="is_featured" <%= event && event.is_featured ? 'checked' : '' %> class="rounded">
+      <label for="is_featured" class="text-slate-300 text-sm">Featured Event</label>
+    </div>
+
+    <div class="flex gap-4">
+      <button type="submit" class="px-6 py-3 bg-accent text-white font-semibold rounded-lg hover:bg-accent/80 transition-all min-h-[44px]">
+        <%= event && event.id ? 'Update Event' : 'Create Event' %>
+      </button>
+      <a href="/admin" class="px-6 py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-500 transition-all min-h-[44px] inline-flex items-center">Cancel</a>
+    </div>
+  </form>
+</div>
