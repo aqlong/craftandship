@@ -60,7 +60,7 @@ Do not bypass the hooks with `--no-verify`; [hook-integrity.yml](.github/workflo
 
 From "Code style" in [CLAUDE.md](CLAUDE.md):
 
-- No linter or formatter is configured. The static checks are `cd web && npx tsc --noEmit` (strict mode) and `python3 -m compileall`; `bandit` runs in the pre-push hook and the CI audit job.
+- No formatter is configured. The static checks are `cd web && npx tsc --noEmit` (strict mode), `ruff check .` (Python correctness rules only; [ruff.toml](ruff.toml) lists them, and CI runs it) and `python3 -m compileall`; `bandit` runs in the pre-push hook and the CI audit job.
 - TypeScript in strict mode; `async` and `await` only; explicit types rather than `any`.
 - Parameterized SQL only. Never build a query by string concatenation.
 - Catch and log errors; do not swallow them.

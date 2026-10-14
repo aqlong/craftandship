@@ -35,7 +35,7 @@ Three things to know first:
 
 Most of the best code here was written by AI agents during the pre-release review, after the system stopped serving customers. Each item says which it is.
 
-1. [compose/build.py](compose/build.py), at [`_spec_safety_errors`](compose/build.py#L856) and [`_safe_output_path`](compose/build.py#L13225): a code generator that treats its input as hostile, and [compose/tests/test_spec_hardening.py](compose/tests/test_spec_hardening.py), which feeds it hostile specs and compiles what comes out. *Added in review; as it ran, the engine trusted its spec.*
+1. [compose/build.py](compose/build.py), at [`_spec_safety_errors`](compose/build.py#L857) and [`_safe_output_path`](compose/build.py#L11902): a code generator that treats its input as hostile, and [compose/tests/test_spec_hardening.py](compose/tests/test_spec_hardening.py), which feeds it hostile specs and compiles what comes out. *Added in review; as it ran, the engine trusted its spec.*
 2. [queue/worker_pg.py](queue/worker_pg.py), at [`_claim_next_job`](queue/worker_pg.py#L615), [`_set_status`](queue/worker_pg.py#L1286) and [`_fail_build`](queue/worker_pg.py#L5728): Postgres as a job queue and a status machine made of guarded `UPDATE` statements. [tests/test_worker_pg_realdb.py](tests/test_worker_pg_realdb.py) runs that SQL on a real database. *The queue ran in production; the forward-only status machine, the attempt token and the real-database tests were added in review.*
 3. [web/src/middleware/auth.ts](web/src/middleware/auth.ts): session secret resolution, CSRF, the cross-origin write guard, and the single definition of "admin". *The CSRF token ran in production; the other three were added in review.*
 4. [web/src/companion/runtime.ts](web/src/companion/runtime.ts): one conversation turn, in the order that matters: a local crisis scan, cost caps, an input rail, the model call, an output rail. *The rails and the per-person cap ran in production; putting the crisis scan ahead of everything else, and the shared cap, were added in review.* The scan is a list of regular expressions, not a clinical safeguard. Measured only on phrasings a language model wrote, none from real conversations: 39 of 40 plain disclosures in a set held back until the patterns were final, and 79% and 70% of two earlier sets, the second written to be indirect ([measured limits](docs/KNOWN_LIMITATIONS.md#harbor-companion)).
@@ -67,7 +67,7 @@ These are true of the design, fixes or not:
 
 ## Quickstart
 
-About five minutes. You need Node 24 (what CI runs; the repository declares no other version) and Postgres, from Docker or installed locally. No API keys are needed to boot the app and browse it.
+About five minutes. You need Node 24 (what CI runs, and what `.nvmrc` and the `engines` field in `web/package.json` declare; `npm ci` warns on an older Node) and Postgres, from Docker or installed locally. No API keys are needed to boot the app and browse it.
 
 **Option A: Postgres from Docker**
 
@@ -131,8 +131,9 @@ cd web && npm test
 ```
 
 ```bash
-# Python tests. Use Python 3.12 (what CI runs and what these results were measured on;
-# `brew install python@3.12` or pyenv provides it).
+# Python tests. Use Python 3.12 (what CI runs, what these results were measured on, and what
+# .python-version names; `brew install python@3.12` or pyenv provides it). 3.13 does not work:
+# the install fails on greenlet, which playwright==1.42.0 (pinned to match the worker image) requires.
 # pytest creates and drops its own scratch databases (cas_test_scratch_*). It uses DATABASE_URL
 # when that is set (and skips those tests if the URL names another machine); when it is unset,
 # it uses the Postgres on localhost that the OS user can reach. Without one, those tests skip.
@@ -196,7 +197,7 @@ Why tests skip ([tests/README.md](tests/README.md) has the detail):
 Statement coverage of the web app under the unit suite is 88% (85% of branches), measured with the database mocked (`cd web && npx vitest run --coverage`); the two files that only start the process (`src/server.ts`, `src/db/index.ts`) are left out of the denominator.
 <!-- results:end -->
 
-CI ([test.yml](.github/workflows/test.yml)) runs all of the above on Linux, plus a job that performs Option A on a clean runner and requests the home page, a job that builds the worker's Docker image and checks that its `pg_dump` can dump the database version the platform provisions, a gitleaks scan, and an advisory dependency audit. No CI result is recorded in this repository, and the worker image was not built when the release was prepared; [the review](docs/PRE_RELEASE_REVIEW.md) says what was not run.
+CI ([test.yml](.github/workflows/test.yml)) runs all of the above on Linux, plus a job that performs Option A on a clean runner and requests the home page, a job that builds the worker's Docker image and checks that its `pg_dump` can dump the database version the platform provisions, a gitleaks scan, and an advisory dependency audit. CI's first run on the release commit (`6144c8f`, 12 October 2026) passed all seven jobs ([the run](https://github.com/aqlong/craftandship/actions/runs/38287911118)). That includes the worker image: it was built and its `pg_dump` checked, though it was never run as a worker. [The review](docs/PRE_RELEASE_REVIEW.md) says what else was not run.
 
 ## Who did what
 

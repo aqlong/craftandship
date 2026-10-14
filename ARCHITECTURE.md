@@ -342,7 +342,7 @@ The [hooks](.githooks/pre-push) run the destructive-DDL and row-change check, th
 | Job | What it runs |
 |---|---|
 | `unit` | Build and `npm test` |
-| `python` | Installs the web dependencies (the v2 widget tests render EJS from `web/node_modules`), builds the sample generated site and installs its dependencies so the tests that boot one run, then `tests/`, `compose/tests/` and `tests/` again with `CAS_BUILD_ENGINE=v1` |
+| `python` | Runs `ruff check .` ([ruff.toml](ruff.toml)), installs the web dependencies (the v2 widget tests render EJS from `web/node_modules`), builds the sample generated site and installs its dependencies so the tests that boot one run, then `tests/`, `compose/tests/` and `tests/` again with `CAS_BUILD_ENGINE=v1` |
 | `quickstart` | The README quickstart on a clean runner |
 | `worker-image` | Builds `Dockerfile.worker` (it downloads the Playwright base image and the PostgreSQL apt repository, so it needs Docker and the network and takes a few minutes), checks that the image's `pg_dump` major version is at least `POSTGRES_SERVER_MAJOR` in `cli/deploy.py`, then starts a `postgres:<that major>` container with a password generated for the run and dumps its schema with the image's `pg_dump`, printing the last three lines. It had not run on GitHub when the release was prepared |
 | `secrets` | A gitleaks release pinned by version and SHA-256, scanning the history with [.gitleaks.toml](.gitleaks.toml); not part of the local hooks |
@@ -384,7 +384,7 @@ The architectural ones; [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) h
 - The build lease is best effort; the attempt token guards the status writes and the Railway columns, not the log rows, screenshots, artifact or cost; an attempt's own Railway project is tracked only in the worker's memory until the build reaches preview.
 - No test runs two worker processes against one database.
 - `provision_postgres` in [cli/deploy.py](cli/deploy.py) creates each customer database as an image service and never attaches a Railway volume; whether its data survives a restart is not established by this repository.
-- The worker image runs Node 20, past its end of life, was not built or run when the release was prepared (the `worker-image` job of `test.yml` builds it), and none of the suites ran on its versions.
+- The worker image runs Node 20, past its end of life. It was not built when the release was prepared; the `worker-image` job of `test.yml` built it on the release commit afterwards and passed, but it was never run as a worker, and none of the suites ran on its versions.
 - The operator dispatch route in `admin.ts` duplicates the steps of `harbor_dispatch.ts` before the insert, so a change to extraction or translation has to be made twice.
 
 ## Where the bodies are buried
@@ -394,7 +394,7 @@ The line counts are the literal output of `wc -l` on the paths in the first colu
 | File | Lines | What would be split first |
 |---|---|---|
 | [cli/build.py](cli/build.py) | 15671 | The 117 `@processor` functions, by the groups `pipeline.py` already encodes. The longest, `_ensure_video_embeds`, is 436 lines. |
-| [compose/build.py](compose/build.py) | 13559 | The CSS. `emit_public_assets` is 1440 lines, most of them one stylesheet held in a string literal; it should be real `.css` files. Then one module per emitter group: `emit_admin_crud_views` is 594 lines, `emit_routes_resource_js` 565 and `emit_routes_pages_js` 494. |
+| [compose/build.py](compose/build.py) | 12236 | One module per emitter group: `emit_admin_crud_views` is 594 lines, `emit_routes_resource_js` 565 and `emit_routes_pages_js` 494. The stylesheet that made `emit_public_assets` 1440 lines is now [compose/templates/public-style.css](compose/templates/public-style.css); after the move all 1,733 files of the ten v2 sample builds were byte-identical to the builds before it. |
 | [queue/worker_pg.py](queue/worker_pg.py) | 6717 | `_run_pipeline` is 1471 lines in one function, `_process_job` 474 and `_supervisor_force_fail` 391. Stage functions first, then lease and recovery code and the thread starters into their own modules. |
 | [web/src/routes/admin.ts](web/src/routes/admin.ts) | 3673 | One router for every admin page. Split by area (builds, reviews, costs, email, coordinator), and move the Harbor dispatch route onto `harbor_dispatch.ts`. |
 | [cli/deploy.py](cli/deploy.py) | 2611 | Used by both engines, so it cannot be left with the v1 code. `deploy` is 174 lines in one function. Split out the Railway client (`gql` is 118 lines, and the project, service and database calls), the probes (`verify_routes` is 140 lines, `verify_auth` 110) and the browser screenshot code (`capture_deploy_screenshots` is 119) into modules of their own. |
@@ -405,7 +405,7 @@ The line counts are the literal output of `wc -l` on the paths in the first colu
 | [scripts/cas-roadmap-loop.sh](scripts/cas-roadmap-loop.sh) | 2590 | `execute_item` is about 600 lines of bash that drive the guard, the test gate and the merge. It should be Python with tests; the item picker, `cas-pick-item.py`, already is. |
 | [coordinator/tick.py](coordinator/tick.py) | 1509 | `run_tick` is 582 lines. Dispatch and the review step first. |
 
-These sizes break the conventions in [CLAUDE.md](CLAUDE.md) (functions under 50 lines), and not only in the files above. Of the 1651 Python functions in `cli/`, `compose/`, `queue/`, `coordinator/`, `monitor/`, `ops/` and `scripts/` (tests excluded), 348 are longer than 50 lines, 123 longer than 100 and 35 longer than 200. This reproduces the count and lists the longest:
+These sizes break the conventions in [CLAUDE.md](CLAUDE.md) (functions under 50 lines), and not only in the files above. Of the 1651 Python functions in `cli/`, `compose/`, `queue/`, `coordinator/`, `monitor/`, `ops/` and `scripts/` (tests excluded), 348 are longer than 50 lines, 123 longer than 100 and 34 longer than 200. This reproduces the count and lists the longest:
 
 ```bash
 python3 - <<'EOF'
@@ -423,7 +423,7 @@ print(*sorted(rows, reverse=True)[:12], sep="\n")
 EOF
 ```
 
-The other stated style rules are not enforced by any tool either. No linter, formatter or Python type checker is configured (there is no `ruff`, `flake8`, `black`, `mypy` or `pyright` setting or dependency, and the web `tsconfig` covers `src` only, so the web test files are not type-checked), so the rules in [CLAUDE.md](CLAUDE.md) under "Code style" hold only where a person or a test happened to hold them. One of them, "never swallow errors silently", is broken most in the legacy engine: a broad `except` whose whole body is `pass` appears 39 times in `cli/` outside `cli/deploy.py` (12 in `cli/test.py`, 10 in `cli/build.py`, 5 in `cli/ui_test.py`, 3 in `cli/fix.py`), 3 times in `compose/` and 5 times in `scripts/`. The last fix round took the count in `queue/`, `coordinator/`, `monitor/`, `ops/` and `cli/deploy.py` from 72 to zero. This reproduces the count per directory:
+The other stated style rules are not enforced by any tool either. The one Python linter, `ruff` ([ruff.toml](ruff.toml), run by CI's `python` job), checks correctness only: pyflakes' bug rules and syntax errors, with five leftover-code rules switched off. No formatter or Python type checker is configured, and the web `tsconfig` covers `src` only, so the web test files are not type-checked. The rules in [CLAUDE.md](CLAUDE.md) under "Code style" hold only where a person or a test happened to hold them. One of them, "never swallow errors silently", is broken most in the legacy engine: a broad `except` whose whole body is `pass` appears 39 times in `cli/` outside `cli/deploy.py` (12 in `cli/test.py`, 10 in `cli/build.py`, 5 in `cli/ui_test.py`, 3 in `cli/fix.py`), 3 times in `compose/` and 5 times in `scripts/`. The last fix round took the count in `queue/`, `coordinator/`, `monitor/`, `ops/` and `cli/deploy.py` from 72 to zero. This reproduces the count per directory:
 
 ```bash
 python3 - <<'EOF'
