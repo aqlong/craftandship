@@ -19,7 +19,7 @@ I built it as the director of an AI coding agent, which wrote the code. I chose 
 
 ## How I built this
 
-I'm Ocean Longnion ([LinkedIn](https://www.linkedin.com/in/aaronlongnion)). I have 26 years of software engineering behind me, most recently shipping production AI into enterprise software. On Craft & Ship I chose not to write the code by hand. An AI coding agent (Claude Code) wrote it, and my work was the judgment around it:
+I'm Ocean Longnion ([LinkedIn](https://www.linkedin.com/in/aaronlongnion)). I have 26 years of building software behind me, and today I design and direct AI-powered engineering workflows in enterprise software. On Craft & Ship I chose not to write the code by hand. An AI coding agent (Claude Code) wrote it, and my work was the judgment around it:
 
 - **What to build, and for whom.** I chose the audience and kept simplifying toward it. In April 2026 the product became one companion, one subscription and one price, sliding from $39 to $19 a month.
 - **When to take the model out.** When model-written apps kept coming back with the same classes of bug, I removed the model from the build path entirely (the v2 engine, decided 20 April 2026).
