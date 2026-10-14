@@ -18,7 +18,7 @@ import pytest
 from compose.build import (
     BuildSpec, resolve_spec, compose_files, build_app, validate_spec,
     _prettify, _slug_for, _plural, _default_fields, _default_nav_items,
-    _default_admin_nav_items,
+    _default_admin_nav_items, PUBLIC_STYLE_CSS_PATH,
 )
 
 
@@ -3690,6 +3690,15 @@ def test_nav_public_logo_has_strict_size_constraints(resolved):
     assert "object-fit: cover" in nav
 
 
+def test_style_css_is_the_template_file_as_it_stands(resolved):
+    """public/style.css is compose/templates/public-style.css, read with
+    universal newlines and changed in no other way, so a checkout that
+    turned the file's line endings into CRLF still emits LF."""
+    files = dict(compose_files(resolved))
+    expected = PUBLIC_STYLE_CSS_PATH.read_bytes().decode("utf-8").replace("\r\n", "\n")
+    assert files["public/style.css"] == expected
+
+
 def test_style_css_has_h10_w10_utilities(resolved):
     files = dict(compose_files(resolved))
     css = files["public/style.css"]
@@ -3698,7 +3707,7 @@ def test_style_css_has_h10_w10_utilities(resolved):
 
 
 def test_style_css_emits_classes_used_by_hero_widget(resolved):
-    """The CSS generator in compose/build.py is a fixed enumerated list,
+    """The stylesheet (compose/templates/public-style.css) is a fixed enumerated list,
     not a JIT-scanned utility build. Any class a widget uses MUST exist
     in the emitted CSS, or it silently renders at 0px.
 

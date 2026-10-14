@@ -1,0 +1,1324 @@
+/* CAS v2 minimal utility CSS (no Tailwind build required). */
+* { box-sizing: border-box; }
+body { margin: 0; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; display: block; height: auto; }
+/* Reset UA margins + ensure
+   <figure> stretches to fill its grid/flex track. Without `width: 100%`,
+   a <figure> grid item whose only child has `width:100% + aspect-ratio`
+   creates a circular intrinsic-size lookup and Safari/Chrome collapse the
+   figure to 0x0. Applying `width: 100%` to figure across all breakpoints
+   (and explicitly re-asserting it inside the mobile single-column
+   breakpoint where this was first observed) breaks the cycle. See
+   docs/internals/WIDGETS_AND_CONTRACTS.md "Grid-item sizing gotcha". */
+figure { margin: 0; width: 100%; min-width: 0; }
+
+/* Display helpers */
+.block { display: block; } .inline-block { display: inline-block; }
+.inline { display: inline; } .hidden { display: none; }
+.flex { display: flex; } .inline-flex { display: inline-flex; }
+.grid { display: grid; }
+
+/* Flex */
+.flex-col { flex-direction: column; } .flex-row { flex-direction: row; }
+.items-center { align-items: center; } .items-start { align-items: flex-start; }
+.justify-center { justify-content: center; } .justify-between { justify-content: space-between; }
+.gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; } .gap-5 { gap: 1.25rem; } .gap-6 { gap: 1.5rem; }
+.gap-7 { gap: 1.75rem; } .gap-8 { gap: 2rem; } .gap-10 { gap: 2.5rem; } .gap-16 { gap: 4rem; }
+.flex-1 { flex: 1; } .flex-wrap { flex-wrap: wrap; }
+
+/* Grid */
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0,1fr)); }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.grid-cols-5 { grid-template-columns: repeat(5, minmax(0,1fr)); }
+
+/* Auto-fit card grid: items grow toward a comfortable max-width and wrap
+   onto new rows; solo items don't stretch across the full row. Solves the
+   "1 case study renders as one giant card" problem that pure grid-cols-N
+   layouts have at low item counts.
+
+   Tightened max-width caps
+   from 600/420 to 380 across grid + grid-3 so when count % cols == 1,
+   the lone last-row card stays close to row-mate width instead of
+   ballooning to 600px. The single-column threshold also dropped from
+   760px to 580px so the transition zone shrinks (between full-width
+   and 2-up, instead of starting at 760). Observed orphans at 640px
+   (3 books = [284, 284, 592]) + at 1024px (16 cards @ 476 + 1 @ 600). */
+.cas-card-grid { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+.cas-card-grid > * { flex: 1 1 320px; max-width: 380px; min-width: 0; }
+.cas-card-grid-3 { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+.cas-card-grid-3 > * { flex: 1 1 280px; max-width: 380px; min-width: 0; }
+.cas-card-grid-4 { display: flex; flex-wrap: wrap; gap: 1rem; }
+.cas-card-grid-4 > * { flex: 1 1 220px; max-width: 320px; min-width: 0; }
+@media (max-width: 580px) {
+  .cas-card-grid > *, .cas-card-grid-3 > *, .cas-card-grid-4 > * { max-width: 100%; }
+  /* Re-assert figure width at the
+     mobile single-column breakpoint. The base rule already sets it, but
+     keeping a parallel mobile rule documents the contract next to the
+     other single-column overrides and survives downstream CSS overrides
+     that might bump figure width to auto. */
+  figure { width: 100%; }
+}
+
+/* Past-content de-emphasis: date-based listing items whose moment has passed
+   render dimmer with a desaturated image, restoring full color on hover.
+   Applied by
+   listing widgets (e.g. offerings/resource-list-card-grid) when item.date_time
+   (or event_date/start_at) is in the past at request time. */
+.cas-past { opacity: 0.78; transition: opacity 0.4s ease; }
+.cas-past:hover, .cas-past:focus-within { opacity: 1; }
+.cas-past img { filter: grayscale(0.6); transition: filter 0.4s ease; }
+.cas-past:hover img, .cas-past:focus-within img { filter: grayscale(0); }
+
+/* Sizing */
+.w-full { width: 100%; } .h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; } .min-h-\[60vh\] { min-height: 60vh; }
+.min-h-\[44px\] { min-height: 44px; } .min-w-\[44px\] { min-width: 44px; }
+.h-6 { height: 1.5rem; } .w-6 { width: 1.5rem; }
+.h-8 { height: 2rem; } .w-8 { width: 2rem; }
+.h-10 { height: 2.5rem; } .w-10 { width: 2.5rem; }
+.h-12 { height: 3rem; } .w-12 { width: 3rem; }
+.h-16 { height: 4rem; } .h-20 { height: 5rem; }
+.max-w-md { max-width: 28rem; } .max-w-xl { max-width: 36rem; }
+.max-w-2xl { max-width: 42rem; } .max-w-3xl { max-width: 48rem; }
+.max-w-4xl { max-width: 56rem; } .max-w-5xl { max-width: 64rem; }
+.max-w-6xl { max-width: 72rem; } .mx-auto { margin-left: auto; margin-right: auto; }
+.aspect-\[16\/9\] { aspect-ratio: 16/9; } .object-cover { object-fit: cover; }
+.overflow-hidden { overflow: hidden; } .overflow-x-auto { overflow-x: auto; }
+
+/* Padding/margin */
+.p-0 { padding: 0; } .p-2 { padding: 0.5rem; } .p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; } .p-12 { padding: 3rem; } .p-20 { padding: 5rem; }
+.px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+.px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+.px-7 { padding-left: 1.75rem; padding-right: 1.75rem; }
+.px-8 { padding-left: 2rem; padding-right: 2rem; }
+.px-10 { padding-left: 2.5rem; padding-right: 2.5rem; }
+.py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+.py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.py-7 { padding-top: 1.75rem; padding-bottom: 1.75rem; }
+.py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+.py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+.py-12 { padding-top: 3rem; padding-bottom: 3rem; }
+.py-14 { padding-top: 3.5rem; padding-bottom: 3.5rem; }
+.py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+.py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+.py-24 { padding-top: 6rem; padding-bottom: 6rem; }
+.py-28 { padding-top: 7rem; padding-bottom: 7rem; }
+.p-7 { padding: 1.75rem; }
+.pt-1 { padding-top: 0.25rem; } .pt-2 { padding-top: 0.5rem; }
+.pt-4 { padding-top: 1rem; } .pt-6 { padding-top: 1.5rem; }
+.pt-10 { padding-top: 2.5rem; } .pt-12 { padding-top: 3rem; }
+.pb-2 { padding-bottom: 0.5rem; } .pb-4 { padding-bottom: 1rem; }
+.pb-5 { padding-bottom: 1.25rem; } .pb-6 { padding-bottom: 1.5rem; }
+.pb-12 { padding-bottom: 3rem; } .pb-16 { padding-bottom: 4rem; } .pb-20 { padding-bottom: 5rem; } .pb-24 { padding-bottom: 6rem; }
+.pr-4 { padding-right: 1rem; }
+.mb-1 { margin-bottom: 0.25rem; } .mb-1\.5 { margin-bottom: 0.375rem; } .mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; } .mb-4 { margin-bottom: 1rem; } .mb-5 { margin-bottom: 1.25rem; }
+.mb-6 { margin-bottom: 1.5rem; } .mb-7 { margin-bottom: 1.75rem; } .mb-8 { margin-bottom: 2rem; }
+.mb-10 { margin-bottom: 2.5rem; } .mb-12 { margin-bottom: 3rem; }
+.mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; } .mt-5 { margin-top: 1.25rem; } .mt-6 { margin-top: 1.5rem; }
+.mt-8 { margin-top: 2rem; } .mt-10 { margin-top: 2.5rem; } .mt-12 { margin-top: 3rem; }
+.mt-14 { margin-top: 3.5rem; } .mt-16 { margin-top: 4rem; } .mt-24 { margin-top: 6rem; }
+.mt-auto { margin-top: auto; }
+.ml-1 { margin-left: 0.25rem; } .ml-2 { margin-left: 0.5rem; } .ml-3 { margin-left: 0.75rem; }
+.mr-2 { margin-right: 0.5rem; } .mr-3 { margin-right: 0.75rem; }
+.gap-x-4 { column-gap: 1rem; } .gap-y-1 { row-gap: 0.25rem; } .gap-x-2 { column-gap: 0.5rem; }
+.space-y-1 > * + * { margin-top: 0.25rem; } .space-y-2 > * + * { margin-top: 0.5rem; }
+.space-y-3 > * + * { margin-top: 0.75rem; } .space-y-4 > * + * { margin-top: 1rem; }
+.space-y-5 > * + * { margin-top: 1.25rem; } .space-y-6 > * + * { margin-top: 1.5rem; }
+.space-y-10 > * + * { margin-top: 2.5rem; }
+.flex-shrink-0 { flex-shrink: 0; } .min-w-0 { min-width: 0; }
+.items-baseline { align-items: baseline; } .items-end { align-items: flex-end; }
+.justify-end { justify-content: flex-end; } .justify-start { justify-content: flex-start; }
+.h-auto { height: auto; }
+
+/* Typography */
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.5; }
+.text-base { font-size: 1rem; line-height: 1.6; }
+.text-lg { font-size: 1.125rem; line-height: 1.6; }
+.text-xl { font-size: 1.25rem; line-height: 1.5; }
+.text-2xl { font-size: 1.5rem; line-height: 1.3; }
+.text-3xl { font-size: 1.875rem; line-height: 1.2; }
+.text-4xl { font-size: 2.25rem; line-height: 1.15; }
+.text-5xl { font-size: 3rem; line-height: 1.1; }
+.text-6xl { font-size: 3.75rem; line-height: 1; }
+.text-7xl { font-size: 4.5rem; line-height: 0.95; }
+.font-bold { font-weight: 700; } .font-semibold { font-weight: 600; } .font-medium { font-weight: 500; }
+.tracking-tight { letter-spacing: -0.01em; } .tracking-wider { letter-spacing: 0.05em; } .tracking-widest { letter-spacing: 0.1em; }
+.leading-\[1\.05\] { line-height: 1.05; }
+.uppercase { text-transform: uppercase; } .leading-tight { line-height: 1.15; } .leading-relaxed { line-height: 1.65; }
+.text-center { text-align: center; } .text-left { text-align: left; } .text-right { text-align: right; }
+.whitespace-nowrap { white-space: nowrap; }
+
+/* Borders */
+.border { border: 1px solid; } .border-0 { border: 0; } .border-2 { border-width: 2px; border-style: solid; }
+.border-t { border-top: 1px solid; } .border-b { border-bottom: 1px solid; }
+.border-dashed { border-style: dashed; }
+.border-primary { border-color: var(--color-primary); }
+.rounded { border-radius: 0.375rem; } .rounded-md { border-radius: 0.5rem; }
+.rounded-lg { border-radius: 0.625rem; } .rounded-xl { border-radius: 0.875rem; } .rounded-2xl { border-radius: 1rem; }
+.rounded-full { border-radius: 9999px; }
+
+/* Color utilities used inline in widgets are primarily CSS vars; these hex
+   utilities cover only flash + error/success states. */
+.bg-white { background-color: #ffffff; }
+.bg-transparent { background-color: transparent; }
+.bg-primary { background-color: var(--color-primary); }
+.bg-green-50 { background-color: #f0fdf4; }
+.text-green-800 { color: #166534; }
+.border-green-200 { border-color: #bbf7d0; }
+.bg-red-50 { background-color: #fef2f2; }
+.text-red-800 { color: #991b1b; }
+.border-red-200 { border-color: #fecaca; }
+.text-white { color: #ffffff; }
+.text-gray-900 { color: #111827; }
+
+/* Buttons: reset browser defaults so inline-styled buttons look like the
+   widget intended (transparent nav buttons, maroon CTAs, etc). */
+button { font: inherit; color: inherit; }
+button.bg-transparent { background: transparent; border: 0; }
+
+/* Button text vertical centering.
+   Three bugs compound to push CTA-button text below true center:
+   (1) `inline-flex items-center` buttons inherit body line-height 1.5,
+       so a single text span occupies ~27px inside a 44px button,
+       leaving the cross-axis center off by half the slack.
+   (2) Without white-space: nowrap, narrow flex containers (sidebar
+       CTAs, mobile menus) wrap text to 3+ lines (the "Work with me"
+       → 3-line / 67px-tall regression).
+   (3) An inline-default SVG icon sibling carries baseline metrics
+       (descender slack) that bias the flex line-box cross-axis
+       midpoint downward by ~5-11px even when text would otherwise
+       center cleanly.
+   Recipe (DO NOT REVERT without replacing equivalent guards; the
+   matching pytest regression test is in
+   compose/tests/test_build_pipeline.py::
+   test_button_text_vertical_centering_recipe):
+     a. min-h-[44px] buttons -> display: inline-block (bypasses flex
+        line-box centering entirely), line-height: 44px (exact box
+        height so inline children center via line-box math), height:
+        44px, padding-top/bottom: 0 (vertical sizing is wholly
+        line-height driven), text-align: center, vertical-align:
+        middle.
+     b. Every direct child of those buttons -> display: inline-block,
+        vertical-align: middle, line-height: 1 (drops the body 1.5
+        line-height inheritance + neutralizes inline-baseline math
+        for the SVG sibling).
+     c. <span> children additionally -> white-space: nowrap (the
+        Work-with-me 3-line wrap fix).
+     d. Buttons WITHOUT min-h-[44px] (newsletter submit, form CTAs)
+        keep their declared padding but still need line-height: 1
+        so inherited body 1.5 doesn't decentre text.
+   Why this stays fragile: every layer is overrideable by a single
+   loose utility class (e.g. a .leading-relaxed sneaking onto a
+   button, an `inline-flex` Tailwind class regenerated as the
+   declared display, a missing nowrap on a new span variant). The
+   recipe assumes single-line button text by construction. */
+a.inline-flex[class*="rounded-"].min-h-\[44px\],
+button.inline-flex[class*="rounded-"].min-h-\[44px\],
+button[type="submit"].min-h-\[44px\],
+button[type="button"].min-h-\[44px\] {
+  display: inline-block;
+  line-height: 44px;
+  height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+a.inline-flex[class*="rounded-"].min-h-\[44px\] > *,
+button.inline-flex[class*="rounded-"].min-h-\[44px\] > *,
+button[type="submit"].min-h-\[44px\] > *,
+button[type="button"].min-h-\[44px\] > * {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+}
+a.inline-flex[class*="rounded-"].min-h-\[44px\] > span,
+button.inline-flex[class*="rounded-"].min-h-\[44px\] > span,
+button[type="submit"].min-h-\[44px\] > span,
+button[type="button"].min-h-\[44px\] > span {
+  white-space: nowrap;
+}
+
+/* Buttons WITHOUT min-h-[44px] (newsletter submit, form CTAs) keep
+   their declared padding but still need line-height: 1 to avoid
+   inherited body line-height messing with vertical centering. */
+a.inline-flex[class*="rounded-"]:not(.min-h-\[44px\]),
+button.inline-flex[class*="rounded-"]:not(.min-h-\[44px\]),
+button[type="submit"]:not(.min-h-\[44px\]),
+button[type="button"]:not(.min-h-\[44px\]),
+.btn {
+  line-height: 1;
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+   CAS design-system utilities (ported from web/src/styles/input.css).
+   The motion and depth rules in this block (spring easing, tinted
+   shadows, haptic press, staggered reveal, bezel cards, ambient depth)
+   are inspired by the design guidance published as "taste-skill"
+   (github.com/Leonxlnx/taste-skill). Pattern names used below such as
+   "double-bezel (Doppelrand)" and "button-in-button" are that project's
+   terms.
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* Foundation motion + shadow tokens. Ban `ease`, `ease-in-out`, `linear`
+   across the entire output: standardize on the spring curve so every
+   hover/active/reveal feels tactile. Tinted shadows via color-mix carry
+   the palette's hue so nothing bottoms out at rgba(0,0,0,X) "AI-default"
+   flat black. */
+:root {
+  /* Shared display token consumed by BOTH public and admin surfaces:
+     rating stars render gold
+     everywhere, never palette-primary on one surface and gold on the
+     other. */
+  --color-rating-star: #d4af37;
+  --cas-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --cas-ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+  --cas-dur-fast: 200ms;
+  --cas-dur-med: 500ms;
+  --cas-dur-slow: 800ms;
+  --cas-shadow-whisper: 0 2px 8px color-mix(in oklab, var(--color-foreground) 5%, transparent);
+  --cas-shadow-diffuse: 0 20px 40px -15px color-mix(in oklab, var(--color-primary) 14%, transparent);
+  --cas-shadow-inner-highlight: inset 0 1px 0 color-mix(in oklab, white 14%, transparent);
+}
+
+/* Smooth anchor-scroll + text-wrap hygiene across every generated page.
+   `text-wrap: balance` prevents orphan words on headlines; `pretty`
+   improves paragraph ragged-right. Zero-cost wins. */
+/* Bold must read as bold: some family fonts render
+   <strong> at near-body weight; pin it. */
+main strong, main b { font-weight: 700; }
+html { scroll-behavior: smooth; }
+h1, h2, h3, .cas-hero-h1 { text-wrap: balance; }
+p, .cas-body { text-wrap: pretty; }
+
+/* Global focus-visible ring. Required for WCAG keyboard nav and
+   replaces the browser-default dotted rectangle with the palette's
+   primary color. Round radius inherits from the focused element. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* Tabular numerics. Apply to price columns, stat blocks, pricing-table
+   tiers: any place aligned numbers matter. Prevents the ragged-digit
+   look that proportional fonts produce. */
+.cas-nums,
+.price,
+.money,
+[data-nums="tabular"] { font-variant-numeric: tabular-nums; }
+
+/* Plain-text uppercase eyebrow: NO pill background, NO border. Used
+   above every H2 on public pages + as field labels in admin detail. */
+.cas-eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--color-foreground-muted);
+  margin-bottom: 0.5rem;
+}
+
+/* Editorial divided-row: the workhorse pattern for "feature list"
+   sections on the CAS site. Replaces 3-col icon-orb grids. Apply to
+   a container of direct children <div>s. Last-child gets no divider. */
+.cas-divided-rows > * {
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--color-border);
+}
+.cas-divided-rows > *:first-child { border-top: 0; }
+
+/* Hero H1 editorial scale: tighter line-height + negative letter-
+   spacing so the heading feels like type, not text. */
+.cas-hero-h1 {
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+/* Primary button with hover-lift + soft primary shadow + haptic active
+   press + focus ring. Round-14 upgrade: standardized on the spring ease,
+   explicit :active transform so every click feels like a physical press,
+   tinted shadow on hover via color-mix. */
+.cas-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--cas-dur-med) var(--cas-ease),
+              box-shadow var(--cas-dur-med) var(--cas-ease),
+              background-color var(--cas-dur-fast) var(--cas-ease);
+  min-height: 44px;
+  border: 1px solid transparent;
+  box-shadow: var(--cas-shadow-whisper);
+}
+.cas-btn:active { transform: translateY(1px) scale(0.98); }
+.cas-btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.cas-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--cas-shadow-diffuse);
+}
+.cas-btn-secondary {
+  background-color: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: none;
+}
+.cas-btn-secondary:hover {
+  background-color: var(--color-secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--cas-shadow-diffuse);
+}
+
+/* Nested trailing icon wrapper: the "button-in-button" pattern (inspired
+   by taste-skill, see the note at the top of this block). Wrap an SVG
+   inside .cas-btn-icon so the arrow
+   lives in its own circular cell with a subtle translucent bg; on hover,
+   the icon translates diagonally while the button itself lifts. */
+.cas-btn-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: color-mix(in oklab, currentColor 12%, transparent);
+  transition: transform var(--cas-dur-med) var(--cas-ease);
+}
+.cas-btn:hover .cas-btn-icon { transform: translate(2px, -1px); }
+
+/* Card with hover-lift: the CAS .gallery-card / .card-feature pattern.
+   Round-14 upgrade: whisper-shadow at rest, diffused primary-tinted on
+   hover, spring ease on both transitions. Cards now lift against the
+   palette, not against flat black. */
+.cas-card-lift {
+  box-shadow: var(--cas-shadow-whisper);
+  transition: transform var(--cas-dur-med) var(--cas-ease),
+              box-shadow var(--cas-dur-med) var(--cas-ease),
+              border-color var(--cas-dur-med) var(--cas-ease);
+}
+.cas-card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--cas-shadow-diffuse);
+  border-color: color-mix(in oklab, var(--color-primary) 25%, var(--color-border));
+}
+
+/* Scroll-reveal animation. IntersectionObserver (shipped as reveal.js)
+   toggles .revealed. Round-14: optional staggered cascade via --index, 
+   set style="--index: <i>" on each loop-emitted item to get an 80ms
+   waterfall instead of simultaneous mount. */
+.cas-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 600ms var(--cas-ease), transform 600ms var(--cas-ease);
+  transition-delay: calc(var(--index, 0) * 80ms);
+}
+.cas-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cas-reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* Hairline section divider: the CAS pattern. 1px, border-color at
+   low opacity. NEVER a gradient, NEVER a shadow. */
+.cas-divider {
+  height: 1px;
+  background-color: var(--color-border);
+  border: 0;
+}
+
+/* Italic serif accent: for one word inside a heading (the CAS
+   emotional-emphasis pattern). Use via {word} syntax in the widget. */
+.cas-accent {
+  font-style: italic;
+  color: var(--color-primary);
+  font-weight: inherit;
+}
+
+/* Double-bezel (Doppelrand): a "machined hardware" card (inspired by
+   taste-skill, see the note at the top of this block).
+   Outer tray has tiny padding + hairline border + large radius; inner
+   plate has a mathematically smaller radius via calc() + inner highlight.
+   Use for hero images, featured cards, testimonial photos (NOT every
+   card: selective for emphasis). */
+.cas-bezel {
+  padding: 0.375rem;
+  border-radius: 2rem;
+  background: color-mix(in oklab, var(--color-foreground) 4%, transparent);
+  border: 1px solid color-mix(in oklab, var(--color-foreground) 6%, transparent);
+}
+.cas-bezel-inner {
+  border-radius: calc(2rem - 0.375rem);
+  background: var(--color-background);
+  box-shadow: var(--cas-shadow-inner-highlight);
+  overflow: hidden;
+}
+.cas-bezel-sm { padding: 0.25rem; border-radius: 1.25rem; }
+.cas-bezel-sm .cas-bezel-inner { border-radius: calc(1.25rem - 0.25rem); }
+
+/* Editorial image treatment: desaturate + warm palette-tint so stock
+   and customer-uploaded photos blend into the archetype instead of
+   fighting it. Apply to <img> or image wrapper. */
+.cas-img-editorial {
+  filter: saturate(0.88) contrast(1.05) brightness(0.98);
+}
+
+/* Drop-cap on long-form prose / about-body. Per-element opt-in via
+   `cas-drop-cap` class on the <p>; widgets honor a `drop_cap: true`
+   param to add the class. Available regardless of flourish set so the
+   class behaves consistently when a customer enables it on a non-
+   literary template. The literary flourish set extends this with link
+   underline-grow, but the drop-cap rule itself lives globally. */
+.cas-drop-cap::first-letter {
+  font-family: var(--font-display, inherit);
+  font-style: italic;
+  font-size: 3.4em;
+  line-height: 0.9;
+  float: left;
+  margin-right: 0.08em;
+  margin-top: 0.06em;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Ambient depth layer: subtle radial gradient on empty-ish sections so
+   they don't read as flat. Fixed, pointer-events-none, sits behind
+   content. Opt-in via class on the section. */
+.cas-section-ambient { position: relative; isolation: isolate; }
+.cas-section-ambient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at top right, color-mix(in oklab, var(--color-primary) 5%, transparent), transparent 60%),
+    radial-gradient(ellipse at bottom left, color-mix(in oklab, var(--color-primary) 3%, transparent), transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Section + container vertical rhythm. Use .cas-section on every
+   widget root and .cas-container inside for consistent breathing
+   room across the whole site. clamp() scales without media-query
+   noise. */
+.cas-section { padding-block: clamp(4rem, 10vw, 10rem); }
+.cas-section-sm { padding-block: clamp(2.5rem, 6vw, 5rem); }
+.cas-container {
+  max-width: 1400px;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+@media (min-width: 768px)  { .cas-container { padding-inline: 2rem; } }
+@media (min-width: 1280px) { .cas-container { padding-inline: 4rem; } }
+
+
+/* Glass-style sticky nav: translucent primary with backdrop-blur on
+   browsers that support it; solid fallback elsewhere. Impeccable 2d.4. */
+@supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+  .cas-nav {
+    background-color: color-mix(in srgb, var(--color-primary) 88%, transparent) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+}
+
+/* Sortable table headers: the permanent ⇅ arrow brightens on hover
+   so users can see each column is clickable even before sorting. */
+.cas-sortable-th .cas-sort-link:hover { opacity: 1 !important; color: var(--color-primary) !important; }
+.cas-sortable-th .cas-sort-link:hover .cas-sort-arrow { opacity: 1 !important; }
+.cas-sortable-th { cursor: pointer; user-select: none; }
+
+/* Quiet "made with [lighthouse] Craft & Ship" footer attribution.
+   Italic display-serif 12-14px on a hover-pill; ink-mute at rest, primary
+   on hover. Inherits the site's --font-display so it feels consistent with
+   the rest of the headlines instead of forcing a font that may not be
+   loaded. Goes in the bottom row of every footer family via the shared
+   shell/cas-attribution.ejs partial. */
+.cas-footer-attribution {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  text-decoration: none;
+  color: var(--color-foreground-muted);
+  border-radius: 9999px;
+  transition: color var(--cas-dur-fast) var(--cas-ease),
+              background-color var(--cas-dur-fast) var(--cas-ease);
+}
+.cas-footer-attribution:hover {
+  color: var(--color-primary);
+  background-color: color-mix(in oklab, var(--color-primary) 6%, transparent);
+}
+.cas-footer-attribution-text {
+  font-family: var(--font-display, Georgia), serif;
+  font-style: italic;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: inherit;
+}
+.cas-footer-attribution-mark {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+.cas-footer-attribution-name {
+  font-family: var(--font-display, Georgia), serif;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: inherit;
+}
+.cas-footer-attribution-name em {
+  font-family: var(--font-display, Georgia), serif;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Form validation: client-side HTML5 feedback.
+   :user-invalid fires only AFTER the user has interacted (not on page
+   load), so empty required fields don't start red. Fallback to :invalid
+   on older Safari. */
+.cas-form input:user-invalid,
+.cas-form select:user-invalid,
+.cas-form textarea:user-invalid {
+  border-color: var(--color-error) !important;
+  box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.1);
+}
+.cas-form input:focus,
+.cas-form select:focus,
+.cas-form textarea:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+  border-color: var(--color-primary) !important;
+}
+.cas-form input:user-invalid:focus,
+.cas-form select:user-invalid:focus,
+.cas-form textarea:user-invalid:focus {
+  outline-color: var(--color-error);
+  border-color: var(--color-error) !important;
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+   Auth surfaces (letterpress + split-panel + centered-card shells).
+   ─ letterpress (DEFAULT): single-column, hairline-rule eyebrow, display
+     font H1, sans-serif inputs with hairline borders + focus ring,
+     charcoal pill submit button, sage hairline accent above the foot.
+     Used by /login, /set-password, /request-magic-link, /magic-link-sent.
+   ─ split-panel (legacy): deep palette-primary aside + cream form.
+     Retained for callers that opt into the two-column layout. Hexagon
+     pattern is suppressed when noDecoration: true is passed.
+   ─ centered-card (legacy): paper card with sage icon header.
+     Retained for callers that opt into the icon-card layout.
+   All inherit the family palette via CSS vars; no per-archetype
+   overrides needed.
+   ═════════════════════════════════════════════════════════════════════ */
+
+.cas-auth-letterpress {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  padding: clamp(3rem, 7vw, 6rem) 1.25rem clamp(4rem, 9vw, 7rem);
+  background: var(--color-surface);
+}
+
+.cas-auth-letterpress__inner {
+  width: 100%;
+  max-width: 26rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.cas-auth-letterpress__brand {
+  font-family: var(--font-display, Georgia), serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-foreground);
+  text-decoration: none;
+  margin: 0 0 2.25rem;
+}
+
+.cas-auth-letterpress__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-foreground-muted);
+  margin: 0 0 1.5rem;
+}
+.cas-auth-letterpress__eyebrow::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.cas-auth-letterpress__heading {
+  font-family: var(--font-display, Georgia), serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-size: clamp(2.25rem, 4vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--color-foreground);
+  margin: 0 0 0.6rem;
+  text-wrap: balance;
+}
+
+.cas-auth-letterpress__subheading {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--color-foreground-muted);
+  margin: 0 0 2rem;
+}
+
+.cas-auth-letterpress__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cas-auth-letterpress__lead {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--color-foreground-muted);
+  margin: 0;
+}
+
+.cas-auth-letterpress__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cas-auth-letterpress__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cas-auth-letterpress__label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-foreground-muted);
+}
+
+.cas-auth-letterpress__hint {
+  font-size: 0.78rem;
+  color: var(--color-foreground-muted);
+  margin-top: -0.125rem;
+}
+
+.cas-auth-letterpress__input {
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-foreground);
+  background-color: var(--color-background);
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  min-height: 44px;
+  outline: none;
+  transition: border-color 200ms var(--cas-ease, ease), box-shadow 200ms var(--cas-ease, ease);
+}
+.cas-auth-letterpress__input::placeholder {
+  color: var(--color-foreground-muted);
+  opacity: 0.6;
+}
+.cas-auth-letterpress__input:focus {
+  border-color: var(--color-foreground);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-foreground) 12%, transparent);
+}
+
+.cas-auth-letterpress__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  padding: 0.95rem 1.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-primary);
+  min-height: 44px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--color-foreground) 8%, transparent);
+}
+.cas-auth-letterpress__submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -14px color-mix(in oklab, var(--color-foreground) 60%, transparent);
+}
+.cas-auth-letterpress__submit:active { transform: translateY(0) scale(0.99); }
+@media (prefers-reduced-motion: reduce) {
+  .cas-auth-letterpress__submit { transition: none; }
+}
+
+.cas-auth-letterpress__notice {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  padding: 0.5rem 0.875rem;
+  margin: 0;
+  border-radius: 0 4px 4px 0;
+}
+.cas-auth-letterpress__notice--error {
+  color: var(--color-error, #991b1b);
+  border-left: 2px solid var(--color-error, #991b1b);
+  background-color: color-mix(in oklab, var(--color-error, #991b1b) 6%, transparent);
+}
+
+.cas-auth-letterpress__foot {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+  position: relative;
+}
+.cas-auth-letterpress__foot::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 2.25rem;
+  height: 1px;
+  background-color: var(--color-accent);
+}
+.cas-auth-letterpress__foot-line {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-foreground-muted);
+}
+.cas-auth-letterpress__foot a {
+  color: var(--color-foreground-muted);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+  transition: color 200ms var(--cas-ease, ease), border-color 200ms var(--cas-ease, ease);
+}
+.cas-auth-letterpress__foot a:hover,
+.cas-auth-letterpress__foot a:focus-visible {
+  color: var(--color-foreground);
+  border-bottom-color: var(--color-foreground);
+}
+
+.cas-auth-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100dvh;
+  background: var(--color-surface);
+}
+@media (min-width: 768px) {
+  .cas-auth-split { grid-template-columns: 1fr 1fr; }
+}
+
+.cas-auth-split__brand {
+  position: relative;
+  display: none;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  overflow: hidden;
+  isolation: isolate;
+}
+@media (min-width: 768px) {
+  .cas-auth-split__brand { display: flex; }
+}
+
+.cas-auth-split__brand-pattern {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.16;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='49' viewBox='0 0 56 49'><g fill='none' stroke='%23ffffff' stroke-width='1.25' stroke-linejoin='round'><polygon points='14,2 27,9.5 27,24.5 14,32 1,24.5 1,9.5'/><polygon points='42,2 55,9.5 55,24.5 42,32 29,24.5 29,9.5'/><polygon points='28,25 41,32.5 41,47.5 28,55 15,47.5 15,32.5'/></g></svg>");
+  background-repeat: repeat;
+  background-size: 56px 49px;
+}
+
+.cas-auth-split__brand-content {
+  position: relative;
+  z-index: 1;
+  margin: auto;
+  padding: 3rem 2.5rem;
+  max-width: 32rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  color: var(--color-on-primary);
+  text-decoration: none;
+}
+
+.cas-auth-split__brand-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 0.625rem;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  object-fit: contain;
+}
+
+.cas-auth-split__brand-mark {
+  font-family: var(--font-display, Georgia), serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.cas-auth-split__brand-tagline {
+  font-size: 1rem;
+  line-height: 1.55;
+  opacity: 0.85;
+  margin: 0;
+  max-width: 28rem;
+}
+
+.cas-auth-split__form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background: var(--color-surface);
+}
+
+.cas-auth-split__form-inner {
+  width: 100%;
+  max-width: 26rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cas-auth-split__form-heading {
+  font-family: var(--font-display, Georgia), serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--color-foreground);
+  margin: 0;
+}
+
+.cas-auth-split__form-subheading {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--color-foreground-muted);
+  margin: 0;
+}
+
+.cas-auth-split__form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.cas-auth-split__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.cas-auth-split__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.cas-auth-split__hint {
+  font-size: 0.8125rem;
+  color: var(--color-foreground-muted);
+  margin-top: 0.125rem;
+}
+
+.cas-auth-split__form-fields input {
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  outline: none;
+  transition: border-color 0.15s var(--cas-ease, ease), box-shadow 0.15s var(--cas-ease, ease);
+}
+.cas-auth-split__form-fields input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
+}
+
+.cas-auth-split__submit {
+  font: inherit;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  min-height: 44px;
+  margin-top: 0.25rem;
+  transition: opacity 0.15s var(--cas-ease, ease), transform 0.15s var(--cas-ease, ease);
+}
+.cas-auth-split__submit:hover { opacity: 0.92; }
+.cas-auth-split__submit:active { transform: translateY(1px); }
+
+.cas-auth-split__notice {
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.cas-auth-split__notice--error {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.cas-auth-split__footnote {
+  font-size: 0.875rem;
+  color: var(--color-foreground-muted);
+  text-align: center;
+  margin: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+.cas-auth-split__footnote a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.cas-auth-split__footnote a:hover { text-decoration: underline; }
+
+/* Centered-card shell: confirmation surfaces (magic-link-sent, etc). */
+.cas-auth-card-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 3rem 1.25rem;
+  background: var(--color-surface);
+  background-image:
+    radial-gradient(ellipse at top right, color-mix(in oklab, var(--color-primary) 6%, transparent), transparent 60%),
+    radial-gradient(ellipse at bottom left, color-mix(in oklab, var(--color-primary) 4%, transparent), transparent 60%);
+}
+
+.cas-auth-card-shell__inner {
+  width: 100%;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.cas-auth-card-shell__brand {
+  font-family: var(--font-display, Georgia), serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-foreground);
+  text-decoration: none;
+}
+
+.cas-auth-card {
+  width: 100%;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 2.25rem 2rem 1.75rem;
+  text-align: center;
+  box-shadow: var(--cas-shadow-diffuse, 0 20px 40px -15px rgba(0,0,0,0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.cas-auth-card__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: color-mix(in oklab, var(--color-accent-earth, var(--color-accent)) 18%, var(--color-surface));
+  color: color-mix(in oklab, var(--color-accent-earth, var(--color-accent)) 70%, var(--color-foreground));
+}
+
+.cas-auth-card__heading {
+  font-family: var(--font-display, Georgia), serif;
+  font-size: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--color-foreground);
+  margin: 0;
+}
+
+.cas-auth-card__subheading,
+.cas-auth-card__lead {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--color-foreground-muted);
+  margin: 0;
+}
+
+.cas-auth-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.cas-auth-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  text-align: left;
+  margin-top: 0.25rem;
+}
+
+.cas-auth-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.cas-auth-card__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.cas-auth-card__form input {
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  outline: none;
+  transition: border-color 0.15s var(--cas-ease, ease), box-shadow 0.15s var(--cas-ease, ease);
+}
+.cas-auth-card__form input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
+}
+
+.cas-auth-card__submit {
+  font: inherit;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  min-height: 44px;
+  margin-top: 0.25rem;
+  transition: opacity 0.15s var(--cas-ease, ease);
+}
+.cas-auth-card__submit:hover { opacity: 0.92; }
+
+.cas-auth-card__notice {
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: left;
+}
+.cas-auth-card__notice--error {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.cas-auth-card__footnote {
+  font-size: 0.875rem;
+  color: var(--color-foreground-muted);
+  margin: 0.5rem 0 0;
+}
+.cas-auth-card__footnote a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.cas-auth-card__footnote a:hover { text-decoration: underline; }
+
+/* Position / layering */
+.relative { position: relative; } .absolute { position: absolute; }
+.static { position: static; } .sticky { position: sticky; top: 0; }
+.top-0 { top: 0; } .top-2 { top: 0.5rem; } .left-0 { left: 0; } .left-2 { left: 0.5rem; }
+.right-0 { right: 0; } .right-2 { right: 0.5rem; } .bottom-0 { bottom: 0; }
+.z-50 { z-index: 50; } .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.06); }
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+
+/* Interactivity */
+.cursor-pointer { cursor: pointer; }
+.transition-all { transition: all 0.2s ease; }
+.transition-colors { transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; }
+.transition-opacity { transition: opacity 0.2s ease; }
+/* One title voice per band: when an eyebrow and its heading
+   say the same thing, widgets render ONE element - the caps line IS the
+   h1/h2. cas-title-caps pins eyebrow sizing against template-family /
+   readability h1-h2 scale rules (hence the !important). */
+.cas-title-caps { font-size: 0.75rem !important; line-height: 1.4 !important; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: var(--color-foreground-muted); }
+/* Long unbreakable strings (emails, URLs) never force horizontal
+   overflow. */
+.cas-wrap-anywhere { overflow-wrap: anywhere; }
+/* Fixed-count rows: a section with a KNOWN item count
+   uses grid columns that SHRINK to fit one row; flex-basis wrapping is
+   only for unknown-count collections. Blockquote UA margin (1em 40px)
+   is zeroed so quote cards fill their tracks. */
+@media (min-width: 768px) {
+  .cas-grid-fixed-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+  .cas-grid-fixed-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
+}
+.cas-grid-fixed-2 blockquote, .cas-grid-fixed-3 blockquote { margin: 0; }
+.transition-transform { transition: transform var(--cas-dur-fast, 200ms) var(--cas-ease, ease); }
+.hover\:-translate-y-1:hover { transform: translateY(-0.25rem); }
+.hover\:opacity-70:hover { opacity: 0.7; } .hover\:opacity-80:hover { opacity: 0.8; } .hover\:opacity-90:hover { opacity: 0.9; }
+.hover\:shadow-md:hover { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+.focus\:not-sr-only:focus { clip: auto; height: auto; width: auto; overflow: visible; margin: 0; white-space: normal; position: static; }
+/* Skip-link focus utilities. Used by the keyboard-skip-link pattern in
+   layout-public.ejs (visually hidden until :focus, then surfaces as a
+   pill near the viewport corner). All variants must apply together for
+   the skip-link to be discoverable; with any one missing it is not. */
+.focus\:absolute:focus { position: absolute; }
+.focus\:top-2:focus { top: 0.5rem; }
+.focus\:left-2:focus { left: 0.5rem; }
+.focus\:z-50:focus { z-index: 50; }
+.focus\:px-4:focus { padding-left: 1rem; padding-right: 1rem; }
+.focus\:py-2:focus { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.focus\:rounded-md:focus { border-radius: 0.5rem; }
+.focus\:shadow-md:focus { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.06); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.order-1 { order: 1; } .order-2 { order: 2; }
+.space-x-2 > * + * { margin-left: 0.5rem; }
+.opacity-0 { opacity: 0; } .opacity-75 { opacity: 0.75; } .opacity-90 { opacity: 0.9; }
+.whitespace-pre-wrap { white-space: pre-wrap; }
+
+/* Responsive: collapse min-width: 768px breakpoint utilities */
+@media (min-width: 768px) {
+  .md\:hidden { display: none; }
+  .md\:flex { display: flex; }
+  .md\:grid { display: grid; }
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .md\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0,1fr)); }
+  .md\:col-span-2 { grid-column: span 2 / span 2; }
+  .md\:col-span-3 { grid-column: span 3 / span 3; }
+  .md\:flex-row { flex-direction: row; }
+  .md\:px-7 { padding-left: 1.75rem; padding-right: 1.75rem; }
+  .md\:py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+  .md\:py-12 { padding-top: 3rem; padding-bottom: 3rem; }
+  .md\:py-14 { padding-top: 3.5rem; padding-bottom: 3.5rem; }
+  .md\:py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+  .md\:py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+  .md\:py-24 { padding-top: 6rem; padding-bottom: 6rem; }
+  .md\:py-28 { padding-top: 7rem; padding-bottom: 7rem; }
+  .md\:pt-10 { padding-top: 2.5rem; }
+  .md\:pt-20 { padding-top: 5rem; }
+  .md\:pb-20 { padding-bottom: 5rem; }
+  .md\:pb-24 { padding-bottom: 6rem; }
+  .md\:mt-16 { margin-top: 4rem; }
+  .md\:mt-24 { margin-top: 6rem; }
+  .md\:p-7 { padding: 1.75rem; }
+  .md\:p-8 { padding: 2rem; }
+  .md\:gap-3 { gap: 0.75rem; }
+  .md\:gap-4 { gap: 1rem; }
+  .md\:gap-5 { gap: 1.25rem; }
+  .md\:gap-6 { gap: 1.5rem; }
+  .md\:gap-8 { gap: 2rem; }
+  .md\:gap-12 { gap: 3rem; }
+  .md\:gap-16 { gap: 4rem; }
+  .md\:order-1 { order: 1; } .md\:order-2 { order: 2; }
+  .md\:text-sm { font-size: 0.875rem; }
+  .md\:text-base { font-size: 1rem; }
+  .md\:text-lg { font-size: 1.125rem; }
+  .md\:text-xl { font-size: 1.25rem; }
+  .md\:text-2xl { font-size: 1.5rem; }
+  .md\:text-3xl { font-size: 1.875rem; }
+  .md\:text-4xl { font-size: 2.25rem; }
+  .md\:text-5xl { font-size: 3rem; }
+  .md\:text-left { text-align: left; }
+  .md\:text-center { text-align: center; }
+}
+@media (min-width: 640px) {
+  .sm\:flex-row { flex-direction: row; }
+  .sm\:items-center { align-items: center; }
+  .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .sm\:px-10 { padding-left: 2.5rem; padding-right: 2.5rem; }
+  .sm\:gap-6 { gap: 1.5rem; }
+  .sm\:top-2 { top: 0.5rem; } .sm\:left-2 { left: 0.5rem; }
+  .sm\:text-xl { font-size: 1.25rem; }
+  .sm\:text-lg { font-size: 1.125rem; }
+}
+@media (min-width: 1024px) {
+  .lg\:text-5xl { font-size: 3rem; }
+  .lg\:text-6xl { font-size: 3.75rem; }
+  .lg\:hidden { display: none; }
+  .lg\:block { display: block; }
+  .lg\:flex { display: flex; }
+  .lg\:flex-1 { flex: 1; }
+  .lg\:grid { display: grid; }
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0,1fr)); }
+  .lg\:items-end { align-items: flex-end; }
+  .lg\:gap-5 { gap: 1.25rem; }
+  .lg\:gap-6 { gap: 1.5rem; }
+  .lg\:gap-8 { gap: 2rem; }
+  .lg\:w-48 { width: 12rem; }
+  .lg\:pb-2 { padding-bottom: 0.5rem; }
+}
+@media (min-width: 1280px) {
+  .xl\:gap-6 { gap: 1.5rem; }
+  .xl\:gap-8 { gap: 2rem; }
+  .xl\:text-7xl { font-size: 4.5rem; }
+}
