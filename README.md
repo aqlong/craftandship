@@ -3,19 +3,34 @@
 [![Tests](https://github.com/aqlong/craftandship/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/aqlong/craftandship/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Craft & Ship turned a conversation into a deployed website. A visitor talked to an AI companion, a model extracted a structured spec from the conversation, code with no model in it composed a complete Express, EJS and Postgres site from that spec, a worker deployed it to its own Railway project, and a review step decided whether it could be marked live.
+Craft & Ship turned a conversation into a deployed website for healers, therapists and event producers. A visitor talked to an AI companion, a model extracted a structured spec from the conversation, code with no model in it composed a complete Express, EJS and Postgres site from that spec, a worker deployed it to its own Railway project, and a review step decided whether it could be marked live. It ran in production from March to July 2026. Real customers used it and gave feedback; none had become a paying subscriber when I wound it down.
 
-**Status: archived codebase.** The system ran in production from March to July 2026 and was then wound down. Nothing is deployed from this repository and it is not maintained. It is published so the engineering can be read, run locally, and judged, limits included.
-
-Three things to know first:
-
-- **One developer directed an AI coding agent, which wrote most of the code.** [Who did what](#who-did-what) says what this repository can and cannot show about that.
-- **This is not a snapshot of production.** A pre-release review changed the code, in places substantially. [What ran in production, and what the review changed](docs/WHAT_RAN_AND_WHAT_CHANGED.md) keeps the two apart.
-- **The history is one commit.** The working history is private because it contains customer data.
+I built it as the director of an AI coding agent, which wrote the code. I chose what to build and for whom, decided how much to automate, and made the agent prove its work. [How I built this](#how-i-built-this) says what that covered and what it did not.
 
 ![Home page of the web app running locally](docs/images/home.png)
 
 ![The home page of a site the build engine generated from the sample spec compose/fixtures/sample-healer-spec.json: invented sample copy, generated placeholder photos](docs/images/generated-site.png)
+
+**Read this with:**
+
+- **Archived.** Nothing is deployed from this repository and it is not maintained. It is published so the engineering can be read, run locally and judged, limits included.
+- **Not a snapshot of production.** A six-round adversarial review I ran after the wind-down changed the code, in places substantially. [What ran in production, and what the review changed](docs/WHAT_RAN_AND_WHAT_CHANGED.md) keeps the two apart.
+- **One commit of history.** The working history is private because it contains customer data.
+
+## How I built this
+
+I have 26 years of software engineering behind me, most recently shipping production AI into enterprise software. On Craft & Ship I chose not to write the code by hand. An AI coding agent (Claude Code) wrote it, and my work was the judgment around it:
+
+- **What to build, and for whom.** I chose the audience and kept simplifying toward it. In April 2026 the product became one companion, one subscription and one price, sliding from $39 to $19 a month.
+- **When to take the model out.** When model-written apps kept coming back with the same classes of bug, I removed the model from the build path entirely (the v2 engine, decided 20 April 2026).
+- **How much to automate.** I decided when the agent's work had earned more autonomy: self-review, self-healing, and in June 2026 an automated review mode. The limits came after a background agent with write access deleted production in April 2026.
+- **Proof, not claims.** I had the agent review, test and audit its own work throughout (code, security, accessibility, UX), and before publishing I ran six adversarial review rounds with fresh-context reviewers.
+- **Taste.** I reviewed outcomes in the browser rather than diffs: how it looked, how simple it was for its users, how the flow felt. When the interface looked AI-made, I redesigned the graphics and UI with Claude Design for the spa and wellness community, and had real customers give feedback on it.
+- **The rules.** I had the agent analyze how I worked with it and what the code needed, then write and maintain its own working agreement, [CLAUDE.md](CLAUDE.md).
+
+[docs/DECISIONS.md](docs/DECISIONS.md) records these calls and what each one cost.
+
+What I did not do: review every diff, or write the planning documents (the agent drafted most of them). The private history that would show each change being proposed and accepted is not published. "Senior Web Craftsman", on the product's own pages, was the studio's brand title for me, not an engineering role.
 
 ## What is in here
 
@@ -33,7 +48,7 @@ Three things to know first:
 
 ## Start with these files
 
-Most of the best code here was written by AI agents during the pre-release review, after the system stopped serving customers. Each item says which it is.
+Much of the hardening came from the adversarial review I ran after the wind-down, so each item says whether it ran in production or came from that review.
 
 1. [compose/build.py](compose/build.py), at [`_spec_safety_errors`](compose/build.py#L857) and [`_safe_output_path`](compose/build.py#L11902): a code generator that treats its input as hostile, and [compose/tests/test_spec_hardening.py](compose/tests/test_spec_hardening.py), which feeds it hostile specs and compiles what comes out. *Added in review; as it ran, the engine trusted its spec.*
 2. [queue/worker_pg.py](queue/worker_pg.py), at [`_claim_next_job`](queue/worker_pg.py#L615), [`_set_status`](queue/worker_pg.py#L1286) and [`_fail_build`](queue/worker_pg.py#L5728): Postgres as a job queue and a status machine made of guarded `UPDATE` statements. [tests/test_worker_pg_realdb.py](tests/test_worker_pg_realdb.py) runs that SQL on a real database. *The queue ran in production; the forward-only status machine, the attempt token and the real-database tests were added in review.*
@@ -199,15 +214,9 @@ Statement coverage of the web app under the unit suite is 88% (85% of branches),
 
 CI ([test.yml](.github/workflows/test.yml)) runs all of the above on Linux, plus a job that performs Option A on a clean runner and requests the home page, a job that builds the worker's Docker image and checks that its `pg_dump` can dump the database version the platform provisions, a gitleaks scan, and an advisory dependency audit. CI's first run on the release commit (`6144c8f`, 12 October 2026) passed all seven jobs ([the run](https://github.com/aqlong/craftandship/actions/runs/38287911118)). That includes the worker image: it was built and its `pg_dump` checked, though it was never run as a worker. [The review](docs/PRE_RELEASE_REVIEW.md) says what else was not run.
 
-## Who did what
+## How this release was made
 
-This project was built by one developer working with an AI coding agent (Claude Code) throughout.
-
-- **The agent wrote most of the code, under written rules.** [CLAUDE.md](CLAUDE.md) is the public edition of that working agreement. Claude Code loads it when the repository is opened in it; no slash commands ship, and no hooks run, because `.claude/` holds only the hook configuration as an example file (`settings.example.json`).
-- **The author was the product owner and the operator.** The planning documents are addressed to the author and the agent.
-- **This release was prepared by AI agents under the author's direction:** the removal of private data, the review rounds, the fixes and the documentation, this file included. [docs/PRE_RELEASE_REVIEW.md](docs/PRE_RELEASE_REVIEW.md) describes that process and what it did not verify.
-
-What the repository cannot show is how individual changes were proposed, reviewed and accepted. The private history is not published, most of the planning documents were drafted by the agent, and this file makes no claim about the author's review of any diff.
+AI agents prepared this release under my direction: the removal of private data, the review rounds, the fixes and the documentation, this file included. [docs/PRE_RELEASE_REVIEW.md](docs/PRE_RELEASE_REVIEW.md) describes that process and what it did not verify. [CLAUDE.md](CLAUDE.md) is the public edition of the agent's working agreement; Claude Code loads it when the repository is opened in it. No slash commands ship, and no hooks run, because `.claude/` holds only the hook configuration as an example file (`settings.example.json`).
 
 ## License
 

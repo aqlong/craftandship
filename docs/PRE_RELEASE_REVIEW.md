@@ -13,7 +13,7 @@ The system ran in production from March to July 2026 and was then wound down. Th
 
 ## Who did the work
 
-The scrub, the reviews, most of the fixes and the documentation were carried out by AI coding agents (Claude Code) at the author's direction. This document makes no claim about the author's review of any individual change; the root README, "Who did what", says what the repository can and cannot show about that. Each agent worked on one area under a shared written brief; the reviewers of the adversarial round (step 7 below) were the exception: each was given a role and a report format, and no account of the code or of the earlier findings. The rules that brief set matter for judging the results:
+The scrub, the reviews, most of the fixes and the documentation were carried out by AI coding agents (Claude Code) at the author's direction. This document makes no claim about the author's review of any individual change; the root README, "How I built this", says what the author did and did not do. Each agent worked on one area under a shared written brief; the reviewers of the adversarial round (step 7 below) were the exception: each was given a role and a report format, and no account of the code or of the earlier findings. The rules that brief set matter for judging the results:
 
 - Read the code in scope properly, most important files first. Record each finding with a severity, a location, what is wrong and a concrete failure scenario.
 - Fix Critical, High and Medium findings in place and add or extend a test that fails before the fix and passes after it. When a correct fix was too large or too risky, do not paper over it: report it with a recommended fix so it can be documented as a known limitation.
