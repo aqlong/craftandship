@@ -1,0 +1,23 @@
+# ruff: the Python lint gate. CI runs `ruff check .` in the python job of
+# .github/workflows/test.yml.
+#
+# What it enforces: pyflakes' correctness rules (undefined names, names used
+# before assignment, duplicate dictionary keys, `is` against a literal,
+# misplaced `return` and `yield`, broken `__all__` and format strings) and
+# syntax errors (E9), for the Python the worker image runs (3.10).
+#
+# What it does not enforce: the five pyflakes rules below, which flag
+# leftovers rather than bugs and had 436 hits in the code as published
+# (mostly in the legacy v1 engine and its tests), and none of the style rules
+# in CLAUDE.md (function length, error handling). Nothing checks Python types.
+target-version = "py310"
+
+[lint]
+select = ["E9", "F"]
+ignore = [
+    "F401",  # unused import
+    "F402",  # import shadowed by a loop variable
+    "F541",  # f-string without placeholders
+    "F811",  # redefinition of an unused name (mostly pytest fixture parameters)
+    "F841",  # local variable assigned but never used
+]

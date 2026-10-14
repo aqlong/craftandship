@@ -95,6 +95,10 @@ jobs:
         # resolves identically to a worker rebuild.
         run: pip install -r requirements.worker.txt -r requirements-dev.txt
 
+      - name: Lint (ruff)
+        # Correctness rules only; ruff.toml says what is and is not enforced.
+        run: ruff check .
+
       # The v2 engine's widget and view tests render EJS with Node, using the
       # ejs package from web/node_modules. Without this install they skip.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7

@@ -14,6 +14,10 @@ soupsieve>=2.5,<3
 # The executor's test gate needs 8.4 or newer; the published results were
 # measured with 9.1.
 pytest>=8.4,<10
+# The lint gate (ruff.toml; CI's python job runs `ruff check .`). Bounded to
+# the minor it was introduced with, because new ruff releases add checks to
+# existing rule codes.
+ruff>=0.17,<0.18
 # Imported by tests that read the CI workflows as YAML. bandit pulls it in
 # too, but the tests should not depend on that.
 PyYAML>=6,<7
