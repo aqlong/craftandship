@@ -1242,4 +1242,18 @@ describe('sendPaymentNotAppliedEmail (the operator is told a paid session was no
     expect(sent.html).not.toContain('x'.repeat(101));
     expect(sent.html).not.toContain('<b>');
   });
+
+  it('leaves the amount out when the session carried none it could read, instead of printing $0.00', async () => {
+    process.env.ADMIN_EMAIL = 'operator@example.test';
+    process.env.RESEND_API_KEY = 'live-key-xyz';
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'resend-3' }) });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await sendPaymentNotAppliedEmail({ ...alert, monthlyAmountCents: 0 });
+
+    const sent = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sent.html).not.toContain('Monthly amount');
+    expect(sent.html).not.toContain('$0.00');
+    expect(sent.html).toContain('sub_alert_1');
+  });
 });

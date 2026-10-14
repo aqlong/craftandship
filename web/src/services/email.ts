@@ -534,7 +534,8 @@ export async function sendPaymentNotAppliedEmail(opts: {
     console.warn('[email/payment] ADMIN_EMAIL not set; cannot send the payment alert', JSON.stringify(opts));
     return;
   }
-  const dollars = (opts.monthlyAmountCents / 100).toFixed(2);
+  // 0 means the session carried no amount the webhook could read; the line is then left out.
+  const dollars = opts.monthlyAmountCents > 0 ? `$${(opts.monthlyAmountCents / 100).toFixed(2)}` : null;
   // The ids come from a signed Stripe event; none is longer than Stripe makes
   // one, but the subject is stored in a VARCHAR(500) column, so each is cut.
   const id = (value: string | null): string | null => (value === null ? null : value.slice(0, MAX_ALERT_ID_CHARS));
@@ -552,7 +553,7 @@ export async function sendPaymentNotAppliedEmail(opts: {
 <ul>
 ${line('Checkout session', sessionId)}
 ${line('Subscription', id(opts.stripeSubscriptionId))}
-${line('Monthly amount', `$${dollars}`)}
+${line('Monthly amount', dollars)}
 ${line('Build', id(opts.buildId))}
 ${line('Account (customer id)', id(opts.customerId))}
 ${line('Trial', id(opts.trialId))}
