@@ -1,6 +1,6 @@
 # Decisions
 
-These are the calls I made as the director of the AI coding agent that wrote Craft & Ship, roughly in order. Each says what the situation was, what I chose, and what it cost. The technical designs that carry them out (Postgres as the queue, the review condition inside the publishing `UPDATE`, the coordinator's permission table) were the agent's proposals, which I judged by their results rather than by reading the code; [ARCHITECTURE.md](../ARCHITECTURE.md) explains them.
+These are the calls I made as the director of the AI coding agent that wrote Craft & Ship, roughly in order. Each says what the situation was, what I chose, and what it cost. The technical designs that carry them out (Postgres as the queue, the review condition inside the publishing `UPDATE`, the coordinator's permission table) were the agent's proposals, which I reviewed in code early on and later judged by their results; [ARCHITECTURE.md](../ARCHITECTURE.md) explains them.
 
 ## 1. Agents lose write access to production (9 April 2026)
 
@@ -35,5 +35,5 @@ These are the calls I made as the director of the AI coding agent that wrote Cra
 ## 6. Automated review (June 2026)
 
 - **Context.** The product promised a human review of every site before it went live.
-- **Decision.** I added an automated review mode to get more done: by then I had learned to trust the agent's work. With `CAS_HARBOR_AUTO_REVIEW=true` a finished build waits as `ai_review_queued` for an automated review loop that ran outside this repository ([queue/worker_pg.py](../queue/worker_pg.py), `_initial_review_status`). The worker still never marks a build live.
+- **Decision.** I added an automated review mode to get more done. The trust behind it was earned: early on I reviewed much of the agent's code myself, and found it accurate as long as I had it review and revise its own work several times. With `CAS_HARBOR_AUTO_REVIEW=true` a finished build waits as `ai_review_queued` for an automated review loop that ran outside this repository ([queue/worker_pg.py](../queue/worker_pg.py), `_initial_review_status`). The worker still never marks a build live.
 - **Cost.** It departed from the promise the product made, and the repository does not record which sites took which path. The customer copy in this release was rewritten to claim only what the code enforces: a recorded review verdict before a site is marked live.

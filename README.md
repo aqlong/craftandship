@@ -19,13 +19,13 @@ I built it as the director of an AI coding agent, which wrote the code. I chose 
 
 ## How I built this
 
-I have 26 years of software engineering behind me, most recently shipping production AI into enterprise software. On Craft & Ship I chose not to write the code by hand. An AI coding agent (Claude Code) wrote it, and my work was the judgment around it:
+I'm Ocean Longnion ([LinkedIn](https://www.linkedin.com/in/aaronlongnion)). I have 26 years of software engineering behind me, most recently shipping production AI into enterprise software. On Craft & Ship I chose not to write the code by hand. An AI coding agent (Claude Code) wrote it, and my work was the judgment around it:
 
 - **What to build, and for whom.** I chose the audience and kept simplifying toward it. In April 2026 the product became one companion, one subscription and one price, sliding from $39 to $19 a month.
 - **When to take the model out.** When model-written apps kept coming back with the same classes of bug, I removed the model from the build path entirely (the v2 engine, decided 20 April 2026).
-- **How much to automate.** I decided when the agent's work had earned more autonomy: self-review, self-healing, and in June 2026 an automated review mode. The limits came after a background agent with write access deleted production in April 2026.
+- **How much to automate.** Early on I reviewed much of the agent's code myself, and found it accurate and trustworthy as long as I had it review and revise its own work several times. That became the rule, and autonomy grew as it was earned: self-healing, and in June 2026 an automated review mode. The limits came after a background agent with write access deleted production in April 2026.
 - **Proof, not claims.** I had the agent review, test and audit its own work throughout (code, security, accessibility, UX), and before publishing I ran six adversarial review rounds with fresh-context reviewers.
-- **Taste.** I reviewed outcomes in the browser rather than diffs: how it looked, how simple it was for its users, how the flow felt. When the interface looked AI-made, I redesigned the graphics and UI with Claude Design for the spa and wellness community, and had real customers give feedback on it.
+- **Taste.** Once the agent's code had earned that trust, I reviewed outcomes in the browser more than diffs: how it looked, how simple it was for its users, how the flow felt. When the interface looked AI-made, I redesigned the graphics and UI with Claude Design for the spa and wellness community, and had real customers give feedback on it.
 - **The rules.** I had the agent analyze how I worked with it and what the code needed, then write and maintain its own working agreement, [CLAUDE.md](CLAUDE.md).
 
 [docs/DECISIONS.md](docs/DECISIONS.md) records these calls and what each one cost.
