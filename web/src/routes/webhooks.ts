@@ -306,19 +306,7 @@ async function handleHarborMakePublic(
   const monthlyAmountCents = parseInt(meta.monthly_amount_cents || '0', 10);
   const slidingScaleAttestation = meta.sliding_scale_attestation === 'true';
   const sessionId = typeof session.id === 'string' ? session.id : '';
-
-  if (!buildId || !UUID_RE.test(buildId)) {
-    console.error('[webhook/harbor] harbor_make_public missing or malformed build_id metadata');
-    return [];
-  }
-  if (!sessionId) {
-    console.error('[webhook/harbor] harbor_make_public session has no id');
-    return [];
-  }
-  if (!Number.isInteger(monthlyAmountCents) || monthlyAmountCents <= 0) {
-    console.error(`[webhook/harbor] harbor_make_public invalid monthly_amount_cents: ${meta.monthly_amount_cents}`);
-    return [];
-  }
+  const amountIsValid = Number.isInteger(monthlyAmountCents) && monthlyAmountCents > 0;
 
   // checkout.session.completed also fires for sessions that completed without
   // the money having arrived (delayed payment methods report "unpaid"). The
@@ -327,18 +315,49 @@ async function handleHarborMakePublic(
   // been paid for. A session with no payment_status at all is let through
   // (Stripe always sends one; only hand-built payloads lack it).
   const paymentStatus = session.payment_status;
-  if (typeof paymentStatus === 'string' && paymentStatus !== 'paid') {
+  const unpaid = typeof paymentStatus === 'string' && paymentStatus !== 'paid';
+  const stripeCustomerId = typeof session.customer === 'string' ? session.customer : '';
+  const stripeSubscriptionId = typeof session.subscription === 'string' ? session.subscription : '';
+
+  // A session this handler cannot act on is acknowledged either way (Stripe
+  // would only redeliver the same payload). An unpaid one took no money and
+  // is only logged; for a paid one the operator alert is the only record
+  // that money arrived.
+  const refuse = (reason: string): AfterCommit[] => {
+    if (unpaid) {
+      console.error(`[webhook/harbor] harbor_make_public session ${reason}`);
+      return [];
+    }
+    return reportUnappliedPayment({
+      reason: `the session ${reason}`,
+      sessionId: sessionId || '(none)',
+      stripeSubscriptionId,
+      buildId: typeof buildId === 'string' ? buildId : '',
+      customerId: null,
+      trialId,
+      monthlyAmountCents: amountIsValid ? monthlyAmountCents : 0,
+    });
+  };
+
+  if (!buildId || !UUID_RE.test(buildId)) {
+    return refuse('has no build_id metadata, or one that is not a UUID');
+  }
+  if (!sessionId) {
+    return refuse('has no id');
+  }
+  if (!amountIsValid) {
+    return refuse(
+      `has monthly_amount_cents metadata ${JSON.stringify(meta.monthly_amount_cents ?? null)}, which is not a positive whole number of cents`
+    );
+  }
+  if (unpaid) {
     console.error(
       `[webhook/harbor] harbor_make_public session ${sessionId} has payment_status=${paymentStatus}; build ${buildId} left as it is`
     );
     return [];
   }
-
-  const stripeCustomerId = typeof session.customer === 'string' ? session.customer : '';
-  const stripeSubscriptionId = typeof session.subscription === 'string' ? session.subscription : '';
   if (!stripeCustomerId.startsWith('cus_') || !stripeSubscriptionId.startsWith('sub_')) {
-    console.error('[webhook/harbor] harbor_make_public missing customer or subscription id on session');
-    return [];
+    return refuse('is missing its Stripe customer or subscription id, or has one of the wrong shape');
   }
   const sessionEmail = (
     (session.customer_email as string) ||

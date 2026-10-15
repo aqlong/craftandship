@@ -1000,6 +1000,62 @@ describe('POST /webhooks/stripe: harbor_make_public takes a reviewed preview liv
     const res = await deliver(stripeEvent('checkout.session.completed', harborSession({ subscription: 'not-a-subscription' })));
     expect(res.status).toBe(200);
     expect(db.find(LOCK_BUILD)).toBeUndefined();
+    // The session is paid, so the operator is told: the claim is committed and Stripe will not redeliver.
+    await vi.waitFor(() => expect(mockSendPaymentNotAppliedEmail).toHaveBeenCalledOnce());
+    expect(mockSendPaymentNotAppliedEmail.mock.calls[0][0]).toMatchObject({
+      sessionId: SESSION_ID,
+      buildId: BUILD_ID,
+      customerId: null,
+      reason: expect.stringMatching(/customer or subscription id/),
+    });
+  });
+
+  describe('a paid session whose metadata cannot be acted on is acknowledged and reported, never dropped silently', () => {
+    const cases: Array<[string, Record<string, unknown>, Record<string, unknown>, RegExp]> = [
+      ['a build_id that is not a UUID', {}, { build_id: 'not-a-uuid' }, /build_id/],
+      ['no build_id at all', {}, { build_id: undefined }, /build_id/],
+      ['a monthly amount that is not a positive whole number of cents', {}, { monthly_amount_cents: 'abc' }, /monthly_amount_cents/],
+      ['a session with no id', { id: undefined }, {}, /no id/],
+    ];
+
+    it.each(cases)('%s: no build is read or written, and the operator is told', async (_label, sessionOverrides, metadata, reason) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      arrangeHappyPath();
+      const res = await deliver(stripeEvent('checkout.session.completed', harborSession(sessionOverrides, metadata)));
+
+      expect(res.status).toBe(200);
+      expect(db.find(LOCK_BUILD)).toBeUndefined();
+      expect(db.all(/^\s*(INSERT|UPDATE)/).filter((statement) => !CLAIM.test(statement.sql))).toHaveLength(0);
+      await vi.waitFor(() => expect(mockSendPaymentNotAppliedEmail).toHaveBeenCalledOnce());
+      expect(mockSendPaymentNotAppliedEmail.mock.calls[0][0]).toMatchObject({
+        customerId: null,
+        stripeSubscriptionId: STRIPE_SUB,
+        reason: expect.stringMatching(reason),
+      });
+    });
+
+    it('an amount that cannot be read is not reported as an amount', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      arrangeHappyPath();
+      await deliver(stripeEvent('checkout.session.completed', harborSession({}, { monthly_amount_cents: '-5' })));
+      await vi.waitFor(() => expect(mockSendPaymentNotAppliedEmail).toHaveBeenCalledOnce());
+      expect(mockSendPaymentNotAppliedEmail.mock.calls[0][0].monthlyAmountCents).toBe(0);
+    });
+
+    it('an unpaid session with the same bad metadata took no money: logged, acknowledged, no alert', async () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      arrangeHappyPath();
+      const res = await deliver(
+        stripeEvent('checkout.session.completed', harborSession({ payment_status: 'unpaid' }, { build_id: 'not-a-uuid' }))
+      );
+
+      expect(res.status).toBe(200);
+      expect(db.find(LOCK_BUILD)).toBeUndefined();
+      expect(errSpy.mock.calls.some(([line]) => /build_id/.test(String(line)))).toBe(true);
+      // Give any after-commit step the chance to run before asserting it did not.
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(mockSendPaymentNotAppliedEmail).not.toHaveBeenCalled();
+    });
   });
 
   it('a paid session for a build that does not exist is logged and acknowledged', async () => {

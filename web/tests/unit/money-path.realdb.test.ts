@@ -1337,6 +1337,30 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
       expect((await q('SELECT 1 FROM harbor_subscriptions WHERE stripe_subscription_id = $1', [`sub_${run}_unpaid`])).length).toBe(0);
     });
 
+    it('a paid session whose metadata cannot be acted on is claimed for good, changes nothing, and is mailed to the operator; an unpaid one is not', async () => {
+      const alertsFor = (tag: string) =>
+        q(`SELECT 1 FROM email_log WHERE template = 'harbor_payment_not_applied' AND metadata->>'stripe_session_id' = $1`, [`cs_${run}_${tag}`]);
+      const t = await trialWithPreview('badmeta');
+      const paid = stripeEvent(
+        'checkout.session.completed',
+        checkoutSession({ buildId: t.buildId, trialId: t.trialId, email: t.payer.email, tag: 'badmeta', amount: 'abc' })
+      );
+      expect((await deliver(paid)).status).toBe(200);
+      // Claimed and committed: Stripe will not redeliver it, so the alert is the only record of the money.
+      expect(await claimed(paid.id)).toBe(1);
+      expect((await buildRow(t.buildId)).status).toBe('preview');
+      expect((await q('SELECT 1 FROM harbor_subscriptions WHERE stripe_subscription_id = $1', [`sub_${run}_badmeta`])).length).toBe(0);
+      await vi.waitFor(async () => expect((await alertsFor('badmeta')).length).toBe(1));
+
+      const unpaid = stripeEvent(
+        'checkout.session.completed',
+        checkoutSession({ buildId: t.buildId, trialId: t.trialId, email: t.payer.email, tag: 'badmeta-unpaid', amount: 'abc', paymentStatus: 'unpaid' })
+      );
+      expect((await deliver(unpaid)).status).toBe(200);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect((await alertsFor('badmeta-unpaid')).length).toBe(0);
+    });
+
     it('an event with a bad signature is refused before anything is read', async () => {
       const t = await trialWithPreview('badsig');
       const event = stripeEvent('checkout.session.completed', checkoutSession({ buildId: t.buildId, trialId: t.trialId, email: t.payer.email, tag: 'badsig' }));
