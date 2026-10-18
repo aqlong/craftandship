@@ -20,7 +20,7 @@ and for every emitted `.css` file and every `<style>` block of every
 emitted view it requires: balanced braces, no `{{` and no `}}` anywhere (the
 emitted CSS closes nested blocks as `} }`, so two adjacent braces are always
 a mistake), and, when web/node_modules has postcss (it does after
-`cd web && npm ci`; Tailwind brings it), a real parse in which every rule
+`cd web && npm ci`; it is a dev dependency there), a real parse in which every rule
 has a selector and every declaration a property.
 
 JavaScript gets the same treatment: every emitted `.js` file passes
