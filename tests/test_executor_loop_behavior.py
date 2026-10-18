@@ -1298,8 +1298,10 @@ def test_what_the_gate_loads_before_the_first_test_is_protected(guard_check):
     blocks = re.findall(r"(?:setupFiles|globalSetup)\s*:\s*(\[[^\]]*\]|'[^']*'|\"[^\"]*\")", config)
     setup = sorted({"web/" + f.lstrip("./") for b in blocks for f in re.findall(r"['\"]([^'\"]+)['\"]", b)})
     assert setup, "web/vitest.config.ts names no setup file, so this test would check nothing"
+    # No PostCSS configuration is listed: the repository has none since the move
+    # to Tailwind 4, and the guard still refuses a branch that adds one.
     web_side = [*setup, "web/package.json", "web/package-lock.json", "web/vitest.config.ts",
-                "web/postcss.config.js", "web/tailwind.config.js"]
+                "web/tailwind.config.js"]
     # pytest imports every conftest.py on the way to tests/, and the tests
     # package itself, before it collects a test.
     conftests = sorted(str(p.relative_to(REPO_ROOT)) for p in (REPO_ROOT / "tests").rglob("conftest.py"))
@@ -1317,14 +1319,16 @@ def test_what_the_gate_loads_before_the_first_test_is_protected(guard_check):
 def test_the_tailwind_configuration_is_code_the_gate_runs_so_it_is_protected(guard_check, tmp_path):
     # tests/test_web_committed_css.py, which the gate's pytest run collects,
     # runs the tailwindcss binary in web/, and the binary evaluates
-    # web/tailwind.config.js. `npm run build` does the same at deploy. A branch
-    # that edited it would run its own JavaScript inside the gate.
+    # web/tailwind.config.js, which web/src/styles/input.css names with @config.
+    # `npm run build` does the same at deploy. A branch that edited it would run
+    # its own JavaScript inside the gate.
+    assert '@config "../../tailwind.config.js";' in (REPO_ROOT / "web" / "src" / "styles" / "input.css").read_text()
     tailwind = REPO_ROOT / "web" / "node_modules" / ".bin" / "tailwindcss"
     if not tailwind.exists() or not shutil.which("node"):
         pytest.skip("needs `cd web && npm ci` and node")
     (tmp_path / "tailwind.config.js").write_text(
         "require('fs').writeFileSync(process.env.MARKER, 'ran');\nmodule.exports = { content: [] };\n")
-    (tmp_path / "input.css").write_text("@tailwind base;\n")
+    (tmp_path / "input.css").write_text('@config "./tailwind.config.js";\n@tailwind utilities;\n')
     result = subprocess.run([str(tailwind), "-i", "input.css", "-o", "out.css"], cwd=tmp_path,
                             env={**os.environ, "MARKER": str(tmp_path / "marker")},
                             capture_output=True, text=True, timeout=120)
