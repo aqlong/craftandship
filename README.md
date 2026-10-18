@@ -113,7 +113,7 @@ npm start                            # http://localhost:4000, runs in the foregr
 
 In Option B, replace the whole `DATABASE_URL` line in `web/.env` with `DATABASE_URL=postgresql://localhost:5432/craftandship_web`. The template's `cas:cas` user exists only in the Docker database of Option A, so it fails on a plain Homebrew install. Without a user in the URL, the Node driver takes the role from the `USER` environment variable, which is the superuser a Homebrew install creates for you. Option A needs no edit.
 
-The schema is applied at boot. `npm ci` reports advisories in development-only packages; `npm audit --omit=dev` reports none. The server warns that `SESSION_SECRET` is still the placeholder and uses a random secret for that process, so logins end when it restarts. To use another port, set `PORT` in `web/.env`.
+The schema is applied at boot. On 18 October 2026 `npm audit` reported no advisories, development packages included. The server warns that `SESSION_SECRET` is still the placeholder and uses a random secret for that process, so logins end when it restarts. To use another port, set `PORT` in `web/.env`.
 
 What to try, from a second terminal or a browser:
 

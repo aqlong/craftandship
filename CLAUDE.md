@@ -47,7 +47,7 @@ Two build engines exist side by side:
 
 ## Tech Stack: `web/`
 
-Node (CI runs 24; no other version is tested), TypeScript strict, Express with `express-ejs-layouts`, EJS views. PostgreSQL via `pg.Pool` (raw parameterized SQL, no ORM). Auth: `express-session` + bcrypt + `connect-pg-simple`, with an HMAC CSRF token behind a global cross-origin write guard (see Key design decisions). Email: Resend REST over Node fetch (no SDK). Payments: Stripe Checkout. AI: Anthropic Claude API. CSS: Tailwind v3 built through PostCSS. Tests: Vitest (unit) and Playwright (UI).
+Node (CI runs 24; no other version is tested), TypeScript strict, Express with `express-ejs-layouts`, EJS views. PostgreSQL via `pg.Pool` (raw parameterized SQL, no ORM). Auth: `express-session` + bcrypt + `connect-pg-simple`, with an HMAC CSRF token behind a global cross-origin write guard (see Key design decisions). Email: Resend REST over Node fetch (no SDK). Payments: Stripe Checkout. AI: Anthropic Claude API. CSS: Tailwind 4, built by its CLI (`@tailwindcss/cli`) without cascade layers so the views' own `<style>` blocks keep Tailwind 3's cascade (the top of `web/src/styles/input.css` says why). Tests: Vitest (unit) and Playwright (UI).
 
 `app.ts` exports the Express app without binding a port (used by supertest). `server.ts` runs the migrations, binds the port (a port already in use is one log line and exit 1, `web/src/utils/listen.ts`) and only then starts the background jobs. `instrument.ts` initializes Sentry and must be the first import in `server.ts`.
 
@@ -74,7 +74,7 @@ docker compose up -d --wait                  # Postgres from docker-compose.yml,
                                              # (or: createdb craftandship_web against your own Postgres)
 cp web/.env.example web/.env                 # the DATABASE_URL in it matches the compose database
 cd web && npm ci
-npm run dev                                  # nodemon + ts-node on port 4000
+npm run dev                                  # node --watch + ts-node on port 4000
 # or: npm run build && npm start             # compiled server (runs css:build and tsc)
 ```
 
