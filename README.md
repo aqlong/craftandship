@@ -15,7 +15,7 @@ I built it as the director of an AI coding agent, which wrote the code. I chose 
 
 - **Archived.** Nothing is deployed from this repository and it is not maintained. It is published so the engineering can be read, run locally and judged, limits included.
 - **Not a snapshot of production.** A six-round adversarial review I ran after the wind-down changed the code, in places substantially. [What ran in production, and what the review changed](docs/WHAT_RAN_AND_WHAT_CHANGED.md) keeps the two apart.
-- **One commit of history.** The working history is private because it contains customer data.
+- **A short public history.** The working history is private because it contains customer data. The first commit is the clean export; the commits after it are a portfolio pass the agent made at my direction and merged through [pull requests](https://github.com/aqlong/craftandship/pulls?q=is%3Apr+is%3Amerged).
 
 ## How I built this
 
