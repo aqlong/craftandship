@@ -242,19 +242,18 @@ describe('the payer, back from Stripe with only the trial cookie', () => {
     expect(res.text).toMatch(/href="\/forgot-password">choose a password<\/a>/);
   });
 
-  it('can cancel: the keeper\'s subscription, and no one else\'s, is cancelled at period end', async () => {
+  it('cannot cancel with the cookie alone: a page says to log in (or choose a password first), and Stripe is not asked', async () => {
     const res = await request(app)
       .post(`/lighthouse/lamp/${PAID_BUILD}/cancel-subscription`)
       .set('Cookie', as(PAYER_TOKEN))
       .type('form')
       .send({ _csrf: csrf });
 
-    expect(res.status).toBe(303);
-    expect(res.headers.location).toBe(`/lighthouse/lamp/${PAID_BUILD}`);
-    expect(mockCancel).toHaveBeenCalledOnce();
-    expect(mockCancel).toHaveBeenCalledWith(PAID_SUB);
-    const lookup = statements.find((s) => /SELECT stripe_subscription_id FROM keepers/.test(s.sql));
-    expect(lookup!.params).toEqual([KEEPER]);
+    expect(res.status).toBe(403);
+    expect(res.text).toContain('Log in to cancel the subscription.');
+    expect(res.text).toContain('Forgot your password?');
+    expect(mockCancel).not.toHaveBeenCalled();
+    expect(statements.some((s) => /SELECT stripe_subscription_id FROM keepers/.test(s.sql))).toBe(false);
   });
 
   it('opens the conversation promotion moved to the keeper, with the live-site banner and a link to manage', async () => {
@@ -408,6 +407,22 @@ describe('a keeper logged in on another browser (an account session, and a trial
     // A keeper has an account: no email gate, no first-message probe on the cookie's trial.
     expect(statements.some((s) => /SELECT email_captured FROM trial_keepers/.test(s.sql))).toBe(false);
     expect(statements.some((s) => /FROM companion_turns WHERE trial_id = \$1/.test(s.sql))).toBe(false);
+  });
+
+  it('can cancel: the keeper\'s subscription, and no one else\'s, is cancelled at period end', async () => {
+    const agent = await keeperSession();
+    const res = await agent
+      .post(`/lighthouse/lamp/${PAID_BUILD}/cancel-subscription`)
+      .set('Cookie', as(STRANGER_TOKEN))
+      .type('form')
+      .send({ _csrf: csrf });
+
+    expect(res.status).toBe(303);
+    expect(res.headers.location).toBe(`/lighthouse/lamp/${PAID_BUILD}`);
+    expect(mockCancel).toHaveBeenCalledOnce();
+    expect(mockCancel).toHaveBeenCalledWith(PAID_SUB);
+    const lookup = statements.find((s) => /SELECT stripe_subscription_id FROM keepers/.test(s.sql));
+    expect(lookup!.params).toEqual([KEEPER]);
   });
 
   it('a logged-in customer who is not a keeper still talks as the trial their cookie holds', async () => {

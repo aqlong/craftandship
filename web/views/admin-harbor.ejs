@@ -58,6 +58,8 @@
       <% } %>
     </div>
 
+    <%- include("admin-harbor-payments") %>
+
     <%
       // Server-side relative-time fallback for pre-JS rendering. After
       // DOMContentLoaded the layout.ejs `[data-ts]` upgrader replaces each
@@ -237,7 +239,7 @@
       <div class="bg-surface-1 border border-border rounded p-6 max-w-[520px] w-full mx-4">
         <h3 class="text-lg font-semibold mb-2 text-gray-100">Dispatch a build for this trial?</h3>
         <p class="text-sm text-subtle mb-3">
-          This calls Opus to extract a v2 spec (~$0.18), queues a build, and stamps the trial as dispatched. The keeper has not paid through Stripe; the build will be attached to their captured email if any, otherwise to your admin account.
+          This calls Opus to extract a v2 spec (~$0.18), queues a build, and stamps the trial as dispatched. The keeper has not paid through Stripe; the build will be attached to a new account for their captured email if any, otherwise to your admin account. A captured email that already has an account is refused: the build is not attached to an existing account on the strength of a typed address.
         </p>
         <dl class="text-xs text-subtle bg-surface-2 rounded p-3 mb-4 space-y-1">
           <div class="flex gap-2"><dt class="w-24 shrink-0">Trial</dt><dd class="font-mono text-gray-300" id="dispatch-modal-trial">-</dd></div>

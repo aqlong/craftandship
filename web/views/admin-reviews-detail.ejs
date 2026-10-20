@@ -116,23 +116,20 @@
     <% } %>
   </div>
 
-  <!-- Panel 3: Credentials -->
+  <!-- Panel 3: Signing in. No password is printed here: sign-in is by the
+       login link the worker emails when the build reaches preview. -->
   <%
     var adminEmail = '';
     try { adminEmail = (build.spec && build.spec.admin_email) ? build.spec.admin_email : ''; } catch (e) { adminEmail = ''; }
     if (!adminEmail && customer && customer.email) { adminEmail = customer.email; }
   %>
   <div class="bg-surface-3 rounded-[10px] p-4 mb-6">
-    <h2 class="text-sm font-semibold text-gray-200 mb-2 uppercase tracking-wider">Login Credentials</h2>
-    <div class="text-xs text-subtle mb-2">Use these to sign in to the preview app as the seeded admin user.</div>
+    <h2 class="text-sm font-semibold text-gray-200 mb-2 uppercase tracking-wider">Signing In</h2>
+    <div class="text-xs text-subtle mb-2" id="review-sign-in-help">To sign in to the preview site as its admin, open the login link in the email that says the website is ready for review. The site owner receives that email and a copy goes to ADMIN_EMAIL.</div>
     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
       <div>
-        <dt class="text-subtle text-xs uppercase tracking-wider">Email</dt>
+        <dt class="text-subtle text-xs uppercase tracking-wider">Admin account</dt>
         <dd class="text-gray-200 font-mono break-all"><%= adminEmail || '-' %></dd>
-      </div>
-      <div>
-        <dt class="text-subtle text-xs uppercase tracking-wider">Password</dt>
-        <dd class="text-gray-200 font-mono">password123</dd>
       </div>
     </dl>
   </div>

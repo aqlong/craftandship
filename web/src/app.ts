@@ -33,6 +33,7 @@ import {
   SESSION_ABSOLUTE_MAX_MS,
   SESSION_COOKIE_NAME,
   SESSION_IDLE_TIMEOUT_MS,
+  sessionCookieAttributes,
 } from './middleware/auth';
 import { boundedRateLimit, rateLimitIpKey } from './middleware/companion-rate-limit';
 import { createMintLimiter, TRIAL_COOKIE_NAME, TRIAL_TTL_DAYS } from './middleware/trial-cookie';
@@ -280,6 +281,8 @@ export const AUTH_FORM_PATHS = [
   '/forgot-password',
   '/reset-password',
   '/resend-verification',
+  '/verify-email',
+  '/unsubscribe',
   '/account/delete',
 ];
 export const AUTH_BODY_LIMIT = '10kb';
@@ -312,19 +315,22 @@ if (process.env.CAS_HARBOR_ENABLED === 'true') {
 
 // Session configuration with PostgreSQL store for persistence across deploys.
 // name: 'cas.sid' prevents cookie collisions on localhost when a generated app
-// (which uses the default 'connect.sid') runs side-by-side on a different port; 
+// (which uses the default 'connect.sid') runs side-by-side on a different port;
 // browser cookies don't scope by port, so the last-written cookie would clobber
-// the admin session and force re-login on every tab switch.
+// the admin session and force re-login on every tab switch. Outside
+// development and test the name is '__Host-cas.sid' (hostOnlyCookieName in
+// middleware/auth.ts), which a browser accepts only from this host over HTTPS.
+// A session is stored once something is written to it; rendering a page does
+// that (keepSessionForRenderedPage), so the CSRF token in the page has a
+// session to be checked against.
 const sessionConfig: session.SessionOptions = {
   name: SESSION_COOKIE_NAME,
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    httpOnly: true,
-    secure: hardenTransport,
+    ...sessionCookieAttributes(),
     maxAge: SESSION_IDLE_TIMEOUT_MS, // 24 hours rolling idle timeout
-    sameSite: 'lax',
   },
   rolling: true, // Reset expiry on every request (idle timeout; the absolute cap is enforceSessionLifetime)
 };

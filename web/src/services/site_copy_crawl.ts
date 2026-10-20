@@ -901,6 +901,9 @@ function parseHttpUrl(raw: unknown): URL | null {
 
 // Address ranges the crawler must never connect to. net.BlockList understands
 // IPv4-mapped IPv6 (::ffff:10.0.0.1), which a hand-rolled prefix check misses.
+// The IPv6 transition ranges are listed whole because each one embeds an IPv4
+// address that a translator or relay on the path may dial; for a literal
+// address in a URL this list is the only check (no DNS answer is involved).
 const PRIVATE_ADDRESS_RANGES = (() => {
   const list = new net.BlockList();
   const v4: Array<[string, number]> = [
@@ -911,17 +914,31 @@ const PRIVATE_ADDRESS_RANGES = (() => {
     ['169.254.0.0', 16], // link-local + cloud metadata
     ['172.16.0.0', 12], // RFC1918
     ['192.0.0.0', 24], // IETF protocol assignments
+    ['192.0.2.0', 24], // documentation (TEST-NET-1)
+    ['192.88.99.0', 24], // 6to4 relay anycast (deprecated)
     ['192.168.0.0', 16], // RFC1918
     ['198.18.0.0', 15], // benchmarking
+    ['198.51.100.0', 24], // documentation (TEST-NET-2)
+    ['203.0.113.0', 24], // documentation (TEST-NET-3)
     ['224.0.0.0', 4], // multicast
     ['240.0.0.0', 4], // reserved + broadcast
   ];
   for (const [addr, prefix] of v4) list.addSubnet(addr, prefix, 'ipv4');
-  list.addAddress('::', 'ipv6'); // unspecified
-  list.addAddress('::1', 'ipv6'); // loopback
-  list.addSubnet('fc00::', 7, 'ipv6'); // unique-local
-  list.addSubnet('fe80::', 10, 'ipv6'); // link-local
-  list.addSubnet('64:ff9b::', 96, 'ipv6'); // NAT64: embeds an IPv4 address
+  const v6: Array<[string, number]> = [
+    ['::', 96], // unspecified, loopback and the deprecated IPv4-compatible form (::7f00:1)
+    ['::ffff:0:0:0', 96], // IPv4-translated (SIIT): embeds an IPv4 address
+    ['64:ff9b::', 96], // NAT64: embeds an IPv4 address
+    ['64:ff9b:1::', 48], // local-use NAT64: embeds an IPv4 address
+    ['100::', 64], // discard-only
+    ['2001::', 32], // Teredo: embeds an IPv4 address
+    ['2001:db8::', 32], // documentation
+    ['2002::', 16], // 6to4: embeds an IPv4 address
+    ['fc00::', 7], // unique-local
+    ['fe80::', 10], // link-local
+    ['fec0::', 10], // site-local (deprecated, still routed on some networks)
+    ['ff00::', 8], // multicast
+  ];
+  for (const [addr, prefix] of v6) list.addSubnet(addr, prefix, 'ipv6');
   return list;
 })();
 

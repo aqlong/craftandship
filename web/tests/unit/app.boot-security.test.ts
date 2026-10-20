@@ -176,10 +176,28 @@ describe('production mode', () => {
 
     expect(res.status).toBe(302);
     const cookie = String(res.headers['set-cookie']);
-    expect(cookie).toContain('cas.sid=');
+    // The __Host- prefix: a browser takes this name only from this host, over HTTPS, with Path=/ and no Domain.
+    expect(cookie.startsWith('__Host-cas.sid=')).toBe(true);
+    expect(cookie).toMatch(/;\s*Path=\/(;|$)/);
+    expect(cookie).not.toMatch(/Domain=/i);
     expect(cookie).toMatch(/;\s*HttpOnly/i);
     expect(cookie).toMatch(/;\s*Secure/i);
     expect(cookie).toMatch(/;\s*SameSite=Lax/i);
+  });
+
+  it('clears the __Host- session cookie at logout with the attributes a browser needs to accept the clearing', async () => {
+    silenceConsole();
+    const { app, csrf } = await loadApp(production);
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+
+    const res = await request(app).post('/logout').set('X-Forwarded-Proto', 'https').type('form').send({ _csrf: csrf() });
+
+    expect(res.status).toBe(302);
+    const cleared = ([] as string[]).concat(res.headers['set-cookie'] ?? []).find((c) => c.startsWith('__Host-cas.sid=;'));
+    expect(cleared).toBeDefined();
+    expect(cleared).toMatch(/;\s*Path=\/(;|$)/);
+    expect(cleared).toMatch(/;\s*Secure/i);
+    expect(cleared).toMatch(/Expires=Thu, 01 Jan 1970/);
   });
 
   it('ignores X-Forwarded-* headers when TRUST_PROXY_HOPS=0 (no proxy in front)', async () => {
@@ -391,12 +409,15 @@ describe('a deployment that is not explicitly development or test gets the harde
         .type('form')
         .send({ _csrf: csrf(), email: 'user@example.com', password: 'password123' });
       expect(login.status).toBe(302);
-      expect(String(login.headers['set-cookie'])).toMatch(/cas\.sid=[^;]+;.*;\s*Secure/i);
+      expect(String(login.headers['set-cookie'])).toMatch(/^__Host-cas\.sid=[^;]+;.*;\s*Secure/i);
 
+      // Both cookies carry the __Host- prefix: Secure, Path=/, no Domain.
       const trial = await request(app).get('/lighthouse/table').set('X-Forwarded-Proto', 'https');
-      const trialCookie = ([] as string[]).concat(trial.headers['set-cookie'] ?? []).find((c) => c.startsWith('cas_harbor_trial='));
+      const trialCookie = ([] as string[]).concat(trial.headers['set-cookie'] ?? []).find((c) => c.startsWith('__Host-cas_harbor_trial='));
       expect(trialCookie).toMatch(/;\s*Secure/i);
       expect(trialCookie).toMatch(/;\s*HttpOnly/i);
+      expect(trialCookie).toMatch(/;\s*Path=\/(;|$)/);
+      expect(trialCookie).not.toMatch(/Domain=/i);
 
       // The development payment bypass stays shut although its flag is set.
       const bypass = await request(app).post('/lighthouse/bypass').send({ email: 'fresh@example.com' });

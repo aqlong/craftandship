@@ -14,7 +14,12 @@ import request from 'supertest';
 import type { Pool } from 'pg';
 
 const sendCrisisAlertEmail = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-vi.mock('../../src/services/email', () => ({ sendCrisisAlertEmail }));
+// The crisis alert is the one sender stood in for; the module's other exports
+// are the real ones (the router's imports reach them through routes/auth.ts).
+vi.mock('../../src/services/email', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/services/email')>()),
+  sendCrisisAlertEmail,
+}));
 
 // Funnel analytics write to the pool on their own schedule; keep them out of the statement log.
 vi.mock('../../src/services/funnel-events', () => ({ track: vi.fn() }));

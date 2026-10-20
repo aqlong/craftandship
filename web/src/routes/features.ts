@@ -190,7 +190,7 @@ router.post('/features/:featureId/message', requireAuth, featureRateLimit, custo
   const csrfToken = req.headers['x-csrf-token'] as string;
   const admin = isAdmin(req);
 
-  if (!csrfToken || !verifyHmacToken(csrfToken)) {
+  if (!csrfToken || !verifyHmacToken(csrfToken, req)) {
     res.status(403).json({ error: 'Invalid CSRF token.' });
     return;
   }

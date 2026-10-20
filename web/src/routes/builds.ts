@@ -139,8 +139,9 @@ router.get('/builds/:buildId', requireAuth, async (req: Request, res: Response) 
   try {
     // Admins can view any build; regular users can only see their own.
     // Columns are listed on purpose: SELECT * would also pull build_artifact
-    // (the multi-megabyte source tarball) and railway_database_url (a
-    // credential) into every status-page render. status.ejs needs neither.
+    // (the multi-megabyte source tarball) and railway_database_url (the
+    // customer database's address) into every status-page render. status.ejs
+    // needs neither.
     const result = isAdmin
       ? await pool.query(`SELECT ${STATUS_PAGE_COLUMNS} FROM builds WHERE id = $1`, [buildId])
       : await pool.query(`SELECT ${STATUS_PAGE_COLUMNS} FROM builds WHERE id = $1 AND customer_id = $2`, [buildId, req.session.customerId]);
@@ -929,7 +930,7 @@ router.post('/builds/:buildId/revision/message', requireAuth, revisionRateLimit,
   const { message } = req.body as { message?: unknown };
   const csrfToken = req.headers['x-csrf-token'] as string;
 
-  if (!csrfToken || !verifyHmacToken(csrfToken)) {
+  if (!csrfToken || !verifyHmacToken(csrfToken, req)) {
     res.status(403).json({ error: 'Invalid CSRF token.' });
     return;
   }

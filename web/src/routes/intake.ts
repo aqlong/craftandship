@@ -116,7 +116,7 @@ router.get('/', requireAuth, harborIntakeRedirect, customerLlmDailyLimit, async 
 // conversation already flowing.
 router.post('/start', requireAuth, intakeRateLimit, customerLlmDailyLimit, async (req: Request, res: Response) => {
   const csrfToken = req.headers['x-csrf-token'] as string;
-  if (!csrfToken || !verifyHmacToken(csrfToken)) {
+  if (!csrfToken || !verifyHmacToken(csrfToken, req)) {
     res.status(403).json({ error: 'Invalid CSRF token.' });
     return;
   }
@@ -173,7 +173,8 @@ router.get('/:buildId', requireAuth, async (req: Request, res: Response) => {
   try {
     // Columns are listed on purpose: SELECT * would also pull build_artifact
     // (the source tarball, up to tens of megabytes) and railway_database_url
-    // (a credential) into the web process for a page that needs neither
+    // (the customer database's address) into the web process for a page that
+    // needs neither
     // (see GET /builds/:buildId in routes/builds.ts).
     const buildResult = await pool.query(
       'SELECT id, customer_id, status, tier, spec FROM builds WHERE id = $1 AND customer_id = $2',
@@ -240,7 +241,7 @@ router.post('/message', requireAuth, intakeRateLimit, customerLlmDailyLimit, asy
   const { buildId, message } = req.body as { buildId?: unknown; message?: unknown };
   const csrfToken = req.headers['x-csrf-token'] as string;
 
-  if (!csrfToken || !verifyHmacToken(csrfToken)) {
+  if (!csrfToken || !verifyHmacToken(csrfToken, req)) {
     res.status(403).json({ error: 'Invalid CSRF token.' });
     return;
   }
@@ -344,7 +345,7 @@ router.post('/:buildId/logo', requireAuth, logoUploadRateLimit, logoUpload, asyn
   const { buildId } = req.params;
   const csrfToken = req.headers['x-csrf-token'] as string;
 
-  if (!csrfToken || !verifyHmacToken(csrfToken)) {
+  if (!csrfToken || !verifyHmacToken(csrfToken, req)) {
     res.status(403).json({ error: 'Invalid CSRF token.' });
     return;
   }

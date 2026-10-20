@@ -728,13 +728,15 @@ class Actuators:
 
     # --- Support KB ---
     def support_kb_insert(self, question: str, answer: str) -> bool:
-        """INSERT a Q&A pair into support_kb so the support chat can serve a
-        cached answer the next time a similar question is asked.
+        """INSERT a Q&A pair into support_kb, stored as 'pending' by the
+        column default; the support chat serves it once an operator sets it
+        to 'approved' (web/src/db/schema.sql).
 
         This closes the customer-service self-learning loop: the agent
         already detects KB gaps from beta_feedback questions; this writes
-        the drafted answer back so the next keeper who asks the same thing
-        gets an immediate response without re-paying the LLM cost.
+        the drafted answer back so that, once approved, the next keeper who
+        asks the same thing gets an immediate response without re-paying
+        the LLM cost.
 
         Permission: kb_record (same gate as the failure-KB record_fix).
         Skipped on dry run, always: a support_kb row is served to customers by

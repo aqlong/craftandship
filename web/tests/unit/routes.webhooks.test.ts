@@ -583,11 +583,18 @@ function previewBuild(overrides: Record<string, unknown> = {}) {
   };
 }
 
-/** Rules for a trial visitor paying for an approved preview. */
+/** The account's verification, read under a share lock for a session no login of the account opened. */
+const ACCOUNT_VERIFIED = /SELECT email_verified FROM customers WHERE id = \$1 FOR SHARE/;
+/** Whether the trial's own dispatch created the account (promoteTrialInTransaction). */
+const CREATED_BY_DISPATCH = /FROM builds WHERE id = \$1 AND customer_id = \$2 AND owner_created_by_dispatch/;
+
+/** Rules for a trial visitor paying for an approved preview, on the unverified account its dispatch created. */
 function arrangeHappyPath(build = previewBuild()): void {
   db.on(CLAIM, (params) => ({ rows: [{ event_id: params[0] }] }));
   db.on(LOCK_BUILD, { rows: [build] });
   db.on(/SELECT email FROM customers WHERE id = \$1/, { rows: [{ email: 'payer@example.test' }] });
+  db.on(ACCOUNT_VERIFIED, { rows: [{ email_verified: false }] });
+  db.on(CREATED_BY_DISPATCH, { rows: [{ '?column?': 1 }] });
   db.on(LOCK_TRIAL, {
     rows: [{
       trial_id: TRIAL_ID, companion_name: 'Haven', companion_assigned: 'Haven', released_at: null,
@@ -889,6 +896,55 @@ describe('POST /webhooks/stripe: harbor_make_public takes a reviewed preview liv
     const blessing = db.find(BLESSING);
     expect(blessing!.params[0]).toBe(CUSTOMER_ID);
     expect(String(blessing!.params[1]).length).toBeGreaterThan(20);
+  });
+
+  describe('whose account a session may write a keeper row on', () => {
+    it('a verified account and a session no login of it opened: nothing is promoted or claimed, the payment is recorded and the operator told', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      arrangeHappyPath();
+      db.on(ACCOUNT_VERIFIED, { rows: [{ email_verified: true }] });
+      const res = await deliver(stripeEvent('checkout.session.completed', harborSession()));
+
+      expect(res.status).toBe(200);
+      expect(db.find(ACCOUNT_VERIFIED)!.params).toEqual([CUSTOMER_ID]);
+      // Read after the build lock, before the trial is touched.
+      expect(db.indexOf(ACCOUNT_VERIFIED)).toBeGreaterThan(db.indexOf(LOCK_BUILD));
+      expect(db.find(LOCK_TRIAL)).toBeUndefined();
+      expect(db.find(CLAIM_KEEPER)).toBeUndefined();
+      expect(db.find(FLIP_LIVE)).toBeUndefined();
+      expect(db.find(RECORD_SUB)!.params).toEqual([CUSTOMER_ID, STRIPE_SUB, STRIPE_CUSTOMER, 2900]);
+      await vi.waitFor(() => expect(mockSendPaymentNotAppliedEmail).toHaveBeenCalledOnce());
+      expect(mockSendPaymentNotAppliedEmail.mock.calls[0][0].reason).toMatch(/verified its address/);
+    });
+
+    it('the same verified account, with the session opened by its own login (keeper_customer_id): not asked, and applied', async () => {
+      arrangeHappyPath();
+      db.on(ACCOUNT_VERIFIED, { rows: [{ email_verified: true }] });
+      const res = await deliver(stripeEvent('checkout.session.completed', harborSession({}, { keeper_customer_id: CUSTOMER_ID })));
+
+      expect(res.status).toBe(200);
+      expect(db.find(ACCOUNT_VERIFIED)).toBeUndefined();
+      // Opened by the account: the trial need not be the one its dispatch created the account for.
+      expect(db.find(CREATED_BY_DISPATCH)).toBeUndefined();
+      expect(db.find(FLIP_LIVE)).toBeDefined();
+      expect(mockSendPaymentNotAppliedEmail).not.toHaveBeenCalled();
+    });
+
+    it('an account the trial\'s dispatch did not create: nothing is promoted or claimed, the payment is recorded and the operator told', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      arrangeHappyPath();
+      db.on(CREATED_BY_DISPATCH, { rows: [] });
+      const res = await deliver(stripeEvent('checkout.session.completed', harborSession()));
+
+      expect(res.status).toBe(200);
+      expect(db.find(CREATED_BY_DISPATCH)!.params).toEqual([BUILD_ID, CUSTOMER_ID]);
+      expect(db.find(CLAIM_KEEPER)).toBeUndefined();
+      expect(db.find(RELEASE_TRIAL)).toBeUndefined();
+      expect(db.find(FLIP_LIVE)).toBeUndefined();
+      expect(db.find(RECORD_SUB)!.params).toEqual([CUSTOMER_ID, STRIPE_SUB, STRIPE_CUSTOMER, 2900]);
+      await vi.waitFor(() => expect(mockSendPaymentNotAppliedEmail).toHaveBeenCalledOnce());
+      expect(mockSendPaymentNotAppliedEmail.mock.calls[0][0].reason).toMatch(/did not create/);
+    });
   });
 
   it('if the locked, publishable build somehow does not flip, the whole event fails rather than commit a promotion with nothing live', async () => {

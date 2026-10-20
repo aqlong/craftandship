@@ -6,8 +6,9 @@
 // for one build. It must not outlive the account a browser logs in to, and it
 // must not outlive a password reset or an email verification of the account it
 // was promoted into. An anonymous dispatch must not attach a build to an
-// account that already has a keeper row or a build, because those builds and
-// their start limits belong to the account's owner.
+// account that already exists (one with a keeper row or a build, or any other),
+// because that account, and the builds and start limits it has, belong to
+// whoever owns the address.
 //
 // The routes, the webhook and the dispatch service run unmodified, against the
 // schema in src/db/schema.sql. Stripe is not contacted: webhook events are
@@ -113,16 +114,23 @@ async function createCustomer(label: string, opts: { verified?: boolean } = {}):
   return { id: row.id, email: address };
 }
 
-/** A build row as the dispatch leaves it: queued or at preview, approved, owned by `customerId`. */
-async function createBuild(customerId: string, opts: { harbor?: boolean; status?: string } = {}): Promise<string> {
+/**
+ * A build row as the dispatch leaves it: queued or at preview, approved, owned
+ * by `customerId`. `ownerCreatedByDispatch` is what an anonymous dispatch
+ * records when it created that account (builds.owner_created_by_dispatch).
+ */
+async function createBuild(
+  customerId: string,
+  opts: { harbor?: boolean; status?: string; ownerCreatedByDispatch?: boolean } = {}
+): Promise<string> {
   const id = crypto.randomUUID();
-  const columns = `id, customer_id, tier, status, review_status, app_name, preview_url, spec`;
-  const values = `$1, $2, 'build', $3, 'approved', $4, $5, '{}'::jsonb`;
+  const columns = `id, customer_id, tier, status, review_status, app_name, preview_url, spec, owner_created_by_dispatch`;
+  const values = `$1, $2, 'build', $3, 'approved', $4, $5, '{}'::jsonb, $6`;
   await q(
     opts.harbor
       ? `INSERT INTO builds (${columns}, is_harbor) VALUES (${values}, TRUE)`
       : `INSERT INTO builds (${columns}) VALUES (${values})`,
-    [id, customerId, opts.status ?? 'preview', `Site ${id.slice(0, 6)}`, `https://preview-${id.slice(0, 8)}.example.test`]
+    [id, customerId, opts.status ?? 'preview', `Site ${id.slice(0, 6)}`, `https://preview-${id.slice(0, 8)}.example.test`, opts.ownerCreatedByDispatch === true]
   );
   return id;
 }
@@ -139,7 +147,8 @@ async function freshCsrf(agent: Browser): Promise<string> {
 }
 /** Log the browser in as `address` (verified accounts only: an unverified one is sent to verify first). */
 async function logIn(agent: Browser, address: string): Promise<void> {
-  const res = await agent.post('/login').type('form').send({ _csrf: await freshCsrf(agent), email: address, password: PASSWORD });
+  const csrf = await freshCsrf(agent);
+  const res = await agent.post('/login').type('form').send({ _csrf: csrf, email: address, password: PASSWORD });
   expect(res.status, `login as ${address}`).toBe(302);
 }
 const setCookies = (res: { headers: Record<string, unknown> }): string[] =>
@@ -213,8 +222,9 @@ interface PaidTrial {
 /** A visitor's trial with a Harbor build stamped on it and a conversation, then paid for through the signed webhook. */
 async function paidTrial(tag: string): Promise<PaidTrial> {
   const visitor = await trialBrowser();
+  // The account the trial's dispatch created for the address it gave.
   const payer = await createCustomer(`payer-${tag}`, { verified: false });
-  const buildId = await createBuild(payer.id, { harbor: true });
+  const buildId = await createBuild(payer.id, { harbor: true, ownerCreatedByDispatch: true });
   const phrase = `conversation-${tag}-${run}`;
   await q('UPDATE trial_keepers SET handoff_build_id = $1, handoff_at = NOW(), email_captured = $2 WHERE trial_id = $3', [
     buildId,
@@ -390,10 +400,13 @@ describe.skipIf(!integrationUrl)('the paid trial cookie and the account session,
       const raw = crypto.randomBytes(32).toString('hex');
       await q('INSERT INTO password_reset_tokens (customer_id, token) VALUES ($1, $2)', [paid.payer.id, sha256(raw)]);
       const elsewhere = browser();
+      // The token first: it is good only in the session its page started, and an
+      // agent attaches its cookies when a request is created, not when it is sent.
+      const csrf = await freshCsrf(elsewhere);
       const reset = await elsewhere
         .post('/reset-password')
         .type('form')
-        .send({ _csrf: await freshCsrf(elsewhere), token: raw, password: `new-${run}-${PASSWORD}` });
+        .send({ _csrf: csrf, token: raw, password: `new-${run}-${PASSWORD}` });
       expect(reset.text).toContain('Your password is set');
 
       expect((await tablePage(paid.agent)).text).not.toContain(paid.phrase);
@@ -408,7 +421,9 @@ describe.skipIf(!integrationUrl)('the paid trial cookie and the account session,
 
       const raw = crypto.randomBytes(32).toString('hex');
       await q('INSERT INTO email_verification_tokens (customer_id, token) VALUES ($1, $2)', [paid.payer.id, sha256(raw)]);
-      const opened = await paid.agent.get(`/verify-email?token=${raw}`);
+      // Opening the link shows a page; its button posts the token back.
+      const page = await paid.agent.get(`/verify-email?token=${raw}`);
+      const opened = await paid.agent.post('/verify-email').type('form').send({ _csrf: csrfFrom(page.text), token: raw });
       expect(opened.status).toBe(302);
       expect((await one<{ email_verified: boolean }>('SELECT email_verified FROM customers WHERE id = $1', [paid.payer.id])).email_verified).toBe(true);
 
@@ -417,7 +432,7 @@ describe.skipIf(!integrationUrl)('the paid trial cookie and the account session,
   });
 
   // -------------------------------------------------------------------------
-  describe('an anonymous dispatch does not attach a build to an account that is already in use', () => {
+  describe('an anonymous dispatch does not attach a build to an account that already exists', () => {
     it('an unverified account that already has a build: an anonymous request for its address is refused, and no start is counted against it', async () => {
       const victim = await createCustomer('victim-with-build', { verified: false });
       const existingBuild = await createBuild(victim.id);
@@ -491,13 +506,17 @@ describe.skipIf(!integrationUrl)('the paid trial cookie and the account session,
       }
     });
 
-    it('an account that gains a build while the extraction runs is refused at the insert, under the account lock', async () => {
-      // The early check sees an unverified account with no build. While the
-      // model call runs, a second dispatch lands a build on that account. The
-      // insert, under the account's lock, must see it and refuse.
-      const racer = await createCustomer('raced-account', { verified: false });
-      const visitor = await readyTrial(racer.email);
+    it('an account that comes into being while the extraction runs is refused at the insert, in the insert\'s transaction', async () => {
+      // The early check finds no account for the address. While the model
+      // call runs, a signup (or another conversation's dispatch) creates one
+      // and a build lands on it. The insert, which creates the dispatch's own
+      // account row in the same transaction as the build, must find the
+      // address taken and refuse.
+      const address = email('raced-account');
+      const visitor = await readyTrial(address);
+      let racer: { id: string; email: string } | null = null;
       const extraction = standInForExtraction(async () => {
+        racer = await createCustomer('raced-account', { verified: false });
         await createBuild(racer.id);
       });
       try {
@@ -505,9 +524,10 @@ describe.skipIf(!integrationUrl)('the paid trial cookie and the account session,
         expect(res.status).toBe(409);
         expect(res.body.error).toBe('email_not_usable');
         expect(extraction.calls()).toBe(1);
+        const raced = racer as unknown as { id: string };
         // Only the build that landed during the extraction exists, and no start is counted for this dispatch.
-        expect(await buildsOf(racer.id)).toHaveLength(1);
-        expect(await ledgerOf(racer.id)).toEqual([]);
+        expect(await buildsOf(raced.id)).toHaveLength(1);
+        expect(await ledgerOf(raced.id)).toEqual([]);
       } finally {
         extraction.restore();
       }

@@ -181,7 +181,7 @@ function respondAnonymousBudgetSpent(res: Response): void {
 router.post('/start', refuseWhenHarborEnabled, anonDraftCreateRateLimit, anonGlobalDailyTurnRateLimit, async (req: Request, res: Response) => {
   const csrfToken = req.headers['x-csrf-token'] as string;
 
-  if (!csrfToken || !verifyHmacToken(csrfToken)) {
+  if (!csrfToken || !verifyHmacToken(csrfToken, req)) {
     res.status(403).json({ error: 'Invalid CSRF token.' });
     return;
   }
@@ -380,7 +380,7 @@ router.post(
   const { message } = req.body as { message: string };
   const csrfToken = req.headers['x-csrf-token'] as string;
 
-  if (!csrfToken || !verifyHmacToken(csrfToken)) {
+  if (!csrfToken || !verifyHmacToken(csrfToken, req)) {
     res.status(403).json({ error: 'Invalid CSRF token.' });
     return;
   }

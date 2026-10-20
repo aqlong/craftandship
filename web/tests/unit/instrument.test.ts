@@ -11,11 +11,13 @@ const DSN_FROM_FILE = ['https://', 'public', '@', 'sentry.invalid', '/', '1'].jo
 const order: string[] = [];
 const init = vi.hoisted(() => vi.fn());
 
-// httpIntegration returns what it was configured with, so a test can read it
-// back out of the options given to init.
+// The integration factories return what they were configured with, so a test
+// can read it back out of the options given to init. The real SDK runs with
+// these options in instrument.real-sdk.test.ts.
 vi.mock('@sentry/node', () => ({
   init,
   httpIntegration: (options: Record<string, unknown>) => ({ name: 'Http', options }),
+  requestDataIntegration: (options: Record<string, unknown>) => ({ name: 'RequestData', options }),
 }));
 // Stands in for web/.env: the variable exists only once dotenv has run.
 vi.mock('dotenv', () => {
@@ -74,8 +76,12 @@ describe('instrument.ts', () => {
     process.env.A3_DOTENV_PROVIDES_DSN = '1';
     await import('../../src/instrument');
     const options = init.mock.calls[0][0];
-    // The integration that would record the body of an incoming request is told not to.
-    expect(options.integrations).toEqual([{ name: 'Http', options: { maxIncomingRequestBodySize: 'none' } }]);
+    // The integration that would record the body of an incoming request is told
+    // not to, and the one that would copy its headers onto an event likewise.
+    expect(options.integrations).toEqual([
+      { name: 'Http', options: { maxIncomingRequestBodySize: 'none' } },
+      { name: 'RequestData', options: { include: { headers: false } } },
+    ]);
 
     const said = `I have been thinking about ending it ${Date.now()}`;
     const typedPassword = ['pw', 'typed', 'by', 'a', 'visitor'].join('-');
@@ -100,6 +106,63 @@ describe('instrument.ts', () => {
       expect(out.request.url).toBe('https://example.com/lighthouse/table/turn');
       expect(out.request.headers['user-agent']).toBe('a browser');
       expect(out.spans[0].data['http.method']).toBe('POST');
+    }
+  });
+
+  it('no credential a request carries in a header leaves the process: only listed headers stay, on events and on transactions', async () => {
+    process.env.A3_DOTENV_PROVIDES_DSN = '1';
+    await import('../../src/instrument');
+    const options = init.mock.calls[0][0];
+
+    // Built at run time; the shapes of the ops API key, the worker status
+    // hook's secret, the Stripe and Svix signatures and the CSRF token.
+    const bearer = ['Bearer', ['ops', 'key', 'value', String(Date.now())].join('-')].join(' ');
+    const stripeSignature = ['t=1', ['v1', ['5f', 'a1', 'b2', 'c3'].join('')].join('=')].join(',');
+    const svixSignature = ['v1', ['c3', 'd4', 'e5', 'f6'].join('')].join(',');
+    const csrfToken = ['csrf', 'value', 'abcdef0123'].join('.');
+    const customKey = ['custom', 'header', 'value', '42'].join('-');
+    const event = {
+      request: {
+        url: 'https://example.com/ops/api/v1/executor/status',
+        headers: {
+          authorization: bearer,
+          'stripe-signature': stripeSignature,
+          'svix-signature': svixSignature,
+          'x-csrf-token': csrfToken,
+          'x-some-new-header': customKey,
+          Authorization: bearer,
+          'user-agent': 'a browser',
+          accept: 'application/json',
+          referer: 'https://example.com/reset-password?token=abc',
+        },
+      },
+      contexts: {
+        trace: {
+          data: {
+            'http.request.header.authorization': bearer,
+            'http.request.header.stripe_signature': stripeSignature,
+            'http.request.header.x_csrf_token': csrfToken,
+            'http.request.header.x_some_new_header': customKey,
+            'http.request.header.user_agent': 'a browser',
+            'gen_ai.usage.input_tokens': 120,
+          },
+        },
+      },
+      spans: [{ data: { 'http.request.header.svix_signature': svixSignature, 'http.method': 'GET' } }],
+      breadcrumbs: [{ data: { api_key: customKey, access_token: csrfToken, url: '/x' } }],
+    };
+    for (const hook of [options.beforeSend, options.beforeSendTransaction]) {
+      const out = hook(structuredClone(event));
+      const sent = JSON.stringify(out);
+      for (const value of [bearer, stripeSignature, svixSignature, csrfToken, customKey]) {
+        expect(sent).not.toContain(value);
+      }
+      // Only the listed headers stay, the Referer cut to its path.
+      expect(Object.keys(out.request.headers).sort()).toEqual(['accept', 'referer', 'user-agent']);
+      expect(out.request.headers.referer).toBe('https://example.com/reset-password');
+      expect(out.contexts.trace.data['http.request.header.user_agent']).toBe('a browser');
+      expect(out.contexts.trace.data['gen_ai.usage.input_tokens']).toBe(120);
+      expect(out.spans[0].data['http.method']).toBe('GET');
     }
   });
 

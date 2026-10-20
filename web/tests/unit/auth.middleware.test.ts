@@ -43,15 +43,20 @@ function mockRes(): Response & { _status: number; _rendered: string | null; _bod
 }
 
 describe('generateCsrfToken', () => {
-  it('returns a string in format payload.hmac', () => {
-    const req = mockReq();
-    const token = generateCsrfToken(req);
+  it('returns nonce.tag.mac: a hex nonce, the session tag, and a hex HMAC over both', () => {
+    const token = generateCsrfToken(mockReq({ sessionID: 'session-one' } as Partial<Request>));
     expect(typeof token).toBe('string');
-    // Should contain exactly one dot separating two hex strings
     const parts = token.split('.');
-    expect(parts.length).toBe(2);
-    expect(parts[0]).toMatch(/^[0-9a-f]+$/);
-    expect(parts[1]).toMatch(/^[0-9a-f]+$/);
+    expect(parts.length).toBe(3);
+    expect(parts[0]).toMatch(/^[0-9a-f]{32}$/);
+    expect(parts[1]).toMatch(/^[0-9a-f]{32}$/);
+    expect(parts[2]).toMatch(/^[0-9a-f]{64}$/);
+    // The tag is derived from the session id and does not contain it.
+    expect(token).not.toContain('session-one');
+  });
+
+  it('a token minted outside a request (no session id) carries the no-session tag', () => {
+    expect(generateCsrfToken(mockReq()).split('.')[1]).toBe('nosession');
   });
 
   it('generates unique tokens on each call', () => {
@@ -85,8 +90,14 @@ describe('verifyHmacToken', () => {
     const token = generateCsrfToken(req);
     const parts = token.split('.');
     // Replace HMAC with zeros of same length
-    const badToken = parts[0] + '.' + '0'.repeat(parts[1].length);
+    const badToken = `${parts[0]}.${parts[1]}.${'0'.repeat(parts[2].length)}`;
     expect(verifyHmacToken(badToken)).toBe(false);
+  });
+
+  it('returns false for a token in the earlier two-part form (nonce.mac), even one this secret signed', () => {
+    const nonce = randomBytes(16).toString('hex');
+    const mac = createHmac('sha256', getSessionSecret()).update(nonce).digest('hex');
+    expect(verifyHmacToken(`${nonce}.${mac}`)).toBe(false);
   });
 
   it('returns false for a token with no dot separator', () => {
@@ -170,6 +181,58 @@ describe('validateCsrfToken middleware', () => {
     expect(res._status).toBe(403);
     expect(res._json).toBeDefined();
     expect(res._rendered).toBeNull(); // json() was called, not render()
+  });
+});
+
+describe('the CSRF token is bound to the session it was issued in', () => {
+  const issuedIn = (sessionID: string): string => generateCsrfToken(mockReq({ sessionID } as Partial<Request>));
+  const validate = (sessionID: string | undefined, token: string): { passed: boolean; status: number } => {
+    const req = mockReq({ sessionID, body: { _csrf: token } } as Partial<Request>);
+    const res = mockRes();
+    const next = vi.fn();
+    validateCsrfToken(req, res, next as unknown as NextFunction);
+    return { passed: next.mock.calls.length === 1, status: res._status };
+  };
+
+  it('is accepted from the session it was issued in', () => {
+    expect(validate('session-a', issuedIn('session-a'))).toEqual({ passed: true, status: 200 });
+  });
+
+  it('is refused from any other session, and from a request with no session', () => {
+    const token = issuedIn('session-a');
+    expect(validate('session-b', token)).toEqual({ passed: false, status: 403 });
+    expect(validate(undefined, token)).toEqual({ passed: false, status: 403 });
+  });
+
+  it('a tag copied onto another session\'s token breaks its HMAC', () => {
+    const [nonce, , mac] = issuedIn('session-a').split('.');
+    const otherTag = issuedIn('session-b').split('.')[1];
+    expect(validate('session-b', `${nonce}.${otherTag}.${mac}`)).toEqual({ passed: false, status: 403 });
+  });
+
+  it('verifyHmacToken checks the binding when given the request, and only the HMAC without it', () => {
+    const token = issuedIn('session-a');
+    expect(verifyHmacToken(token, mockReq({ sessionID: 'session-a' } as Partial<Request>))).toBe(true);
+    expect(verifyHmacToken(token, mockReq({ sessionID: 'session-b' } as Partial<Request>))).toBe(false);
+    expect(verifyHmacToken(token)).toBe(true);
+  });
+
+  it('a token minted with no session id (only code outside a request does that) is accepted from any session', () => {
+    expect(validate('session-b', generateCsrfToken(mockReq())).passed).toBe(true);
+  });
+
+  it('rendering a page writes to the session, so the session (and its cookie) outlives the page', () => {
+    const session = {} as Request['session'];
+    const render = vi.fn();
+    const res = { render } as unknown as Response;
+    const req = mockReq({ sessionID: 'session-a', session, res } as Partial<Request>);
+    generateCsrfToken(req);
+    generateCsrfToken(req); // a second token in the same request wraps render once
+    expect(session.csrfBound).toBeUndefined();
+    (res.render as (view: string, locals: object) => void)('login', { a: 1 });
+    expect(session.csrfBound).toBe(true);
+    expect(render).toHaveBeenCalledOnce();
+    expect(render).toHaveBeenCalledWith('login', { a: 1 });
   });
 });
 
@@ -320,11 +383,11 @@ describe('initSessionSecret / getSessionSecret', () => {
 
   it('CSRF tokens are signed with the resolved secret, not the old literal', () => {
     const token = generateCsrfToken(mockReq());
-    const [nonce, mac] = token.split('.');
+    const [nonce, tag, mac] = token.split('.');
     for (const literal of SESSION_SECRET_PLACEHOLDERS) {
-      const forged = createHmac('sha256', literal).update(nonce).digest('hex');
+      const forged = createHmac('sha256', literal).update(`${nonce}|${tag}`).digest('hex');
       expect(forged).not.toBe(mac);
-      expect(verifyHmacToken(`${nonce}.${forged}`)).toBe(false);
+      expect(verifyHmacToken(`${nonce}.${tag}.${forged}`)).toBe(false);
     }
   });
 });

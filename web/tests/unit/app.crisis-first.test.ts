@@ -56,10 +56,13 @@ async function loadApp(harborEnabled: boolean, previewPassword = ''): Promise<Ap
   return (await import('../../src/app')).default;
 }
 
-/** The session cookie express-session accepts: "s:<id>.<base64 HMAC-SHA256 of the id, unpadded>", URL-encoded. */
+/**
+ * The session cookie express-session accepts: "s:<id>.<base64 HMAC-SHA256 of the id, unpadded>", URL-encoded,
+ * under the name it has outside development and test (these tests load the app with NODE_ENV=production).
+ */
 function signedSessionCookie(sessionId: string): string {
   const mac = crypto.createHmac('sha256', SECRET).update(sessionId).digest('base64').replace(/=+$/, '');
-  return `cas.sid=${encodeURIComponent(`s:${sessionId}.${mac}`)}`;
+  return `__Host-cas.sid=${encodeURIComponent(`s:${sessionId}.${mac}`)}`;
 }
 const SESSION_COOKIE = (): string => signedSessionCookie(crypto.randomBytes(16).toString('hex'));
 

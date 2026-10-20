@@ -24,7 +24,7 @@ const feedbackRateLimit = boundedRateLimit({
 // POST /feedback - submit beta feedback (JSON API, uses header-based CSRF)
 router.post('/feedback', requireAuth, feedbackRateLimit, async (req: Request, res: Response): Promise<void> => {
   const csrfToken = req.headers['x-csrf-token'] as string;
-  if (!csrfToken || !verifyHmacToken(csrfToken)) {
+  if (!csrfToken || !verifyHmacToken(csrfToken, req)) {
     res.status(403).json({ error: 'Invalid CSRF token.' });
     return;
   }

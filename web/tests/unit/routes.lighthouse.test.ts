@@ -1497,6 +1497,7 @@ describe('POST /lighthouse/build: self-serve trial path', () => {
     mockQuery.mockResolvedValueOnce(guard({ email_captured: null })); // trial guard
     mockQuery.mockResolvedValueOnce({ rows: [{ email: "o'brien@example.com" }] }); // the session account's address
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 }); // the address recorded on the trial
+    mockQuery.mockResolvedValueOnce({ rows: [{ trial_id: TRIAL_ID }] }); // the trial's cookie replaced (rotateTrialCookie)
     mockQuery.mockResolvedValueOnce({ rows: [{ c: '9' }] }); // turn count (ready)
     mockDispatch.mockRejectedValueOnce(
       new dispatchModule.HarborDispatchError('email_not_buildable', dispatchModule.OWNER_EMAIL_NOT_BUILDABLE_MESSAGE)
@@ -2263,8 +2264,13 @@ describe('GET /lighthouse/lamp/:buildId/make-public', () => {
 });
 
 describe('POST /lighthouse/lamp/:buildId/make-public', () => {
+  // The form's token is good only in the session that rendered the form, so
+  // the POST carries that session's cookie as a browser would ("; cas.sid=...",
+  // set by csrfToken(); empty when a test fetched no form).
+  let formSession = '';
   beforeEach(() => {
     mockQuery.mockReset();
+    formSession = '';
   });
 
   async function csrfToken(): Promise<string> {
@@ -2273,6 +2279,8 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     const formRes = await request(app)
       .get(`/lighthouse/lamp/${BUILD_ID}/make-public`)
       .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`);
+    const sessionCookie = ([] as string[]).concat(formRes.headers['set-cookie'] || []).find((c) => c.startsWith('cas.sid='));
+    formSession = sessionCookie ? `; ${sessionCookie.split(';')[0]}` : '';
     const m = formRes.text.match(/name="_csrf"\s+value="([^"]+)"/);
     return m ? m[1] : '';
   }
@@ -2281,7 +2289,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     setupTrialOwnedBuild();
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ monthly_amount_cents: '3900', email: 'maya@example.com' });
     expect(res.status).toBe(403);
@@ -2292,7 +2300,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     setupTrialOwnedBuild();
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '100', email: 'maya@example.com', sliding_scale_attestation: 'on' });
     expect(res.status).toBe(400);
@@ -2304,7 +2312,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     setupTrialOwnedBuild();
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '2900', email: 'maya@example.com' });
     expect(res.status).toBe(400);
@@ -2317,7 +2325,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ email_captured: '' }] }); // resolvePrefilledEmail trial path
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900', email: '' });
     expect(res.status).toBe(400);
@@ -2330,7 +2338,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     mockQuery.mockResolvedValueOnce({ rows: [] }); // no account has this email yet
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900', email: 'maya@example.com', email_confirmed: 'on' });
     expect(res.status).toBe(303);
@@ -2346,7 +2354,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     create.mockClear();
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900', email: 'maya@example.com' });
     expect(res.status).toBe(400);
@@ -2359,7 +2367,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     setupTrialOwnedBuild(buildRow({ status: 'building', review_status: null }));
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900', email: 'maya@example.com' });
     expect(res.status).toBe(409);
@@ -2375,7 +2383,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     create.mockClear();
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900', email: 'Victim@Example.com' });
     expect(res.status).toBe(409);
@@ -2400,7 +2408,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ id: 'cust-1' }] }); // the email is the session's own account
     const res = await agent
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900', email: 'maya@example.com', email_confirmed: 'on' });
     expect(res.status).toBe(303);
@@ -2416,7 +2424,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     create.mockClear();
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900', email: 'maya@example.com', email_confirmed: 'on' });
     expect(res.status).toBe(303);
@@ -2439,7 +2447,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     create.mockClear();
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900', email: 'jane@gmail.example', email_confirmed: 'on' });
     expect(res.status).toBe(409);
@@ -2456,7 +2464,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ email_captured: 'maya@example.com' }] }); // the address this trial gave
     const refused = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900' });
     expect(refused.status).toBe(400);
@@ -2486,7 +2494,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
       mockQuery.mockResolvedValueOnce({ rows: [{ email_captured: captured }] });
       const res = await request(app)
         .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-        .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+        .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
         .type('form')
         .send({ _csrf: csrf, monthly_amount_cents: '3900', email: 'owner@elsewhere.example', email_confirmed: 'on' });
       expect(res.status).toBe(409);
@@ -2506,7 +2514,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     create.mockClear();
     const res = await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '3900', email: 'maya@example.com' });
     expect(res.status).toBe(409);
@@ -2523,7 +2531,7 @@ describe('POST /lighthouse/lamp/:buildId/make-public', () => {
     create.mockClear();
     await request(app)
       .post(`/lighthouse/lamp/${BUILD_ID}/make-public`)
-      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}`)
+      .set('Cookie', `cas_harbor_trial=${VALID_TOKEN}${formSession}`)
       .type('form')
       .send({ _csrf: csrf, monthly_amount_cents: '2900', email: 'lena@example.com', sliding_scale_attestation: 'on', email_confirmed: 'on' });
     expect(create).toHaveBeenCalledOnce();
@@ -3515,7 +3523,7 @@ describe('POST /lighthouse/build: keeper path (promoted keeper with a session)',
     expect(insertAt).toBeGreaterThan(2);
     // The shared insert: queued, and marked is_harbor so its publish needs a subscription.
     expect(calls[insertAt]).toMatch(
-      /\(customer_id, tier, status, spec, app_name, is_harbor\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE\)/
+      /\(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE, \$5\)/
     );
     expect(params[insertAt][0]).toBe('cust-1');
     // The stamp sets the id and the durable handoff_at together.

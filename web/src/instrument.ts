@@ -12,11 +12,41 @@ dotenv.config();
 
 type ScrubbableEvent = Pick<Sentry.Event, 'request' | 'contexts' | 'spans' | 'breadcrumbs' | 'message' | 'exception'>;
 
-/** Attributes a span or breadcrumb may carry: URLs, query strings, and a request's body or cookies among them. */
+/**
+ * The request headers an event or a span may keep; every other one is
+ * deleted. Requests to this app carry credentials in headers: the ops API key
+ * and the worker status hook's secret as `Authorization: Bearer`, Stripe's and
+ * Svix's webhook signatures, the CSRF token and the session cookie. A list of
+ * what may stay, rather than of what must go, also keeps out a header the app
+ * starts to read later. Lower case, as Node reports header names.
+ */
+const KEPT_REQUEST_HEADERS: ReadonlySet<string> = new Set([
+  'user-agent',
+  'accept',
+  'accept-language',
+  'content-type',
+  'content-length',
+  'host',
+  'sec-fetch-site',
+  'sec-fetch-mode',
+  'sec-fetch-dest',
+  'referer',
+]);
+
+/** Span attributes the SDK writes for request headers: `http.request.header.<name>`, dashes as underscores. */
+const REQUEST_HEADER_ATTRIBUTE = /^http\.request\.header\.(.+)$/i;
+
+/** Attributes a span or breadcrumb may carry: URLs, query strings, request headers, and a request's body or cookies among them. */
 function scrubAttributes(data: Record<string, unknown> | undefined): void {
   if (!data) return;
   for (const [name, value] of Object.entries(data)) {
-    if (/body|cookie/i.test(name)) {
+    const header = REQUEST_HEADER_ATTRIBUTE.exec(name);
+    if (header && !KEPT_REQUEST_HEADERS.has(header[1].toLowerCase().replace(/_/g, '-'))) {
+      delete data[name];
+      continue;
+    }
+    // `token(?!s\b)`: a token, not a model call's token count (gen_ai.usage.input_tokens).
+    if (/body|cookie|authorization|token(?!s\b)|signature|api[-_]?key/i.test(name)) {
       data[name] = '[redacted]';
       continue;
     }
@@ -38,10 +68,18 @@ function scrubAttributes(data: Record<string, unknown> | undefined): void {
  * the body of an incoming request (up to 10 kB by default) and attaches it to
  * the event, with `sendDefaultPii: false` as well; here that body is a
  * message to the companion, a password on the login form, or a crisis
- * disclosure. The body and the cookies are deleted from the event, the
- * Cookie header with them, and the same from span data. (The integration is
- * also told not to record bodies at all, below; this is the check that holds
- * whatever the SDK's defaults become.) Exported for tests.
+ * disclosure. The body and the cookies are deleted from the event, and the
+ * same from span data.
+ *
+ * And it removes the credentials a request carries in its headers. With
+ * `sendDefaultPii: false` the SDK still copies the request's headers onto the
+ * event, Authorization and Cookie included, on a transaction as well as on an
+ * error. Every request header outside KEPT_REQUEST_HEADERS is deleted from the
+ * event and from span data, and span or breadcrumb data whose name speaks of
+ * authorization, a token, a signature or an API key is redacted. (The SDK is
+ * also told, below, not to record request bodies or attach request headers at
+ * all; this is the check that holds whatever the SDK's defaults become.)
+ * Exported for tests.
  */
 export function scrubSentryEvent<T extends ScrubbableEvent>(event: T): T {
   const request = event.request;
@@ -52,8 +90,9 @@ export function scrubSentryEvent<T extends ScrubbableEvent>(event: T): T {
     delete request.cookies;
     if (request.headers) {
       for (const name of Object.keys(request.headers)) {
-        if (/^refer+er$/i.test(name)) request.headers[name] = loggablePath(request.headers[name]);
-        if (/^(?:set-)?cookie$/i.test(name)) delete request.headers[name];
+        const lowerName = name.toLowerCase();
+        if (!KEPT_REQUEST_HEADERS.has(lowerName)) delete request.headers[name];
+        else if (lowerName === 'referer') request.headers[name] = loggablePath(request.headers[name]);
       }
     }
   }
@@ -67,20 +106,33 @@ export function scrubSentryEvent<T extends ScrubbableEvent>(event: T): T {
   return event;
 }
 
-if (process.env.SENTRY_DSN) {
+/**
+ * The options Sentry.init receives (the transport is the SDK's default).
+ * Exported so a test can run the real SDK with exactly these options and an
+ * in-memory transport.
+ */
+export function sentryInitOptions(dsn: string | undefined, nodeEnv: string | undefined): Sentry.NodeOptions {
   // Only an explicit development or test run is labelled as one; an unset
   // NODE_ENV is a production deployment everywhere else in this app.
-  const nodeEnv = process.env.NODE_ENV;
   const developmentOrTest = nodeEnv === 'development' || nodeEnv === 'test';
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
+  return {
+    dsn,
     environment: nodeEnv || 'production',
     tracesSampleRate: developmentOrTest ? 1.0 : 0.2,
     sendDefaultPii: false,
-    // Replaces the default HTTP integration with one that does not record
-    // the bodies of incoming requests (see scrubSentryEvent).
-    integrations: [Sentry.httpIntegration({ maxIncomingRequestBodySize: 'none' })],
+    integrations: [
+      // Replaces the default HTTP integration with one that does not record
+      // the bodies of incoming requests (see scrubSentryEvent).
+      Sentry.httpIntegration({ maxIncomingRequestBodySize: 'none' }),
+      // Replaces the default request-data integration with one that does not
+      // copy the request's headers onto events (see scrubSentryEvent).
+      Sentry.requestDataIntegration({ include: { headers: false } }),
+    ],
     beforeSend: (event) => scrubSentryEvent(event),
     beforeSendTransaction: (event) => scrubSentryEvent(event),
-  });
+  };
+}
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init(sentryInitOptions(process.env.SENTRY_DSN, process.env.NODE_ENV));
 }

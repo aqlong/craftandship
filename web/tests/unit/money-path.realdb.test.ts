@@ -272,7 +272,10 @@ async function freshCsrf(agent: Browser): Promise<string> {
 }
 async function loggedIn(address: string): Promise<Browser> {
   const agent = browser();
-  const res = await agent.post('/login').type('form').send({ _csrf: await freshCsrf(agent), email: address, password: PASSWORD });
+  // The token first: it is good only in the session its page started, and an
+  // agent attaches its cookies when a request is created, not when it is sent.
+  const csrf = await freshCsrf(agent);
+  const res = await agent.post('/login').type('form').send({ _csrf: csrf, email: address, password: PASSWORD });
   expect(res.status, `login as ${address}`).toBe(302);
   return agent;
 }
@@ -395,11 +398,17 @@ const keeperRow = (customerId: string) =>
     [customerId]
   );
 
-/** A trial with an approved preview build attached, as the dispatch route leaves it: a Harbor build, stamped on the trial. */
+/**
+ * A trial with an approved preview build attached, as the dispatch route leaves
+ * it: a Harbor build, stamped on the trial, on the unverified account the
+ * dispatch created for the address the trial gave (and recorded as created by
+ * it, builds.owner_created_by_dispatch).
+ */
 async function trialWithPreview(tag: string, build: BuildOpts = {}) {
   const visitor = await trialBrowser();
   const payer = await createCustomer(`payer-${tag}`, { verified: false });
   const buildId = await createBuild(payer.id, { harbor: true, ...build });
+  await q('UPDATE builds SET owner_created_by_dispatch = TRUE WHERE id = $1', [buildId]);
   await q('UPDATE trial_keepers SET handoff_build_id = $1, handoff_at = NOW(), email_captured = $2 WHERE trial_id = $3', [
     buildId,
     payer.email,
@@ -1240,15 +1249,29 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
       const published = await t.agent.get(`/lighthouse/lamp/${t.buildId}/published`);
       expect(published.status).toBe(200);
       expect(published.text).toContain('Your website is public.');
+      // That first request after the payment replaced the cookie's value, once.
+      const replaced = ([] as string[]).concat(published.headers['set-cookie'] || []).find((c) => c.startsWith('cas_harbor_trial='));
+      const newToken = String(replaced).split(';')[0].split('=')[1];
+      expect(newToken).toMatch(/^[0-9a-f]{64}$/);
+      expect(newToken).not.toBe(t.token);
       const lamp = await t.agent.get(`/lighthouse/lamp/${t.buildId}`);
       expect(lamp.status).toBe(200);
       expect(lamp.text).toContain('Cancel subscription');
       const table = await t.agent.get('/lighthouse/table');
       expect(table.text).toContain('Tell me more.');
       expect(table.text).toContain('Your site is live');
-      // The cookie was not swapped for a new trial.
-      const stillTheirs = await one<{ n: string }>('SELECT COUNT(*) AS n FROM trial_keepers WHERE cookie_token = $1', [t.token]);
-      expect(Number(stillTheirs.n)).toBe(1);
+      // The cookie was not swapped for a new trial. Its value was replaced
+      // once, on the first request after the payment (the browser got the new
+      // one), so a copy of the cookie taken before the payment finds nothing.
+      const stillTheirs = await one<{ cookie_token: string; rotated: boolean }>(
+        'SELECT cookie_token, cookie_rotated_at >= released_at AS rotated FROM trial_keepers WHERE trial_id = $1',
+        [t.trialId]
+      );
+      expect(stillTheirs.rotated).toBe(true);
+      expect(stillTheirs.cookie_token).toBe(newToken); // the later requests did not replace it again
+      expect(await q('SELECT 1 FROM trial_keepers WHERE cookie_token = $1', [t.token])).toHaveLength(0);
+      const copied = await request(app).get(`/lighthouse/lamp/${t.buildId}`).set('Cookie', `cas_harbor_trial=${t.token}`);
+      expect(copied.status).toBe(404);
 
       // Someone who only knows the address:
       const stranger = await trialBrowser();
@@ -1269,16 +1292,20 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
       expect((await q(`SELECT 1 FROM companion_turns WHERE keeper_id = $1 AND surface = 'harbor-blessing'`, [t.payer.id])).length).toBe(1);
     });
 
-    it('the payer\'s cancel request is authorized (checked up to the point where Stripe would be called)', async () => {
+    it('the payer\'s cancel request takes the account\'s login: the paying cookie alone is told to log in, and the account logged in is authorized (checked up to the point where Stripe would be called)', async () => {
       const t = await trialWithPreview('cancel');
       await deliver(stripeEvent('checkout.session.completed', checkoutSession({ buildId: t.buildId, trialId: t.trialId, email: t.payer.email, tag: 'cancel' })));
+      // The browser that paid, with its cookie alone: a page that says how to log in.
+      const cookieCsrf = await freshCsrf(t.agent);
+      const byCookie = await t.agent.post(`/lighthouse/lamp/${t.buildId}/cancel-subscription`).type('form').send({ _csrf: cookieCsrf });
+      expect(byCookie.status).toBe(403);
+      expect(byCookie.text).toContain('Log in to cancel the subscription.');
       // With no subscription id on the keeper row the route stops at 409 after
       // it has accepted the caller as the keeper, and before any call to Stripe.
       await q('UPDATE keepers SET stripe_subscription_id = NULL WHERE customer_id = $1', [t.payer.id]);
-      const res = await t.agent
-        .post(`/lighthouse/lamp/${t.buildId}/cancel-subscription`)
-        .type('form')
-        .send({ _csrf: await freshCsrf(t.agent) });
+      const owner = await loggedInElsewhere(t.payer);
+      const ownerCsrf = await freshCsrf(owner);
+      const res = await owner.post(`/lighthouse/lamp/${t.buildId}/cancel-subscription`).type('form').send({ _csrf: ownerCsrf });
       expect(res.status).toBe(409);
       expect(res.body.error).toBe('no_active_subscription');
     });
@@ -1380,7 +1407,8 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
       expect((await one<{ email_verified: boolean }>('SELECT email_verified FROM customers WHERE id = $1', [t.payer.id])).email_verified).toBe(false);
 
       const agent = browser();
-      await agent.post('/forgot-password').type('form').send({ _csrf: await freshCsrf(agent), email: t.payer.email });
+      const forgotCsrf = await freshCsrf(agent);
+      await agent.post('/forgot-password').type('form').send({ _csrf: forgotCsrf, email: t.payer.email });
       await vi.waitFor(() => expect(latestDevLink('Password reset link')).toContain('/reset-password?token='));
       const link = latestDevLink('Password reset link');
       const token = new URL(link, 'http://localhost').searchParams.get('token') as string;
@@ -1390,7 +1418,8 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
       expect((await one<{ email_verified: boolean }>('SELECT email_verified FROM customers WHERE id = $1', [t.payer.id])).email_verified).toBe(true);
 
       const elsewhere = browser();
-      const login = await elsewhere.post('/login').type('form').send({ _csrf: await freshCsrf(elsewhere), email: t.payer.email, password: newPassword });
+      const loginCsrf = await freshCsrf(elsewhere);
+      const login = await elsewhere.post('/login').type('form').send({ _csrf: loginCsrf, email: t.payer.email, password: newPassword });
       expect(login.status).toBe(302);
       const lamp = await elsewhere.get(`/lighthouse/lamp/${t.buildId}`);
       expect(lamp.status).toBe(200);
@@ -1886,34 +1915,59 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
 
   // -------------------------------------------------------------------------
   describe('signup against an address someone else already claimed', () => {
-    const signUp = async (agent: Browser, address: string, password: string, name: string) =>
-      agent.post('/signup').type('form').send({ _csrf: await freshCsrf(agent), email: address, password, name });
+    // The token first: it is good only in the session its page started, and an
+    // agent attaches its cookies when a request is created, not when it is sent.
+    const signUp = async (agent: Browser, address: string, password: string, name: string) => {
+      const csrf = await freshCsrf(agent);
+      return agent.post('/signup').type('form').send({ _csrf: csrf, email: address, password, name });
+    };
     const tryLogin = async (address: string, password: string) => {
       const agent = browser();
-      return agent.post('/login').type('form').send({ _csrf: await freshCsrf(agent), email: address, password });
+      const csrf = await freshCsrf(agent);
+      return agent.post('/login').type('form').send({ _csrf: csrf, email: address, password });
+    };
+    /** Open an emailed verification link as a browser does: the page spends nothing, its button posts the token. */
+    const openLink = async (agent: Browser, link: string) => {
+      const page = await agent.get(link);
+      if (!page.text.includes('action="/verify-email"')) return page;
+      const token = (page.text.match(/name="token" value="([^"]+)"/) || [])[1];
+      return agent.post('/verify-email').type('form').send({ _csrf: csrfFrom(page.text), token });
     };
     const stored = (address: string) =>
-      one<{ password: string; name: string; email_verified: boolean }>('SELECT password, name, email_verified FROM customers WHERE email = $1', [address]);
+      one<{ password: string; name: string; email_verified: boolean; terms: boolean }>(
+        'SELECT password, name, email_verified, terms_accepted_at IS NOT NULL AS terms FROM customers WHERE email = $1',
+        [address]
+      );
+    const linksOf = (address: string) =>
+      q<{ used: boolean }>(
+        `SELECT t.used_at IS NOT NULL AS used FROM email_verification_tokens t JOIN customers c ON c.id = t.customer_id
+          WHERE c.email = $1 ORDER BY t.expires_at`,
+        [address]
+      );
+    const verificationMailsTo = (address: string) =>
+      q<{ html_body: string }>(`SELECT html_body FROM email_log WHERE to_email = $1 AND template = 'email_verification' ORDER BY created_at`, [address]);
+    /** Wait for the n-th verification mail to the address (mail starts after the response). */
+    const mailed = async (address: string, n: number) =>
+      vi.waitFor(async () => expect(await verificationMailsTo(address)).toHaveLength(n));
     const attackerPassword = `attacker-${crypto.randomBytes(8).toString('hex')}`;
     const ownerPassword = `owner-${crypto.randomBytes(8).toString('hex')}`;
 
-    it('the owner signs up later and verifies: their password and name, not the first claimant\'s', async () => {
+    it('the owner signs up later and opens the link in the mailbox: their password and name, not the first claimant\'s', async () => {
       const address = email('victim-a');
       const attacker = browser();
       const first = await signUp(attacker, address, attackerPassword, 'Mallory');
       expect(first.headers.location).toBe('/verify-email-sent');
-      const attackerHash = (await stored(address)).password;
+      await mailed(address, 1);
+      const before = await stored(address);
 
       const owner = browser();
       const second = await signUp(owner, address, ownerPassword, 'Vera Owner');
       expect(second.status).toBe(first.status);
       expect(second.headers.location).toBe(first.headers.location);
-      const afterClaim = await stored(address);
-      expect(afterClaim.password).not.toBe(attackerHash);
-      expect(afterClaim.name).toBe('Vera Owner');
+      // The owner's claim waits in the owner's session: the row is as the first signup left it.
+      expect(await stored(address)).toEqual(before);
 
-      await vi.waitFor(() => expect(latestDevLink('Verification link')).toContain('/verify-email?token='));
-      const verified = await owner.get(latestDevLink('Verification link'));
+      const verified = await openLink(owner, latestDevLink('Verification link'));
       expect(verified.status).toBe(302);
       expect(verified.headers.location).toBe('/intake');
       expect(await stored(address)).toMatchObject({ email_verified: true, name: 'Vera Owner' });
@@ -1924,16 +1978,67 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
       expect(ownerLogin.headers.location).toBe('/dashboard');
     });
 
-    it('the first claimant claims again after the owner; the owner opens the newest link and still gets their own password', async () => {
+    it('a stranger\'s signup for an unverified account writes nothing to it, spends none of its links, and the mail it can cause carries none of its words', async () => {
+      // An account a payment made: unverified, a password nobody knows, a name from the address, no terms stamp.
+      const victim = await createCustomer('unverified-victim', { verified: false });
+      await q('UPDATE customers SET terms_accepted_at = NULL WHERE id = $1', [victim.id]);
+      const ownersLink = crypto.randomBytes(32).toString('hex');
+      await q('INSERT INTO email_verification_tokens (customer_id, token) VALUES ($1, $2)', [
+        victim.id,
+        crypto.createHash('sha256').update(ownersLink).digest('hex'),
+      ]);
+      const before = await stored(victim.email);
+      const phish = `URGENT ${run}: your card was declined, update it at evil.example`;
+
+      const stranger = browser();
+      const res = await signUp(stranger, victim.email, attackerPassword, phish);
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe('/verify-email-sent');
+
+      // No password, name or terms change, and the owner's link is not spent.
+      expect(await stored(victim.email)).toEqual(before);
+      expect(await linksOf(victim.email)).toEqual([{ used: false }]);
+      // A link went to the address less than an hour ago, so nothing more is sent, whoever asks.
+      const resendCsrf = await freshCsrf(stranger);
+      await stranger.post('/resend-verification').type('form').send({ _csrf: resendCsrf, email: victim.email });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(await verificationMailsTo(victim.email)).toEqual([]);
+
+      // An hour on, one more link may go out; it greets nobody by name and keeps the earlier link alive.
+      await q(`UPDATE email_verification_tokens SET expires_at = NOW() + INTERVAL '22 hours' WHERE customer_id = $1`, [victim.id]);
+      const again = await freshCsrf(stranger);
+      await stranger.post('/resend-verification').type('form').send({ _csrf: again, email: victim.email });
+      await mailed(victim.email, 1);
+      const [mail] = await verificationMailsTo(victim.email);
+      expect(mail.html_body).toContain('Hi there,');
+      expect(mail.html_body).not.toContain(run + ': your card');
+      expect(mail.html_body).not.toContain('evil.example');
+      expect(await linksOf(victim.email)).toEqual([{ used: false }, { used: false }]);
+
+      // The stranger's browser holds the stranger's claim, but no link: the stranger has nothing.
+      expect((await tryLogin(victim.email, attackerPassword)).status).toBe(200);
+
+      // The owner signs up, and opens the first link in that browser: their claim settles the row, terms included.
+      const owner = browser();
+      await signUp(owner, victim.email, ownerPassword, 'Vera Owner');
+      expect(await stored(victim.email)).toEqual(before);
+      const verified = await openLink(owner, `/verify-email?token=${ownersLink}`);
+      expect(verified.headers.location).toBe('/intake');
+      expect(await stored(victim.email)).toMatchObject({ email_verified: true, name: 'Vera Owner', terms: true });
+      expect((await tryLogin(victim.email, ownerPassword)).status).toBe(302);
+    });
+
+    it('the first claimant claims again after the owner; the owner opens the link and still gets their own password', async () => {
       const address = email('victim-b');
       const owner = browser();
       await signUp(owner, address, ownerPassword, 'Vera Owner');
-      const before = infoSpy.mock.calls.length;
+      await mailed(address, 1);
       await signUp(browser(), address, attackerPassword, 'Mallory');
-      await vi.waitFor(() => expect(infoSpy.mock.calls.length).toBeGreaterThan(before));
-      expect(await bcrypt.compare(attackerPassword, (await stored(address)).password)).toBe(true);
+      // The row still carries the owner's claim, and the one link is the one the owner's signup sent.
+      expect(await bcrypt.compare(ownerPassword, (await stored(address)).password)).toBe(true);
+      expect(await linksOf(address)).toEqual([{ used: false }]);
 
-      const verified = await owner.get(latestDevLink('Verification link'));
+      const verified = await openLink(owner, latestDevLink('Verification link'));
       expect(verified.headers.location).toBe('/intake');
       const row = await stored(address);
       expect(row).toMatchObject({ email_verified: true, name: 'Vera Owner' });
@@ -1944,12 +2049,15 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
 
     it('the owner never signed up and opens a link the claimant triggered: nothing the claimant typed survives', async () => {
       const address = email('victim-c');
-      const before = infoSpy.mock.calls.length;
       await signUp(browser(), address, attackerPassword, 'Mallory');
-      await vi.waitFor(() => expect(infoSpy.mock.calls.length).toBeGreaterThan(before));
+      await mailed(address, 1);
 
       const owner = browser();
-      const verified = await owner.get(latestDevLink('Verification link'));
+      // Opening the link spends nothing: a scanner that fetches it first leaves it for the owner.
+      expect((await request(app).get(latestDevLink('Verification link'))).status).toBe(200);
+      expect(await linksOf(address)).toEqual([{ used: false }]);
+
+      const verified = await openLink(owner, latestDevLink('Verification link'));
       expect(verified.status).toBe(302);
       expect(verified.headers.location).toMatch(/^\/reset-password\?token=[0-9a-f]{64}&verified=1$/);
       const row = await stored(address);
@@ -1962,6 +2070,46 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
       const set = await owner.post('/reset-password').type('form').send({ _csrf: await freshCsrf(owner), token, password: ownerPassword });
       expect(set.text).toContain('Your password is set');
       expect((await tryLogin(address, ownerPassword)).status).toBe(302);
+    });
+
+    it('a link opened in a browser that holds a claim for another address leaves that claim for its own link', async () => {
+      const addressA = email('claim-a');
+      const addressB = email('claim-b');
+      await signUp(browser(), addressA, attackerPassword, 'Person A');
+      await mailed(addressA, 1);
+      const linkA = latestDevLink('Verification link');
+
+      const b = browser();
+      await signUp(b, addressB, ownerPassword, 'Person B');
+      await mailed(addressB, 1);
+      const linkB = latestDevLink('Verification link');
+
+      expect((await openLink(b, linkA)).headers.location).toMatch(/^\/reset-password\?token=/);
+      const openedB = await openLink(b, linkB);
+      expect(openedB.headers.location).toBe('/intake');
+      expect(await stored(addressB)).toMatchObject({ email_verified: true, name: 'Person B' });
+      expect((await tryLogin(addressB, ownerPassword)).status).toBe(302);
+    });
+
+    it('a reset of an account a stranger created drops the name the stranger typed, and the reset mail greets nobody by name', async () => {
+      const address = email('stranger-named');
+      await signUp(browser(), address, attackerPassword, `URGENT ${run}: pay at evil.example`);
+      await mailed(address, 1);
+
+      const owner = browser();
+      const forgotCsrf = await freshCsrf(owner);
+      await owner.post('/forgot-password').type('form').send({ _csrf: forgotCsrf, email: address });
+      const resetMails = () =>
+        q<{ html_body: string }>(`SELECT html_body FROM email_log WHERE to_email = $1 AND template = 'password_reset'`, [address]);
+      await vi.waitFor(async () => expect(await resetMails()).toHaveLength(1));
+      const [resetMail] = await resetMails();
+      expect(resetMail.html_body).toContain('Hi there,');
+      expect(resetMail.html_body).not.toContain('evil.example');
+
+      const token = new URL(latestDevLink('Password reset link'), 'http://localhost').searchParams.get('token') as string;
+      const set = await owner.post('/reset-password').type('form').send({ _csrf: await freshCsrf(owner), token, password: ownerPassword });
+      expect(set.text).toContain('Your password is set');
+      expect(await stored(address)).toMatchObject({ email_verified: true, name: address.split('@')[0] });
     });
 
     it('a verified account is not touched by a signup against it, and an old link cannot change it', async () => {
@@ -1981,6 +2129,8 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
 
       const viaLink = await attacker.get(`/verify-email?token=${leftover}`);
       expect(viaLink.text).toContain('expired or already been used');
+      const viaPost = await attacker.post('/verify-email').type('form').send({ _csrf: csrfFrom(viaLink.text), token: leftover });
+      expect(viaPost.text).toContain('expired or already been used');
       expect(await stored(account.email)).toEqual(before);
       expect((await tryLogin(account.email, attackerPassword)).status).toBe(200);
       expect((await tryLogin(account.email, PASSWORD)).status).toBe(302);
@@ -2599,6 +2749,10 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
       const note = `Teaches reiki on Sundays ${tag} ${run}`;
       await seedNote(first.trialId, note);
       const visitor = await trialBrowser();
+      // A second build on an account that already existed, as only the
+      // earlier code's dispatch left it (an anonymous dispatch now refuses
+      // the address). Its payment is refused for that too, unless the
+      // account's own login opens it (promoteTrialInTransaction).
       const buildId = await createBuild(first.payer.id, { harbor: true });
       await q('UPDATE trial_keepers SET handoff_build_id = $1, handoff_at = NOW(), email_captured = $2 WHERE trial_id = $3', [
         buildId,
@@ -3047,18 +3201,23 @@ describe.skipIf(!integrationUrl)('money, account and safety paths against a real
       // Signup: the password the visitor typed.
       const signupAddress = email('cost-signup');
       const typist = browser();
-      await typist.post('/signup').type('form').send({ _csrf: await freshCsrf(typist), email: signupAddress, password: PASSWORD, name: 'Cost Signup' });
+      const typistCsrf = await freshCsrf(typist);
+      await typist.post('/signup').type('form').send({ _csrf: typistCsrf, email: signupAddress, password: PASSWORD, name: 'Cost Signup' });
       found.signup = costOf(await hashOf(signupAddress));
 
       // The verification link opened in a browser that made no claim: the password becomes one nobody knows.
       await vi.waitFor(() => expect(latestDevLink('Verification link')).toContain('/verify-email?token='));
       const stranger = browser();
-      expect((await stranger.get(latestDevLink('Verification link'))).status).toBe(302);
+      const linkPage = await stranger.get(latestDevLink('Verification link'));
+      const linkToken = (linkPage.text.match(/name="token" value="([^"]+)"/) || [])[1];
+      const opened = await stranger.post('/verify-email').type('form').send({ _csrf: csrfFrom(linkPage.text), token: linkToken });
+      expect(opened.status).toBe(302);
       found.verificationOpenedElsewhere = costOf(await hashOf(signupAddress));
 
       // A reset: the password the owner chose.
       const resetter = browser();
-      await resetter.post('/forgot-password').type('form').send({ _csrf: await freshCsrf(resetter), email: signupAddress });
+      const resetterCsrf = await freshCsrf(resetter);
+      await resetter.post('/forgot-password').type('form').send({ _csrf: resetterCsrf, email: signupAddress });
       await vi.waitFor(() => expect(latestDevLink('Password reset link')).toContain('/reset-password?token='));
       const resetToken = new URL(latestDevLink('Password reset link'), 'http://localhost').searchParams.get('token') as string;
       const chosen = `chosen-${crypto.randomBytes(9).toString('hex')}`;

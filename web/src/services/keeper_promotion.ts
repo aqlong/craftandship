@@ -33,7 +33,10 @@
  * A promotion that fails the rule writes nothing and says why
  * (`refusal`); the caller decides what becomes of the payment. A trial is also
  * promoted only for the build stamped on it (`buildId`), so that the release
- * below records a fact the cookie rule can check.
+ * below records a fact the cookie rule can check, and, unless the account's
+ * own login or paying browser opened the payment, only into the account that
+ * build's dispatch created (or that the payment itself created): an account
+ * that existed before may belong to someone who never saw this conversation.
  *
  * What the trial cookie is worth afterwards: promotion sets `released_at`, so
  * the cookie stops being a trial identity. It is not thrown away, though: the
@@ -135,18 +138,43 @@ export interface PromoteTrialStepOpts extends Omit<PromoteTrialOpts, 'pool'> {
   /**
    * The build this payment is for. When given, the trial must be the one
    * stamped on that build (`trial_keepers.handoff_build_id`); a trial that is
-   * not is refused (`trial_not_for_build`). The development bypass pays for no
-   * build and leaves it out.
+   * not is refused (`trial_not_for_build`). The trial is also promoted only
+   * into an account that came into being for it, unless one of the two flags
+   * below says otherwise: the account that build's own dispatch created
+   * (`builds.owner_created_by_dispatch`, with `builds.customer_id` the
+   * account); anything else is refused (`account_not_created_for_trial`). The
+   * development bypass pays for no build and leaves it out.
    */
   buildId?: string;
+  /**
+   * The Checkout session was opened by a login of `customerId`, or by the
+   * browser that already paid into it (the session's `keeper_customer_id`
+   * metadata): the account's owner chose to pay, so the trial may be promoted
+   * into it although its dispatch did not create it.
+   */
+  openedByAccount?: boolean;
+  /** No account existed for the payment's address, and this payment created `customerId`. */
+  accountCreatedByPayment?: boolean;
 }
 
 /**
- * Why a payment was not applied to the account it names: the account's keeper
- * already carries a subscription of its own that this one may not replace, or
- * the trial the payment names is not the one stamped on its build.
+ * Why a payment was not applied to the account it names:
+ *   - `account_has_subscription`: the account's keeper already carries a
+ *     subscription of its own that this one may not replace;
+ *   - `trial_not_for_build`: the trial the payment names is not the one
+ *     stamped on its build;
+ *   - `account_not_created_for_trial`: a trial's payment, opened by no login
+ *     of the account, for an account the trial's dispatch did not create (an
+ *     account that existed before it, see PromoteTrialStepOpts.buildId);
+ *   - `account_verified_by_other`: a payment opened by no login of the
+ *     account, into an account whose owner has verified the address (decided
+ *     by the webhook, routes/webhooks.ts, before any promotion).
  */
-export type PaymentRefusal = 'account_has_subscription' | 'trial_not_for_build';
+export type PaymentRefusal =
+  | 'account_has_subscription'
+  | 'trial_not_for_build'
+  | 'account_not_created_for_trial'
+  | 'account_verified_by_other';
 
 /**
  * What `claimKeeperSubscription` writes to a keeper row. `replaceEnded` is what
@@ -366,6 +394,22 @@ export async function promoteTrialInTransaction(
   });
   if (opts.buildId && (trial.handoff_build_id ?? '').toLowerCase() !== opts.buildId.toLowerCase()) {
     return refused('trial_not_for_build');
+  }
+
+  // 3b. ...and the account must be one that came into being for this trial:
+  //     the one its dispatch created, or one this payment created, unless the
+  //     account's own login or paying browser opened the payment. An account
+  //     that existed before the dispatch may be someone else's (anyone can
+  //     type an address, and POST /signup makes an account for any address),
+  //     and a promotion into it would put this trial's keeper row,
+  //     subscription and conversation into that person's account and make
+  //     this trial's cookie its keeper. The caller has locked the build row.
+  if (opts.buildId && !opts.openedByAccount && !opts.accountCreatedByPayment) {
+    const createdForTrial = await client.query(
+      `SELECT 1 FROM builds WHERE id = $1 AND customer_id = $2 AND owner_created_by_dispatch`,
+      [opts.buildId, opts.customerId]
+    );
+    if (createdForTrial.rows.length === 0) return refused('account_not_created_for_trial');
   }
 
   // 4. Create the keeper row and point it at the subscription, and the

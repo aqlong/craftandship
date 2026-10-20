@@ -5,6 +5,7 @@ import {
   buildCorpus,
   parseClustersJson,
   isValidCluster,
+  containsLinkOrMarkup,
   normalizeQuestion,
   buildExtractPrompt,
   type ExtractFn,
@@ -431,5 +432,60 @@ describe('topic KB sweep input / output filtering (R1-W2 review)', () => {
         answer: 'Hosting, revisions, and a review of every build before it goes live.',
       })
     ).toBe(true);
+  });
+
+  it('isValidCluster rejects any dotted host name, an address and a phone number, not only a fixed list of TLDs', () => {
+    const bad = [
+      'You can pay at paypal.me/craftship before the build starts.',
+      'Message the team on t.me/craftship or wa.me/15125550100.',
+      'Visit example.shop for the latest pricing.',
+      'Go to bit.ly/3abc for the form.',
+      'The discount link is discord.gg/craft.',
+      'Send the deposit through cash.app/$craftship.',
+      'Pay at pay.example.co.uk today.',
+      'Visit craftandship.io.example.test for the offer.',
+      `Pay at paypal${String.fromCharCode(0xff0e)}me/craftship.`, // a full-width dot
+      'The form is at 93.184.216.34/form.',
+      'Call 512-555-0100 and give the code CRAFT50 for a refund.',
+      'Text +1 (512) 555 0100 for a discount.',
+    ];
+    for (const answer of bad) {
+      expect(isValidCluster({ question: 'How do I pay?', answer }), answer).toBe(false);
+      expect(isValidCluster({ question: answer, answer: 'Fine.' }), answer).toBe(false);
+    }
+  });
+
+  it('isValidCluster accepts abbreviations, prices and the product domain', () => {
+    const fine = [
+      'Pick any amount, e.g. $19 or $39, i.e. what fits your budget.',
+      'Most sites are ready in 3.5 days; plans run $19.99 to $39 a month.',
+      'Everything is explained at craftandship.io/pricing.',
+      'Open 9 a.m. to 5 p.m., with up to 30 revisions in 2026.',
+    ];
+    for (const answer of fine) {
+      expect(isValidCluster({ question: 'How does pricing work?', answer }), answer).toBe(true);
+    }
+  });
+
+  it('containsLinkOrMarkup stays linear on long hostile text (isValidCluster caps it at 1,500 characters anyway)', () => {
+    for (const unit of ['.', '.-', 'a.', 'a@', '1 (', 'word ']) {
+      const text = unit.repeat(Math.ceil(200_000 / unit.length));
+      const started = performance.now();
+      containsLinkOrMarkup(text);
+      expect(performance.now() - started, JSON.stringify(unit)).toBeLessThan(1000);
+    }
+  });
+
+  it('stores what it inserts as pending, which the support chat does not serve', async () => {
+    const queryFn = vi.fn();
+    queryFn.mockResolvedValueOnce({ rows: makeTurnRows(15) });
+    queryFn.mockResolvedValueOnce({ rowCount: 1, rows: [] });
+    const extractFn = makeExtractFn({
+      clusters: [{ question: 'How much does it cost?', answer: 'Sliding $19 to $39 a month.' }],
+      costMicros: 5000,
+    });
+    await runTopicKbSweep({ pool: makePool(queryFn), extractFn });
+    const insertSql = String(queryFn.mock.calls[1][0]);
+    expect(insertSql).toMatch(/INSERT INTO support_kb \(question, question_normalized, answer, status\)\s+SELECT \$1, \$2, \$3, 'pending'/);
   });
 });

@@ -289,10 +289,12 @@ interface MakePublicBuildRow {
  *   - the account already has a keeper with a subscription this payment may
  *     not replace (a second trial's session, or a second payment by the
  *     keeper), or the trial the session names is not the one stamped on its
- *     build. The build stays in preview, the trial is not released and the
- *     keeper row is not touched. (When the cause is the keeper's own
- *     subscription, the account's owner can still publish the build under
- *     it.)
+ *     build, or a session no login of the account opened names a verified
+ *     account, or a trial's session names an account its dispatch did not
+ *     create (see `promoteTrialInTransaction`). The build stays in preview,
+ *     the trial is not released and the keeper row is not touched. (When the
+ *     cause is the keeper's own subscription, the account's owner can still
+ *     publish the build under it.)
  * None is repaired or refunded automatically: refunding is a person's decision
  * made in Stripe, and this code never calls Stripe.
  */
@@ -427,6 +429,7 @@ async function handleHarborMakePublic(
   // Step 2: the customer the payment lands in.
   let customerId: string;
   let recipientEmail: string;
+  let accountCreatedByPayment = false;
   if (build.customer_id) {
     customerId = build.customer_id;
     // The mail goes to the account's address. Whenever the account is
@@ -452,8 +455,29 @@ async function handleHarborMakePublic(
         monthlyAmountCents,
       });
     }
-    customerId = await resolveCustomerByEmail(client, sessionEmail);
+    const resolved = await resolveCustomerByEmail(client, sessionEmail);
+    customerId = resolved.id;
+    accountCreatedByPayment = resolved.created;
     recipientEmail = sessionEmail;
+  }
+
+  // Whose payment this is. The make-public route records
+  // `keeper_customer_id` only for a session opened under the account's login
+  // or by the browser that already paid into it (routes/lighthouse.ts); every
+  // other session was opened by a trial cookie, which proves nothing about the
+  // account. A keeper row is never created or claimed on a verified account
+  // for such a session: the account's owner has proved the mailbox, and the
+  // payer has not. The share lock orders this read against a verification or
+  // a reset of the account (an UPDATE of the row) that is in flight.
+  const openedByAccount = meta.keeper_customer_id === customerId;
+  let promoted = false;
+  let refusal: PaymentRefusal | null = null;
+  if (!openedByAccount) {
+    const account = await client.query<{ email_verified: boolean | null }>(
+      'SELECT email_verified FROM customers WHERE id = $1 FOR SHARE',
+      [customerId]
+    );
+    if (account.rows[0]?.email_verified === true) refusal = 'account_verified_by_other';
   }
 
   // Step 3: promote the trial, or attach the subscription to the keeper.
@@ -466,9 +490,7 @@ async function handleHarborMakePublic(
   if (!trialId || !UUID_RE.test(trialId)) {
     trialId = await unreleasedTrialForBuild(client, buildId);
   }
-  let promoted = false;
-  let refusal: PaymentRefusal | null = null;
-  if (trialId && UUID_RE.test(trialId)) {
+  if (!refusal && trialId && UUID_RE.test(trialId)) {
     const step = await promoteTrialInTransaction(client, {
       trialId,
       buildId,
@@ -479,20 +501,20 @@ async function handleHarborMakePublic(
       monthlyAmountCents,
       slidingScaleAttestation,
       initialStatus: 'active',
+      openedByAccount,
+      accountCreatedByPayment,
     });
     promoted = step.promoted;
     refusal = step.refusal;
     if (!step.trialFound) {
       console.warn(`[webhook/harbor] trial ${trialId} named by session ${sessionId} does not exist; continuing without it`);
     }
-    // The account's own keeper paying again (the make-public route records
-    // `keeper_customer_id` only for a session opened under the account's login
-    // or by the browser that paid for it) is not a trial paying into someone
-    // else's keeper. When the keeper already has a subscription, the trial is
-    // not merged into it, but the payment is still the keeper's: it falls
-    // through to the claim below, which takes over a subscription that no
-    // longer publishes and refuses one that still does.
-    if (refusal === 'account_has_subscription' && meta.keeper_customer_id === customerId) refusal = null;
+    // The account's own keeper paying again is not a trial paying into
+    // someone else's keeper. When the keeper already has a subscription, the
+    // trial is not merged into it, but the payment is still the keeper's: it
+    // falls through to the claim below, which takes over a subscription that
+    // no longer publishes and refuses one that still does.
+    if (refusal === 'account_has_subscription' && openedByAccount) refusal = null;
   }
   if (!promoted && !refusal) {
     // Reached when the payer was already a keeper (no trial in the metadata)
@@ -600,6 +622,10 @@ const REFUSAL_REASONS: Record<PaymentRefusal, string> = {
     'the account already has a keeper with a subscription that this payment may not replace, so the keeper row, the trial and the build were left as they were',
   trial_not_for_build:
     'the trial the session names is not the one stamped on its build, so nothing was promoted and the build was left as it was',
+  account_not_created_for_trial:
+    'a trial cookie opened the session for an account that the trial\'s own dispatch did not create (the account existed before it), so nothing was promoted and the build was left as it was',
+  account_verified_by_other:
+    'the session was opened by no login of the account, and the account\'s owner has verified its address, so no keeper row was written on it and the build was left as it was',
 };
 
 interface UnappliedPayment {
@@ -652,12 +678,12 @@ async function recordSubscription(
 
 /**
  * The customers row for a Checkout email: the existing one, or a new
- * unverified one. `password` and `name` are NOT NULL, so a new row gets a
- * bcrypt hash of 64 random bytes that nobody ever sees (the account is
+ * unverified one (`created`). `password` and `name` are NOT NULL, so a new row
+ * gets a bcrypt hash of 64 random bytes that nobody ever sees (the account is
  * entered through a password-reset or verification link sent to the mailbox)
  * and a name taken from the email's local part.
  */
-async function resolveCustomerByEmail(client: PoolClient, email: string): Promise<string> {
+async function resolveCustomerByEmail(client: PoolClient, email: string): Promise<{ id: string; created: boolean }> {
   const ephemeralPassword = await hashUnusablePassword();
   const ephemeralName = (email.split('@')[0] || 'Keeper').slice(0, 60);
   const inserted = await client.query<{ id: string }>(
@@ -667,7 +693,7 @@ async function resolveCustomerByEmail(client: PoolClient, email: string): Promis
      RETURNING id`,
     [email, ephemeralPassword, ephemeralName]
   );
-  if (inserted.rows.length > 0) return inserted.rows[0].id;
+  if (inserted.rows.length > 0) return { id: inserted.rows[0].id, created: true };
   const existing = await client.query<{ id: string }>(
     'SELECT id FROM customers WHERE email = $1',
     [email]
@@ -675,7 +701,7 @@ async function resolveCustomerByEmail(client: PoolClient, email: string): Promis
   if (existing.rows.length === 0) {
     throw new Error('[webhook/harbor] could not resolve a customer for the checkout email');
   }
-  return existing.rows[0].id;
+  return { id: existing.rows[0].id, created: false };
 }
 
 // ---------------------------------------------------------------------------

@@ -92,10 +92,8 @@ ALTER TABLE builds ADD COLUMN IF NOT EXISTS retry_count INTEGER DEFAULT 0;
 ALTER TABLE builds ADD COLUMN IF NOT EXISTS railway_project_id VARCHAR(255);
 ALTER TABLE builds ADD COLUMN IF NOT EXISTS railway_service_id VARCHAR(255);
 ALTER TABLE builds ADD COLUMN IF NOT EXISTS railway_environment_id VARCHAR(255);
--- Generated Postgres DATABASE_URL (includes auto-generated password). Persisted at
--- provision time because Railway's variables GraphQL field returns empty for
--- service env vars after the deploy, leaving the password otherwise unrecoverable.
--- Required for ops to connect to a customer-app PG via Railway's TCP proxy.
+-- Generated Postgres DATABASE_URL with its credentials masked (the worker's
+-- _set_preview_status); the password stays with Railway.
 ALTER TABLE builds ADD COLUMN IF NOT EXISTS railway_database_url TEXT;
 
 -- Anonymous intake preview: drafts start with customer_id=NULL and a random
@@ -131,6 +129,19 @@ CREATE TABLE IF NOT EXISTS support_kb (
 );
 
 CREATE INDEX IF NOT EXISTS idx_support_kb_usage ON support_kb (usage_count DESC);
+
+-- Whether a support_kb answer may be served: the support chat serves only
+-- 'approved' rows (findKnowledgeBaseAnswer in routes/support.ts). The column
+-- arrives with DEFAULT 'approved', so the rows that exist when it is added are
+-- filled with 'approved' once, by the ADD COLUMN itself, and keep being served;
+-- on every later boot the ADD COLUMN does nothing. The default is then set to
+-- 'pending', so a row inserted afterwards without a status (the weekly topic
+-- sweep and the coordinator's support_kb_insert are the writers) is not served
+-- until an operator approves it, by hand:
+--   UPDATE support_kb SET status = 'approved', updated_at = NOW() WHERE id = '<id>'
+ALTER TABLE support_kb ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'approved'
+  CHECK (status IN ('pending', 'approved'));
+ALTER TABLE support_kb ALTER COLUMN status SET DEFAULT 'pending';
 
 -- Platform-level singleton key/value metadata (e.g. support_kb knowledge hash
 -- so we can detect when the dynamic support-knowledge content changed and
@@ -1125,6 +1136,12 @@ ALTER TABLE trial_keepers ADD COLUMN IF NOT EXISTS handoff_at TIMESTAMP;
 ALTER TABLE trial_keepers ADD COLUMN IF NOT EXISTS promoted_customer_id UUID REFERENCES customers(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS trial_keepers_promoted_customer_idx ON trial_keepers(promoted_customer_id) WHERE promoted_customer_id IS NOT NULL;
 
+-- When the trial's cookie token was last replaced (middleware/trial-cookie.ts).
+-- A trial released by a payment while this is NULL or older than released_at
+-- gets a new token on the next request that presents it, once, so a copy of
+-- the cookie taken before the payment does not speak for the paying browser.
+ALTER TABLE trial_keepers ADD COLUMN IF NOT EXISTS cookie_rotated_at TIMESTAMP;
+
 -- Faithful-copy mode storage (harbor-faithful-copy-admin-trigger-route,
 -- 2026-05-09). When the operator triggers POST /admin/harbor/:trial_id/
 -- crawl-source-site with a source URL, the crawler result is persisted
@@ -1228,6 +1245,15 @@ BEGIN
     UPDATE keepers SET handoff_at = NOW() WHERE handoff_build_id IS NOT NULL AND handoff_at IS NULL;
   END IF;
 END $$;
+
+-- TRUE on a Harbor build whose dispatch created the customers row that owns
+-- it, in the same transaction (an anonymous dispatch attaches a build only to
+-- such a row: services/harbor_dispatch.ts). A trial's payment is promoted only
+-- into that account unless the account's own login or paying cookie opened the
+-- Checkout session (promoteTrialInTransaction in services/keeper_promotion.ts).
+-- Rows written before the column existed carry FALSE: nothing left says which
+-- dispatch created which account.
+ALTER TABLE builds ADD COLUMN IF NOT EXISTS owner_created_by_dispatch BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Subscription audit trail. One row per Stripe subscription_id; updated
 -- by webhook handlers on subscription.updated / .deleted events.

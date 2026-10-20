@@ -31,8 +31,16 @@ function siteUrl(): string {
   return (process.env.BASE_URL || 'https://craftandship.io').replace(/\/+$/, '');
 }
 
+// The same escaping as escapeHtml in app.ts (tests/unit/email.escape-html.test.ts
+// holds the two to one table): safe in element content and in an attribute
+// quoted with either quote character.
 function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Signed with the resolved session secret (middleware/auth.ts), never with a
@@ -423,15 +431,20 @@ export function logDevEmailLink(label: string, url: string): void {
   console.info(`[dev] Email is not configured. ${label}: ${url}`);
 }
 
+/**
+ * `name` is the account's name when its owner has settled it (a verified
+ * account), else null and the mail greets nobody by name: the name on an
+ * unverified account was typed by whoever created it.
+ */
 export async function sendPasswordResetEmail(
   to: string,
-  name: string,
+  name: string | null,
   resetUrl: string
 ): Promise<void> {
   logDevEmailLink('Password reset link', resetUrl);
   const subject = 'Reset your Craft & Ship password';
   const body = `
-<p>Hi ${escapeHtml(name)},</p>
+<p>Hi ${name ? escapeHtml(name) : 'there'},</p>
 <p>We received a request to reset your password. Click the link below to set a new one:</p>
 <p><a href="${escapeHtml(resetUrl)}">${escapeHtml(resetUrl)}</a></p>
 <p>This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.</p>
@@ -837,15 +850,19 @@ export async function sendPostBuildTestimonialEmail(
   await sendEmail({ to, subject, html: emailShell(subject, body, unsubscribeUrl), template: 'post_build_testimonial' });
 }
 
+/**
+ * Greets nobody by name: the mail goes to an address whose owner has proven
+ * nothing yet, and any name there is was typed by whoever filled in the form,
+ * who may be someone else.
+ */
 export async function sendVerificationEmail(
   to: string,
-  name: string,
   verifyUrl: string
 ): Promise<void> {
   logDevEmailLink('Verification link', verifyUrl);
   const subject = 'Verify your Craft & Ship email address';
   const body = `
-<p>Hi ${escapeHtml(name)},</p>
+<p>Hi there,</p>
 <p>Thanks for signing up! Please verify your email address to get started:</p>
 <p><a href="${escapeHtml(verifyUrl)}" style="display:inline-block;background:#3A2A1F;color:#fff;padding:12px 24px;border-radius:5px;text-decoration:none;font-weight:600;">Verify Email Address</a></p>
 <p>Or copy this link: <a href="${escapeHtml(verifyUrl)}">${escapeHtml(verifyUrl)}</a></p>

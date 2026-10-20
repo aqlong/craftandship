@@ -1,0 +1,45 @@
+<%#
+  "Payments needing a person" on the Harbor inbox. GET /admin/harbor
+  (src/routes/admin.ts, PAYMENTS_NEEDING_A_PERSON_SQL) passes the rows, or
+  null when they could not be read. Drawn only when there is something to
+  say: a row, or the failure to read them.
+%>
+<% if (locals.paymentsNeedingAPerson === null) { %>
+  <div class="bg-surface-3 rounded-[10px] px-4 py-3 mb-5" data-payments-needing-a-person>
+    <p class="text-sm text-gray-200">Payments needing a person could not be read. The server log says why.</p>
+  </div>
+<% } else if (Array.isArray(locals.paymentsNeedingAPerson) && locals.paymentsNeedingAPerson.length > 0) { %>
+  <div class="bg-surface-3 rounded-[10px] overflow-hidden mb-5" data-payments-needing-a-person>
+    <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-amber-400 uppercase tracking-wider">Payments needing a person</h2>
+      <span class="text-xs text-subtle"><%= locals.paymentsNeedingAPerson.length %> shown</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Account</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Stripe subscription</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Stripe customer</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Status</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Amount</th>
+            <th class="px-4 py-3 text-left text-subtle font-semibold border-b border-border">Recorded</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% locals.paymentsNeedingAPerson.forEach(function(payment) { %>
+            <tr class="border-b border-surface-3 last:border-b-0 hover:bg-surface-2" data-payment-subscription="<%= payment.stripe_subscription_id %>">
+              <td class="px-4 py-2.5 text-gray-300 text-xs" title="<%= payment.keeper_customer_id %>"><%= payment.email %></td>
+              <td class="px-4 py-2.5 text-gray-300 text-xs whitespace-nowrap font-mono"><%= payment.stripe_subscription_id %></td>
+              <td class="px-4 py-2.5 text-gray-300 text-xs whitespace-nowrap font-mono"><%= payment.stripe_customer_id %></td>
+              <td class="px-4 py-2.5 text-gray-300 text-xs whitespace-nowrap"><%= payment.status %></td>
+              <td class="px-4 py-2.5 text-gray-300 tabular-nums whitespace-nowrap">$<%= (Number(payment.monthly_amount_cents) / 100).toFixed(2) %> a month</td>
+              <td class="px-4 py-2.5 text-subtle text-xs whitespace-nowrap"><span data-ts="<%= payment.created_at %>" data-ts-fmt="datetime"><%= payment.created_at ? new Date(payment.created_at).toISOString().slice(0, 10) : '' %></span></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="text-xs text-subtle mt-2 mb-5 max-w-[720px]">Each of these is a subscription Stripe still has open and that no account&rsquo;s paid conversation uses: a payment the webhook recorded without applying it (mailed to you once, when it arrived), or an earlier subscription that a newer one replaced. A person refunds or cancels it in Stripe; cancelling ends it here too.</p>
+<% } %>

@@ -4,6 +4,7 @@ import type { Request, Response, NextFunction } from 'express';
 import {
   trialCookie,
   identifyTrialCookie,
+  rotateTrialCookie,
   createMintLimiter,
   _internals,
 } from '../../../src/middleware/trial-cookie';
@@ -12,7 +13,7 @@ const { readCookie, isValidTokenShape, generateToken, TRIAL_COOKIE_NAME, TRIAL_T
   _internals;
 
 describe('trial-cookie middleware: helpers', () => {
-  it('TRIAL_COOKIE_NAME is stable for cross-version compatibility', () => {
+  it('TRIAL_COOKIE_NAME is the bare name in development and test (plain HTTP; see hostOnlyCookieName)', () => {
     expect(TRIAL_COOKIE_NAME).toBe('cas_harbor_trial');
   });
 
@@ -199,7 +200,11 @@ describe('trialCookie middleware-handler', () => {
     await handler(req, res, next as unknown as NextFunction);
     const [selectSql, selectParams] = queryFn.mock.calls[0] as [string, unknown[]];
     expect(selectSql).toMatch(/WHERE cookie_token = \$1\s+AND expires_at > NOW\(\)/);
-    expect(selectSql).toMatch(/released_at, handoff_build_id\s+FROM trial_keepers/);
+    expect(selectSql).toMatch(/released_at, handoff_build_id,[\s\S]*\s+FROM trial_keepers/);
+    // Whether the payment released the trial after its token was last replaced (see "After payment").
+    expect(selectSql).toMatch(
+      /\(released_at IS NOT NULL\s+AND \(cookie_rotated_at IS NULL OR cookie_rotated_at < released_at\)\) AS rotate_cookie/
+    );
     expect(selectParams).toEqual([VALID_TOKEN]);
   });
 
@@ -387,7 +392,9 @@ describe('trialCookie: bots that never keep cookies cannot mint unbounded trials
 // After payment. The Stripe webhook releases the trial; the browser on its
 // way back from Stripe holds nothing but this cookie. It must keep meaning
 // "the browser that paid for this trial's build" and must not be swapped for
-// a fresh trial (which is what locked the payer out before).
+// a fresh trial (which is what locked the payer out before). Its value is
+// replaced once, on the first request after the release (rotate_cookie, read
+// with the row); releasedRow() is a trial whose value was already replaced.
 // ----------------------------------------------------------------------
 
 const BUILD_ID = 'bbbbbbbb-1111-2222-3333-444444444444';
@@ -399,9 +406,119 @@ function releasedRow(overrides: Record<string, unknown> = {}) {
     released_at: new Date('2026-04-27T10:00:00Z'),
     handoff_build_id: BUILD_ID,
     expires_at: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+    rotate_cookie: false,
     ...overrides,
   };
 }
+
+describe('trialCookie: the first request after the payment replaces the cookie value', () => {
+  it('writes a new token in place of the old one, only while the row still holds the old one, and sets it once', async () => {
+    const row = releasedRow({ rotate_cookie: true });
+    const queryFn = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [row] }) // trial by token
+      .mockResolvedValueOnce({ rows: [{ build_id: BUILD_ID, customer_id: KEEPER_ID }] }) // paid build
+      .mockResolvedValueOnce({ rows: [{ trial_id: row.trial_id }] }); // the replacement
+    const req = makeReq(`cas_harbor_trial=${VALID_TOKEN}`);
+    const { res, cookieFn } = makeRes();
+    await trialCookie(makePool(queryFn))(req, res, vi.fn() as unknown as NextFunction);
+
+    expect(queryFn).toHaveBeenCalledTimes(3);
+    const [sql, params] = queryFn.mock.calls[2] as [string, unknown[]];
+    expect(sql).toMatch(/UPDATE trial_keepers SET cookie_token = \$3, cookie_rotated_at = NOW\(\)\s+WHERE trial_id = \$1 AND cookie_token = \$2/);
+    expect(params[0]).toBe(row.trial_id);
+    expect(params[1]).toBe(VALID_TOKEN);
+    expect(params[2]).toMatch(/^[0-9a-f]{64}$/);
+    expect(params[2]).not.toBe(VALID_TOKEN);
+    // The browser gets the new value, once, with the time left on the row.
+    expect(cookieFn).toHaveBeenCalledOnce();
+    const [name, value, opts] = cookieFn.mock.calls[0];
+    expect(name).toBe('cas_harbor_trial');
+    expect(value).toBe(params[2]);
+    expect(opts.maxAge).toBeGreaterThan(19 * 24 * 60 * 60 * 1000);
+    // Still the payer: the replacement changes the value, not who it is.
+    expect(req.harborPaidKeeper).toEqual({ trialId: row.trial_id, buildId: BUILD_ID, customerId: KEEPER_ID });
+    expect(req.harborTrial?.cookie_token).toBe(params[2]);
+  });
+
+  it('a request that lost the race to replace it sets no cookie (the winner sets the new one) and is still the payer', async () => {
+    const row = releasedRow({ rotate_cookie: true });
+    const queryFn = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [row] })
+      .mockResolvedValueOnce({ rows: [{ build_id: BUILD_ID, customer_id: KEEPER_ID }] })
+      .mockResolvedValueOnce({ rows: [] }); // another request replaced the token first
+    const req = makeReq(`cas_harbor_trial=${VALID_TOKEN}`);
+    const { res, cookieFn } = makeRes();
+    await trialCookie(makePool(queryFn))(req, res, vi.fn() as unknown as NextFunction);
+
+    expect(cookieFn).not.toHaveBeenCalled();
+    expect(req.harborPaidKeeper).toEqual({ trialId: row.trial_id, buildId: BUILD_ID, customerId: KEEPER_ID });
+  });
+});
+
+describe('rotateTrialCookie: a new value after a step that trusts the cookie with more', () => {
+  it('replaces the token of the request\'s trial and sets the new value', async () => {
+    const queryFn = vi.fn().mockResolvedValueOnce({ rows: [{ trial_id: ACTIVE_TRIAL_ROW.trial_id }] });
+    const req = makeReq(`cas_harbor_trial=${VALID_TOKEN}`);
+    req.harborTrial = { ...ACTIVE_TRIAL_ROW };
+    const { res, cookieFn } = makeRes();
+    expect(await rotateTrialCookie(makePool(queryFn), req, res)).toBe(true);
+    const [sql, params] = queryFn.mock.calls[0] as [string, unknown[]];
+    expect(sql).toMatch(/WHERE trial_id = \$1 AND cookie_token = \$2/);
+    expect(params.slice(0, 2)).toEqual([ACTIVE_TRIAL_ROW.trial_id, VALID_TOKEN]);
+    expect(cookieFn).toHaveBeenCalledOnce();
+    expect(cookieFn.mock.calls[0][1]).toBe(params[2]);
+    expect(req.harborTrial.cookie_token).toBe(params[2]);
+  });
+
+  it('sets nothing when the token was already replaced, or when the request has no trial', async () => {
+    const queryFn = vi.fn().mockResolvedValueOnce({ rows: [] });
+    const req = makeReq(`cas_harbor_trial=${VALID_TOKEN}`);
+    req.harborTrial = { ...ACTIVE_TRIAL_ROW };
+    const { res, cookieFn } = makeRes();
+    expect(await rotateTrialCookie(makePool(queryFn), req, res)).toBe(false);
+    expect(await rotateTrialCookie(makePool(queryFn), makeReq(), res)).toBe(false);
+    expect(queryFn).toHaveBeenCalledTimes(1);
+    expect(cookieFn).not.toHaveBeenCalled();
+    expect(req.harborTrial.cookie_token).toBe(VALID_TOKEN);
+  });
+});
+
+describe('the cookie names outside development and test', () => {
+  it('carry the __Host- prefix (Secure, Path=/, no Domain) in production, and stay bare in development and test', async () => {
+    const { hostOnlyCookieName } = await import('../../../src/middleware/auth');
+    expect(hostOnlyCookieName('cas_harbor_trial', { NODE_ENV: 'production' })).toBe('__Host-cas_harbor_trial');
+    expect(hostOnlyCookieName('cas.sid', { NODE_ENV: 'staging' })).toBe('__Host-cas.sid');
+    expect(hostOnlyCookieName('cas.sid', {})).toBe('__Host-cas.sid');
+    expect(hostOnlyCookieName('cas.sid', { NODE_ENV: 'development' })).toBe('cas.sid');
+    expect(hostOnlyCookieName('cas_harbor_trial', { NODE_ENV: 'test' })).toBe('cas_harbor_trial');
+  });
+
+  it('a production trial cookie is set as __Host-cas_harbor_trial with Secure, Path=/ and no Domain, and only that name is read', async () => {
+    const original = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    vi.resetModules();
+    try {
+      const production = await import('../../../src/middleware/trial-cookie');
+      expect(production.TRIAL_COOKIE_NAME).toBe('__Host-cas_harbor_trial');
+      const queryFn = vi.fn().mockResolvedValue({ rows: [ACTIVE_TRIAL_ROW] });
+      const { res, cookieFn } = makeRes();
+      // The bare name, which a sibling host could set with Domain=, is not read: a fresh trial is minted.
+      await production.trialCookie(makePool(queryFn))(makeReq(`cas_harbor_trial=${VALID_TOKEN}`), res, vi.fn() as unknown as NextFunction);
+      expect(queryFn).toHaveBeenCalledTimes(1);
+      expect(String(queryFn.mock.calls[0][0])).toMatch(/INSERT INTO trial_keepers/);
+      const [name, , opts] = cookieFn.mock.calls[0];
+      expect(name).toBe('__Host-cas_harbor_trial');
+      expect(opts).toMatchObject({ secure: true, path: '/' });
+      expect(opts).not.toHaveProperty('domain');
+    } finally {
+      if (original === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = original;
+      vi.resetModules();
+    }
+  });
+});
 
 describe('trialCookie: a trial released by a payment', () => {
   it('keeps the cookie, attaches the released trial and names the build and keeper it paid for', async () => {

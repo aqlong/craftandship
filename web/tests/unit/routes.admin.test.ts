@@ -2103,10 +2103,14 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
         process.env.CAS_HARBOR_ENABLED = 'true';
         const agent = await loginAgent('admin@example.com');
         mockQuery.mockResolvedValueOnce({ rows: [makeHarborRow()] });
+        mockQuery.mockResolvedValueOnce({ rows: [] }); // payments needing a person
         const before = mockQuery.mock.calls.length;
         const res = await agent.get('/admin/harbor');
         expect(res.status).toBe(200);
-        expect(mockQuery.mock.calls.length - before).toBe(1);
+        // Two statements: the trial list and the payments needing a person. The keeper list is not one of them.
+        const statements = mockQuery.mock.calls.slice(before).map((c) => String(c[0]));
+        expect(statements).toHaveLength(2);
+        expect(statements.some((sql) => /FROM keepers k\s+JOIN customers c ON c\.id = k\.customer_id/.test(sql))).toBe(false);
         expect(res.text).toContain('href="/admin/harbor?status=keepers"');
         expect(res.text).toContain('data-filter="keepers"');
         expect(res.text).toContain('Trials by recency');
@@ -2146,6 +2150,70 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       mockQuery.mockRejectedValueOnce(new Error('boom'));
       const res = await agent.get('/admin/harbor');
       expect(res.status).toBe(500);
+    });
+
+    // A payment the webhook recorded and did not apply is mailed once; the
+    // inbox keeps it in front of the operator until Stripe says it ended.
+    describe('payments needing a person', () => {
+      afterEach(() => {
+        mockQuery.mockReset();
+      });
+      const SUBSCRIPTION = ['sub', 'refused', 'one'].join('_');
+
+      it('lists each subscription still open at Stripe that no keeper row uses, on every view, escaped', async () => {
+        process.env.CAS_HARBOR_ENABLED = 'true';
+        const agent = await loginAgent('admin@example.com');
+        for (const view of ['', '?status=keepers']) {
+          mockQuery.mockResolvedValueOnce({ rows: [] }); // trials
+          if (view) mockQuery.mockResolvedValueOnce({ rows: [] }); // keepers
+          mockQuery.mockResolvedValueOnce({
+            rows: [
+              {
+                stripe_subscription_id: SUBSCRIPTION,
+                stripe_customer_id: ['cus', 'refused', 'one'].join('_'),
+                status: 'active',
+                monthly_amount_cents: 2900,
+                created_at: new Date('2026-05-01T10:00:00Z'),
+                keeper_customer_id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+                email: '"><b>owner@example.com',
+              },
+            ],
+          });
+          const before = mockQuery.mock.calls.length;
+          const res = await agent.get(`/admin/harbor${view}`);
+          expect(res.status).toBe(200);
+          expect(res.text).toContain('Payments needing a person');
+          expect(res.text).toContain(`data-payment-subscription="${SUBSCRIPTION}"`);
+          expect(res.text).toContain('$29.00 a month');
+          expect(res.text).not.toContain('"><b>owner@example.com');
+          const [sql, params] = mockQuery.mock.calls[mockQuery.mock.calls.length - 1] as [string, unknown[]];
+          expect(mockQuery.mock.calls.length - before).toBe(view ? 3 : 2);
+          expect(sql).toMatch(/FROM harbor_subscriptions hs/);
+          expect(sql).toMatch(/NOT EXISTS \(SELECT 1 FROM keepers k WHERE k\.stripe_subscription_id = hs\.stripe_subscription_id\)/);
+          expect(params[0]).toEqual(['canceled', 'incomplete_expired']);
+        }
+      });
+
+      it('draws nothing when there is none', async () => {
+        process.env.CAS_HARBOR_ENABLED = 'true';
+        const agent = await loginAgent('admin@example.com');
+        mockQuery.mockResolvedValueOnce({ rows: [] });
+        mockQuery.mockResolvedValueOnce({ rows: [] });
+        const res = await agent.get('/admin/harbor');
+        expect(res.status).toBe(200);
+        expect(res.text).not.toContain('data-payments-needing-a-person');
+      });
+
+      it('a read that fails is said on the page, and the trial list is still drawn', async () => {
+        process.env.CAS_HARBOR_ENABLED = 'true';
+        const agent = await loginAgent('admin@example.com');
+        mockQuery.mockResolvedValueOnce({ rows: [makeHarborRow()] });
+        mockQuery.mockRejectedValueOnce(new Error('boom'));
+        const res = await agent.get('/admin/harbor');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('Payments needing a person could not be read.');
+        expect(res.text).toContain('Trials by recency');
+      });
     });
 
     // 2026-04-28 Phase 2 polish: add filter chips by status
@@ -2376,7 +2444,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const statements: string[] = [];
       mockQuery.mockImplementation(async (sql: string) => {
         statements.push(String(sql));
-        if (/SELECT trial_id, email_captured, handoff_build_id, released_at/.test(String(sql))) {
+        if (/SELECT trial_id, email_captured, handoff_build_id,/.test(String(sql))) {
           return { rows: [{ trial_id: TRIAL_ID, email_captured: address, handoff_build_id: null, released_at: null, harbor_meta_overrides: null }] };
         }
         return { rows: [] };
@@ -2405,7 +2473,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
         const agent = await loginAgent("admin.o'neil@example.com");
         const csrf = await getCsrf(agent);
         mockQuery.mockImplementation(async (sql: string) =>
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/.test(String(sql))
+          /SELECT trial_id, email_captured, handoff_build_id,/.test(String(sql))
             ? { rows: [{ trial_id: TRIAL_ID, email_captured: null, handoff_build_id: null, released_at: null, harbor_meta_overrides: null }] }
             : { rows: [] }
         );
@@ -2430,11 +2498,18 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
     // bodies. The pattern dispatcher is order-agnostic + auth-route
     // queries (login customer SELECT, harbor list trials SELECT) are
     // matched by their text and don't pollute the dispatch flow.
+    //
+    // The route dispatches through dispatchHarborTrialBuild, whose own reads
+    // match the same patterns: its trial read is the route's columns and more,
+    // its insert transaction runs on a client that forwards here, and the
+    // trial's row lock is answered as unstamped unless a test says otherwise.
+    // A value that is an Error is thrown, as a failing statement would.
     function installDispatcher(byPattern: Array<[RegExp, unknown]>): void {
       mockQuery.mockImplementation(async (sql: string) => {
         const text = String(sql);
         for (const [re, value] of byPattern) {
           if (re.test(text)) {
+            if (value instanceof Error) throw value;
             return value;
           }
         }
@@ -2442,6 +2517,9 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
         if (/^\s*BEGIN/i.test(text)) return { rows: [] };
         if (/^\s*COMMIT/i.test(text)) return { rows: [] };
         if (/^\s*ROLLBACK/i.test(text)) return { rows: [] };
+        if (/SELECT handoff_build_id, handoff_at FROM trial_keepers WHERE trial_id = \$1 FOR UPDATE/.test(text)) {
+          return { rows: [{ handoff_build_id: null, handoff_at: null }] };
+        }
         if (/SELECT id, email, name, password, email_verified FROM customers/i.test(text)) {
           // loginAgent's customer SELECT; loginAgent passes the customer
           // row via mockResolvedValueOnce earlier than this dispatcher
@@ -2462,7 +2540,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           {
             rows: [
               {
@@ -2479,7 +2557,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
           { rows: [{ id: 'cust-uuid-aaa' }] },
         ],
         [
-          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/,
+          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/,
           { rows: [{ id: 'build-uuid-zzz' }] },
         ],
         [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [] }],
@@ -2520,36 +2598,49 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       expect(res.body.customerId).toBe('cust-uuid-aaa');
       expect(res.body.warnings).toEqual([]);
       expect(res.body.costMicros).toBe(180_000);
-      expect(mockExtractSpecFromConversation).toHaveBeenCalledWith({
-        pool: expect.anything(),
-        trialId: TRIAL_ID,
-      });
+      expect(mockExtractSpecFromConversation).toHaveBeenCalledWith(
+        expect.objectContaining({ pool: expect.anything(), trialId: TRIAL_ID })
+      );
       const calls = mockQuery.mock.calls.map((c) => String(c[0]).trim().split(/\s+/)[0]);
       expect(calls).toContain('BEGIN');
       expect(calls).toContain('COMMIT');
+      // The captured address is a typed one: the account is created inside the
+      // transaction that inserts the build (after BEGIN), not before it.
+      const verbs = mockQuery.mock.calls.map((c) => String(c[0]));
+      const begin = verbs.findIndex((sql) => /^\s*BEGIN/.test(sql));
+      const createAccount = verbs.findIndex((sql) => /INSERT INTO customers/.test(sql));
+      expect(createAccount).toBeGreaterThan(begin);
       // The build is inserted through the shared Harbor insert, which marks it
-      // as a Harbor build (what the customer's publish gate reads).
+      // as a Harbor build (what the customer's publish gate reads) and records
+      // that its dispatch created the owning account.
       const inserts = mockQuery.mock.calls.filter((c) => /INSERT INTO builds/.test(String(c[0])));
       expect(inserts).toHaveLength(1);
       expect(String(inserts[0][0])).toMatch(
-        /\(customer_id, tier, status, spec, app_name, is_harbor\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE\)/
+        /\(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE, \$5\)/
       );
+      expect((inserts[0][1] as unknown[])[4]).toBe(true);
     });
 
-    it('double dispatch: the loser rolls its build back and returns the winner (compare-and-set stamp)', async () => {
+    it('double dispatch: the loser finds the winner\'s stamp under the trial\'s row lock and returns it, writing nothing', async () => {
+      // The route dispatches through the service, whose insert transaction
+      // locks the trial row (FOR UPDATE) before it writes anything: a second
+      // click that ran its extraction alongside the first waits there, sees
+      // the first one's stamp, and commits nothing of its own.
       process.env.CAS_HARBOR_ENABLED = 'true';
       const agent = await loginAgent('admin@example.com');
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           { rows: [{ trial_id: TRIAL_ID, email_captured: 'twice@example.com', handoff_build_id: null, released_at: null }] },
         ],
+        // Another request stamped the trial first: the locked read sees its build.
+        [
+          /SELECT handoff_build_id, handoff_at FROM trial_keepers WHERE trial_id = \$1 FOR UPDATE/,
+          { rows: [{ handoff_build_id: 'build-winner', handoff_at: new Date() }] },
+        ],
         [/INSERT INTO customers \(email, password, email_verified, name\)/, { rows: [{ id: 'cust-race' }] }],
-        [/INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/, { rows: [{ id: 'build-loser' }] }],
-        // Another request stamped the trial first: the guarded UPDATE matches nothing.
-        [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [], rowCount: 0 }],
-        [/SELECT handoff_build_id FROM trial_keepers WHERE trial_id/, { rows: [{ handoff_build_id: 'build-winner' }] }],
+        [/INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/, { rows: [{ id: 'build-loser' }] }],
       ]);
       mockExtractSpecFromConversation.mockResolvedValueOnce({
         spec: { spec_version: '1.0', app_name: 'race-site', tier: 'build', archetype: 'coach-consultant', description: 'x', pages: [] },
@@ -2567,33 +2658,51 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       expect(res.status).toBe(200);
       expect(res.body.alreadyDispatched).toBe(true);
       expect(res.body.buildId).toBe('build-winner');
-      const verbs = mockQuery.mock.calls.map((c) => String(c[0]).trim().split(/\s+/)[0]);
-      expect(verbs).toContain('ROLLBACK');
-      expect(verbs).not.toContain('COMMIT');
-      const stamp = mockQuery.mock.calls.find((c) => /UPDATE trial_keepers\s+SET handoff_build_id/.test(String(c[0])));
-      expect(String(stamp![0])).toMatch(/handoff_build_id IS NULL/);
+      const statements = mockQuery.mock.calls.map((c) => String(c[0]));
+      expect(statements.some((sql) => /INSERT INTO (builds|customers)|UPDATE trial_keepers/.test(sql))).toBe(false);
+      expect(statements.map((sql) => sql.trim().split(/\s+/)[0])).not.toContain('ROLLBACK');
     });
 
-    it('happy path: re-SELECTs customer when ON CONFLICT DO NOTHING returns no rows', async () => {
+    // A captured address is one a visitor typed. The operator's dispatch of it
+    // follows the visitor's rule: the build goes only to an account that
+    // dispatch creates. An address that already has an account is refused, in
+    // the dispatch's own sentence for the operator.
+    it.each([
+      ['an unverified account', false, 'address_in_use', /already has an account/],
+      ['a verified account', true, 'account_exists', /^That address has a verified account; the owner must log in and build from their account\.$/],
+    ] as const)('a captured address that already has %s: 409 %s, before the model call, and nothing is written', async (_label, verified, code, message) => {
       process.env.CAS_HARBOR_ENABLED = 'true';
       const agent = await loginAgent('admin@example.com');
       const csrf = await getCsrf(agent);
-      mockQuery.mockResolvedValueOnce({
-        rows: [
-          {
-            trial_id: TRIAL_ID,
-            email_captured: 'concurrent@example.com',
-            handoff_build_id: null,
-            released_at: null,
-          },
+      installDispatcher([
+        [
+          /SELECT trial_id, email_captured, handoff_build_id,/,
+          { rows: [{ trial_id: TRIAL_ID, email_captured: 'someone@example.com', handoff_build_id: null, released_at: null }] },
         ],
-      });
-      // INSERT ON CONFLICT DO NOTHING returns 0 rows (concurrent inserter
-      // got there first); next call re-SELECTs.
-      mockQuery.mockResolvedValueOnce({ rows: [] });
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 'preexisting-cust' }],
-      });
+        [/SELECT id, email_verified FROM customers WHERE email = \$1/, { rows: [{ id: 'cust-existing', email_verified: verified }] }],
+      ]);
+      const res = await agent.post(`/admin/harbor/${TRIAL_ID}/dispatch`).set('x-csrf-token', csrf);
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBe(code);
+      expect(res.body.message).toMatch(message);
+      expect(mockExtractSpecFromConversation).not.toHaveBeenCalled();
+      const statements = mockQuery.mock.calls.map((c) => String(c[0]));
+      expect(statements.filter((sql) => /INSERT INTO|UPDATE /.test(sql))).toEqual([]);
+    });
+
+    it('a captured address that gains an account while the model runs: the insert finds it taken, 409 address_in_use, rolled back, no build', async () => {
+      process.env.CAS_HARBOR_ENABLED = 'true';
+      const agent = await loginAgent('admin@example.com');
+      const csrf = await getCsrf(agent);
+      installDispatcher([
+        [
+          /SELECT trial_id, email_captured, handoff_build_id,/,
+          { rows: [{ trial_id: TRIAL_ID, email_captured: 'concurrent@example.com', handoff_build_id: null, released_at: null }] },
+        ],
+        // INSERT ... ON CONFLICT DO NOTHING returns no row: a signup got there first.
+        [/INSERT INTO customers \(email, password, email_verified, name\)/, { rows: [] }],
+        [/INSERT INTO builds/, { rows: [{ id: 'build-never' }] }],
+      ]);
       mockExtractSpecFromConversation.mockResolvedValueOnce({
         spec: { spec_version: '1.0', app_name: 'x', tier: 'build', pages: [] },
         warnings: [],
@@ -2601,46 +2710,65 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
         contextSize: { memoryRows: 1, turns: 1 },
       });
       mockTranslateExtractedSpecToV1.mockReturnValueOnce({
-        spec: {
-          spec_version: '1.0',
-          app_name: 'x',
-          tier: 'build',
-          description: '',
-          data_models: [],
-          user_roles: [],
-          pages: [],
-          _seed_settings: {},
-          _harbor_meta: {},
-        },
+        spec: { spec_version: '1.0', app_name: 'x', tier: 'build', description: '', data_models: [], user_roles: [], pages: [], _seed_settings: {}, _harbor_meta: {} },
         warnings: [],
       });
-      mockQuery.mockResolvedValueOnce({ rows: [] }); // BEGIN
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'build-2' }] });
-      mockQuery.mockResolvedValueOnce({ rows: [] }); // UPDATE
-      mockQuery.mockResolvedValueOnce({ rows: [] }); // COMMIT
 
-      const res = await agent
-        .post(`/admin/harbor/${TRIAL_ID}/dispatch`)
-        .set('x-csrf-token', csrf);
+      const res = await agent.post(`/admin/harbor/${TRIAL_ID}/dispatch`).set('x-csrf-token', csrf);
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBe('address_in_use');
+      const statements = mockQuery.mock.calls.map((c) => String(c[0]));
+      expect(statements.some((sql) => /INSERT INTO builds/.test(sql))).toBe(false);
+      expect(statements.map((sql) => sql.trim().split(/\s+/)[0])).toContain('ROLLBACK');
+    });
+
+    it('a trial that captured no address: the build is attached to the operator\'s own, existing account', async () => {
+      process.env.CAS_HARBOR_ENABLED = 'true';
+      const agent = await loginAgent('admin@example.com');
+      const csrf = await getCsrf(agent);
+      installDispatcher([
+        [
+          /SELECT trial_id, email_captured, handoff_build_id,/,
+          { rows: [{ trial_id: TRIAL_ID, email_captured: null, handoff_build_id: null, released_at: null }] },
+        ],
+        // The admin's account exists and is verified: the upsert finds it.
+        [/SELECT id, email_verified FROM customers WHERE email = \$1/, { rows: [{ id: 'cust-admin', email_verified: true }] }],
+        [/INSERT INTO customers \(email, password, email_verified, name\)/, { rows: [] }],
+        [/INSERT INTO builds/, { rows: [{ id: 'build-admin' }] }],
+      ]);
+      mockExtractSpecFromConversation.mockResolvedValueOnce({
+        spec: { spec_version: '1.0', app_name: 'x', tier: 'build', pages: [] },
+        warnings: [],
+        costMicros: 100,
+        contextSize: { memoryRows: 1, turns: 1 },
+      });
+      mockTranslateExtractedSpecToV1.mockReturnValueOnce({
+        spec: { spec_version: '1.0', app_name: 'x', tier: 'build', description: '', data_models: [], user_roles: [], pages: [], _seed_settings: {}, _harbor_meta: {} },
+        warnings: [],
+      });
+
+      const res = await agent.post(`/admin/harbor/${TRIAL_ID}/dispatch`).set('x-csrf-token', csrf);
       expect(res.status).toBe(200);
-      expect(res.body.customerId).toBe('preexisting-cust');
+      expect(res.body.customerId).toBe('cust-admin');
+      const lookup = mockQuery.mock.calls.find((c) => /SELECT id, email_verified FROM customers WHERE email = \$1/.test(String(c[0])));
+      expect((lookup![1] as unknown[])[0]).toBe('admin@example.com');
+      const insert = mockQuery.mock.calls.find((c) => /INSERT INTO builds/.test(String(c[0])));
+      expect((insert![1] as unknown[])[0]).toBe('cust-admin');
+      expect((insert![1] as unknown[])[4]).toBe(false);
     });
 
     it('coerces invalid Opus tier to build + records a warning', async () => {
       process.env.CAS_HARBOR_ENABLED = 'true';
       const agent = await loginAgent('admin@example.com');
       const csrf = await getCsrf(agent);
-      mockQuery.mockResolvedValueOnce({
-        rows: [
-          {
-            trial_id: TRIAL_ID,
-            email_captured: 'tier@example.com',
-            handoff_build_id: null,
-            released_at: null,
-          },
+      installDispatcher([
+        [
+          /SELECT trial_id, email_captured, handoff_build_id,/,
+          { rows: [{ trial_id: TRIAL_ID, email_captured: 'tier@example.com', handoff_build_id: null, released_at: null }] },
         ],
-      });
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'cust-3' }] });
+        [/INSERT INTO customers \(email, password, email_verified, name\)/, { rows: [{ id: 'cust-3' }] }],
+        [/INSERT INTO builds/, { rows: [{ id: 'build-3' }] }],
+      ]);
       mockExtractSpecFromConversation.mockResolvedValueOnce({
         spec: { spec_version: '1.0', app_name: 'y', tier: 'build', pages: [] },
         warnings: [],
@@ -2662,10 +2790,6 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
         },
         warnings: [],
       });
-      mockQuery.mockResolvedValueOnce({ rows: [] });
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'build-3' }] });
-      mockQuery.mockResolvedValueOnce({ rows: [] });
-      mockQuery.mockResolvedValueOnce({ rows: [] });
 
       const res = await agent
         .post(`/admin/harbor/${TRIAL_ID}/dispatch`)
@@ -2685,17 +2809,13 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       process.env.CAS_HARBOR_ENABLED = 'true';
       const agent = await loginAgent('admin@example.com');
       const csrf = await getCsrf(agent);
-      mockQuery.mockResolvedValueOnce({
-        rows: [
-          {
-            trial_id: TRIAL_ID,
-            email_captured: 'nokey@example.com',
-            handoff_build_id: null,
-            released_at: null,
-          },
+      installDispatcher([
+        [
+          /SELECT trial_id, email_captured, handoff_build_id,/,
+          { rows: [{ trial_id: TRIAL_ID, email_captured: 'nokey@example.com', handoff_build_id: null, released_at: null }] },
         ],
-      });
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'cust-nokey' }] });
+        [/INSERT INTO customers \(email, password, email_verified, name\)/, { rows: [{ id: 'cust-nokey' }] }],
+      ]);
       const { AssistantNotConfiguredError } = await import('../../src/utils/assistant');
       mockExtractSpecFromConversation.mockRejectedValueOnce(new AssistantNotConfiguredError());
 
@@ -2722,9 +2842,12 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       process.env.CAS_HARBOR_ENABLED = 'true';
       const agent = await loginAgent('admin@example.com');
       const csrf = await getCsrf(agent);
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ trial_id: TRIAL_ID, email_captured: 'theo@example.com', handoff_build_id: null, released_at: null }],
-      });
+      installDispatcher([
+        [
+          /SELECT trial_id, email_captured, handoff_build_id,/,
+          { rows: [{ trial_id: TRIAL_ID, email_captured: 'theo@example.com', handoff_build_id: null, released_at: null }] },
+        ],
+      ]);
       const { SpecExtractionError } = await import('../../src/services/spec_extraction');
       mockExtractSpecFromConversation.mockRejectedValueOnce(new SpecExtractionError(code, 'Nothing was built.'));
 
@@ -2743,9 +2866,12 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       process.env.CAS_HARBOR_ENABLED = 'true';
       const agent = await loginAgent('admin@example.com');
       const csrf = await getCsrf(agent);
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ trial_id: TRIAL_ID, email_captured: 'theo@example.com', handoff_build_id: null, released_at: null }],
-      });
+      installDispatcher([
+        [
+          /SELECT trial_id, email_captured, handoff_build_id,/,
+          { rows: [{ trial_id: TRIAL_ID, email_captured: 'theo@example.com', handoff_build_id: null, released_at: null }] },
+        ],
+      ]);
       const { LlmDailyBudgetError } = await import('../../src/services/llm-budget');
       mockExtractSpecFromConversation.mockRejectedValueOnce(new LlmDailyBudgetError());
       const res = await agent.post(`/admin/harbor/${TRIAL_ID}/dispatch`).set('x-csrf-token', csrf);
@@ -2757,17 +2883,15 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       process.env.CAS_HARBOR_ENABLED = 'true';
       const agent = await loginAgent('admin@example.com');
       const csrf = await getCsrf(agent);
-      mockQuery.mockResolvedValueOnce({
-        rows: [
-          {
-            trial_id: TRIAL_ID,
-            email_captured: 'rollback@example.com',
-            handoff_build_id: null,
-            released_at: null,
-          },
+      installDispatcher([
+        [
+          /SELECT trial_id, email_captured, handoff_build_id,/,
+          { rows: [{ trial_id: TRIAL_ID, email_captured: 'rollback@example.com', handoff_build_id: null, released_at: null }] },
         ],
-      });
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'cust-roll' }] });
+        [/INSERT INTO customers \(email, password, email_verified, name\)/, { rows: [{ id: 'cust-roll' }] }],
+        // Build INSERT fails.
+        [/INSERT INTO builds/, new Error('disk full')],
+      ]);
       mockExtractSpecFromConversation.mockResolvedValueOnce({
         spec: { spec_version: '1.0', app_name: 'z', tier: 'build', pages: [] },
         warnings: [],
@@ -2788,11 +2912,6 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
         },
         warnings: [],
       });
-      mockQuery.mockResolvedValueOnce({ rows: [] }); // BEGIN
-      // Build INSERT fails.
-      mockQuery.mockRejectedValueOnce(new Error('disk full'));
-      // ROLLBACK is issued.
-      mockQuery.mockResolvedValueOnce({ rows: [] });
 
       const res = await agent
         .post(`/admin/harbor/${TRIAL_ID}/dispatch`)
@@ -2816,7 +2935,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           {
             rows: [
               {
@@ -2833,7 +2952,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
           { rows: [{ id: 'cust-sample-1' }] },
         ],
         [
-          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/,
+          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/,
           { rows: [{ id: 'build-sample-1' }] },
         ],
         [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [] }],
@@ -2911,7 +3030,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           {
             rows: [
               {
@@ -2928,7 +3047,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
           { rows: [{ id: 'cust-thin' }] },
         ],
         [
-          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/,
+          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/,
           { rows: [{ id: 'build-thin' }] },
         ],
         [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [] }],
@@ -2987,7 +3106,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           {
             rows: [
               {
@@ -3004,7 +3123,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
           { rows: [{ id: 'cust-fat' }] },
         ],
         [
-          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/,
+          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/,
           { rows: [{ id: 'build-fat' }] },
         ],
         [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [] }],
@@ -3053,7 +3172,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           {
             rows: [
               {
@@ -3070,7 +3189,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
           { rows: [{ id: 'cust-piano' }] },
         ],
         [
-          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/,
+          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/,
           { rows: [{ id: 'build-piano' }] },
         ],
         [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [] }],
@@ -3141,7 +3260,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           {
             rows: [
               {
@@ -3158,7 +3277,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
           { rows: [{ id: 'cust-remap' }] },
         ],
         [
-          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/,
+          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/,
           { rows: [{ id: 'build-remap' }] },
         ],
         [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [] }],
@@ -3214,7 +3333,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           {
             rows: [
               {
@@ -3231,7 +3350,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
           { rows: [{ id: 'cust-match' }] },
         ],
         [
-          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/,
+          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/,
           { rows: [{ id: 'build-match' }] },
         ],
         [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [] }],
@@ -3282,7 +3401,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           {
             rows: [
               {
@@ -3299,7 +3418,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
           { rows: [{ id: 'cust-silent' }] },
         ],
         [
-          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/,
+          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/,
           { rows: [{ id: 'build-silent' }] },
         ],
         [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [] }],
@@ -3350,7 +3469,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       mockQuery.mockImplementation(async (sql: string, params?: unknown[]) => {
         const text = String(sql);
-        if (/SELECT trial_id, email_captured, handoff_build_id, released_at/.test(text)) {
+        if (/SELECT trial_id, email_captured, handoff_build_id,/.test(text)) {
           return {
             rows: [
               {
@@ -3364,6 +3483,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
         }
         if (/INSERT INTO customers/.test(text)) return { rows: [{ id: 'cust-ab' }] };
         if (/INSERT INTO builds/.test(text)) return { rows: [{ id: 'build-ab' }] };
+        if (/FOR UPDATE/.test(text)) return { rows: [{ handoff_build_id: null, handoff_at: null }] };
         if (/UPDATE trial_keepers/.test(text)) return { rows: [] };
         if (/INSERT INTO agent_learnings/.test(text)) {
           // Throw only on the archetype_correction row; allow other
@@ -3418,7 +3538,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const csrf = await getCsrf(agent);
       installDispatcher([
         [
-          /SELECT trial_id, email_captured, handoff_build_id, released_at/,
+          /SELECT trial_id, email_captured, handoff_build_id,/,
           {
             rows: [
               {
@@ -3435,7 +3555,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
           { rows: [{ id: 'cust-bl' }] },
         ],
         [
-          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)/,
+          /INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)/,
           { rows: [{ id: 'build-bl' }] },
         ],
         [/UPDATE trial_keepers\s+SET handoff_build_id/, { rows: [] }],
@@ -3445,7 +3565,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       // not native; install a one-shot rejection by re-implementing.
       mockQuery.mockImplementation(async (sql: string) => {
         const text = String(sql);
-        if (/SELECT trial_id, email_captured, handoff_build_id, released_at/.test(text)) {
+        if (/SELECT trial_id, email_captured, handoff_build_id,/.test(text)) {
           return {
             rows: [
               {
@@ -3459,6 +3579,7 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
         }
         if (/INSERT INTO customers/.test(text)) return { rows: [{ id: 'cust-bl' }] };
         if (/INSERT INTO builds/.test(text)) return { rows: [{ id: 'build-bl' }] };
+        if (/FOR UPDATE/.test(text)) return { rows: [{ handoff_build_id: null, handoff_at: null }] };
         if (/UPDATE trial_keepers/.test(text)) return { rows: [] };
         if (/INSERT INTO agent_learnings/.test(text)) {
           throw new Error('agent_learnings table does not exist');
@@ -3832,22 +3953,22 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
       const agent = await loginAgent('admin@example.com');
       const csrf = await getCsrf(agent);
 
-      // SELECT trial_keepers: has overrides.
-      mockQuery.mockResolvedValueOnce({
-        rows: [{
-          trial_id: TRIAL_ID,
-          email_captured: 'sample-irrigation@example.com',
-          handoff_build_id: null,
-          released_at: null,
-          harbor_meta_overrides: {
-            copy_source_url: 'https://sample-irrigation.example/',
-            copy_pages: [{ path: '/', markdown_blocks: ['# Sample Irrigation Co'] }],
-          },
-        }],
-      });
-
-      // SELECT customers (existing): returns id.
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'cust-1' }] });
+      // SELECT trial_keepers (the route's read and the dispatch service's): has overrides.
+      const trialWithOverrides = {
+        trial_id: TRIAL_ID,
+        email_captured: 'sample-irrigation@example.com',
+        handoff_build_id: null,
+        released_at: null,
+        harbor_meta_overrides: {
+          copy_source_url: 'https://sample-irrigation.example/',
+          copy_pages: [{ path: '/', markdown_blocks: ['# Sample Irrigation Co'] }],
+        },
+      };
+      mockQuery.mockImplementation(async (sql: string) =>
+        /SELECT trial_id, email_captured, handoff_build_id,/.test(String(sql))
+          ? { rows: [trialWithOverrides] }
+          : { rows: [] }
+      );
 
       // Opus extraction returns spec with no _harbor_meta initially.
       mockExtractSpecFromConversation.mockResolvedValueOnce({
@@ -3873,11 +3994,14 @@ describe('POST /admin/builds/:id/analyze: additional coverage', () => {
 
       // Capture the INSERT to verify the spec carries the merged _harbor_meta.
       let insertedSpec: Record<string, unknown> = {};
-      // Reproduce the dispatch handler's transactional client mock: BEGIN +
-      // INSERT builds (RETURNING id) + UPDATE trial_keepers + COMMIT.
+      // The dispatch service's insert transaction: BEGIN, the trial's row
+      // lock, the account it creates for the captured address, INSERT builds
+      // (RETURNING id), UPDATE trial_keepers, COMMIT.
       const txClient = {
         query: vi.fn().mockImplementation(async (sql: string, params?: unknown[]) => {
           if (typeof sql === 'string' && sql.startsWith('BEGIN')) return { rows: [] };
+          if (typeof sql === 'string' && /FOR UPDATE/.test(sql)) return { rows: [{ handoff_build_id: null, handoff_at: null }] };
+          if (typeof sql === 'string' && sql.includes('INSERT INTO customers')) return { rows: [{ id: 'cust-1' }] };
           if (typeof sql === 'string' && sql.includes('INSERT INTO builds')) {
             insertedSpec = JSON.parse(params?.[2] as string);
             return { rows: [{ id: 'build-merge-1' }] };

@@ -9,6 +9,7 @@ import {
   safeReturnTo,
   timingSafeEqualStrings,
   SESSION_COOKIE_NAME,
+  sessionCookieAttributes,
 } from '../middleware/auth';
 import { authRateLimit, signupRateLimit, accountDeleteRateLimit } from '../middleware/auth-rate-limit';
 import { sendWelcomeEmail, sendPasswordResetEmail, sendVerificationEmail, generateUnsubscribeToken } from '../services/email';
@@ -83,7 +84,10 @@ export function publicBaseUrl(req: Request): string {
   }
   const host = req.get('host') || '';
   const safeHost = /^(?:[a-z0-9.-]+|\[[0-9a-f:]+\])(?::\d{1,5})?$/i.test(host) ? host : 'localhost';
-  return `${req.protocol}://${safeHost}`;
+  // Under 'trust proxy', req.protocol is the client's X-Forwarded-Proto
+  // verbatim, so only the two schemes a link may carry are passed through.
+  const scheme = req.protocol === 'https' ? 'https' : 'http';
+  return `${scheme}://${safeHost}`;
 }
 
 const SESSION_CARRY_OVER_KEYS = [
@@ -134,6 +138,46 @@ function markTokenPage(res: Response): void {
   res.locals.analyticsId = '';
 }
 
+/**
+ * Start `send` once the response has gone out, so that building and logging
+ * a mail is not part of the time a request takes (a known address and an
+ * unknown one must answer alike). Registered before the response is written;
+ * 'close' covers a client that disconnects before 'finish'. Errors are logged.
+ */
+function sendAfterResponse(res: Response, label: string, send: () => Promise<void>): void {
+  let started = false;
+  const start = (): void => {
+    if (started) return;
+    started = true;
+    send().catch((err) => console.error(`${label}:`, (err as Error).message));
+  };
+  res.once('finish', start);
+  res.once('close', start);
+}
+
+/**
+ * Attach the anonymous /try draft held by this session to `customerId` and
+ * remember it for the redirect after verification. Best effort: a failure is
+ * logged and the flow goes on. Clears the session's anonymous keys either
+ * way, so later /try calls start fresh under the account.
+ */
+async function claimSessionDraft(req: Request, customerId: string): Promise<void> {
+  if (!req.session.anonSessionId) return;
+  try {
+    const { claimed, buildId: claimedBuildId } = await claimAnonDraftBySessionId(
+      req.session.anonSessionId,
+      customerId
+    );
+    if (claimed && claimedBuildId) {
+      req.session.claimedAnonBuildId = claimedBuildId;
+    }
+  } catch (err) {
+    console.error('anon-intake: claim on signup failed:', (err as Error).message);
+  }
+  delete req.session.anonSessionId;
+  delete req.session.anonBuildId;
+}
+
 // ---------------------------------------------------------------------------
 // Unverified accounts: whose password is it?
 // ---------------------------------------------------------------------------
@@ -150,17 +194,25 @@ function markTokenPage(res: Response): void {
 // that then proves the mailbox.
 //
 //   - POST /signup keeps what was typed (password hash and name) in that
-//     browser's server-side session as `pendingSignup`, and, when the address
-//     has no account or an unverified one, also writes it to the row and
-//     voids verification links issued for earlier claims. A verified account
-//     is never touched. The response is the same in all three cases.
-//   - GET /verify-email, on a valid link for an unverified account, sets the
-//     account's password and name in the same statement that verifies it:
-//     to this browser's own `pendingSignup` when it has one for that address,
-//     and otherwise to an unusable random password and a neutral name. In the
-//     second case the visitor is sent to choose a password. Either way,
-//     whatever an earlier claimant typed does not survive verification unless
-//     it was typed in this browser.
+//     browser's server-side session as `pendingSignup`. Only when the address
+//     has no account does it also create the row (with what was typed, and
+//     the terms stamp). An existing row, verified or not, is not written to,
+//     and no link already sent is voided: the claim lives in the session
+//     until a link settles it. The response is the same in all three cases.
+//   - Opening a valid link for an unverified account (GET /verify-email shows
+//     a confirmation page; its POST does the work) sets the account's
+//     password and name in the same statement that verifies it: to this
+//     browser's own `pendingSignup` when it has one for that address (which
+//     also stamps the terms, if the row has no stamp yet), and otherwise to an
+//     unusable random password and a neutral name. In the second case the
+//     visitor is sent to choose a password. Either way, whatever an earlier
+//     claimant typed does not survive verification unless it was typed in
+//     this browser.
+//   - Verification mail goes to an address whose owner has proven nothing
+//     yet, so it greets nobody by name (whatever name exists was typed by
+//     whoever created the row), and at most one link is sent to an address
+//     per hour, whoever asks (ISSUE_VERIFICATION_TOKEN_SQL). Links already
+//     sent keep working, so the limit costs the owner nothing.
 //   - POST /login with the correct password for an unverified account records
 //     the same claim before showing the "verify first" page, so someone who
 //     signed up on one device can finish on another by logging in there and
@@ -180,17 +232,56 @@ function claimFor(req: Request, email: string): { passwordHash: string; name: st
   return { passwordHash: claim.passwordHash, name: claim.name };
 }
 
-// Issue a token and, in the same statement, drop tokens that expired long ago
+// Each statement that issues a token also drops tokens that expired long ago,
 // so the table cannot grow without bound. (A data-modifying CTE runs exactly
 // once whether or not the outer statement reads from it.)
-const INSERT_VERIFICATION_TOKEN_SQL = `
+
+// Issue a verification link for the address $1 (token hash $2), in one
+// statement that runs whether or not the address has an account: it inserts
+// only for an unverified account that has been sent no link in the last hour,
+// and returns a row only when it inserted. A link lives 24 hours (the
+// column's default), so "issued in the last hour" is "expires more than 23
+// hours from now". Two requests at the same instant can each issue one: the
+// check reads the table as it was when the statement started.
+const ISSUE_VERIFICATION_TOKEN_SQL = `
   WITH pruned AS (
     DELETE FROM email_verification_tokens
     WHERE expires_at < NOW() - INTERVAL '7 days'
+  ),
+  target AS (
+    SELECT c.id FROM customers c
+     WHERE c.email = $1
+       AND c.email_verified IS NOT TRUE
+       AND NOT EXISTS (
+         SELECT 1 FROM email_verification_tokens t
+          WHERE t.customer_id = c.id
+            AND t.expires_at > NOW() + INTERVAL '23 hours')
   )
   INSERT INTO email_verification_tokens (customer_id, token)
-  VALUES ($1, $2)`;
+  SELECT id, $2 FROM target
+  RETURNING customer_id`;
 
+// Issue a reset link for the address $1 (token hash $2), in one statement
+// that runs whether or not the address has an account; it inserts, and
+// returns the account's name and whether it is verified, only when there is one.
+const ISSUE_PASSWORD_RESET_TOKEN_SQL = `
+  WITH pruned AS (
+    DELETE FROM password_reset_tokens
+    WHERE expires_at < NOW() - INTERVAL '1 day'
+  ),
+  target AS (
+    SELECT id, name, email_verified FROM customers WHERE email = $1
+  ),
+  issued AS (
+    INSERT INTO password_reset_tokens (customer_id, token)
+    SELECT id, $2 FROM target
+    RETURNING customer_id
+  )
+  SELECT target.name, target.email_verified
+    FROM issued JOIN target ON target.id = issued.customer_id`;
+
+// A reset link for a known account (POST /verify-email hands one to a visitor
+// whose browser made no claim).
 const INSERT_PASSWORD_RESET_TOKEN_SQL = `
   WITH pruned AS (
     DELETE FROM password_reset_tokens
@@ -297,29 +388,12 @@ router.post('/signup', signupRateLimit, validateCsrfToken, async (req: Request, 
       return;
     }
 
-    let customer: { id: string; email: string; name: string };
-    if (existingRow) {
-      // Unverified: whoever created the row has shown nothing. This claim
-      // replaces theirs (see "Unverified accounts" above), and links that
-      // were issued for the earlier claim stop working.
-      const replaced = await pool.query(
-        `UPDATE customers
-            SET password = $2, name = $3, terms_accepted_at = NOW()
-          WHERE id = $1 AND email_verified IS NOT TRUE
-          RETURNING id, email, name`,
-        [existingRow.id, hashedPassword, sanitizedName]
-      );
-      if (replaced.rows.length === 0) {
-        // Verified between the two statements: treat as verified.
-        sent();
-        return;
-      }
-      customer = replaced.rows[0] as { id: string; email: string; name: string };
-      await pool.query(
-        'UPDATE email_verification_tokens SET used_at = NOW() WHERE customer_id = $1 AND used_at IS NULL',
-        [customer.id]
-      );
-    } else {
+    // An unverified row is not written to: whoever created it has shown
+    // nothing, and neither has this browser. The claim recorded above is what
+    // a link opened here settles (see "Unverified accounts" above); links
+    // already sent to the address keep working.
+    let createdId: string | null = null;
+    if (!existingRow) {
       // Capture UTM attribution from session (stashed on GET /signup)
       const utmSource = (req.session.utmSource || '').slice(0, 255) || null;
       const utmMedium = (req.session.utmMedium || '').slice(0, 255) || null;
@@ -332,47 +406,24 @@ router.post('/signup', signupRateLimit, validateCsrfToken, async (req: Request, 
          RETURNING id, email, name`,
         [sanitizedEmail, hashedPassword, sanitizedName, utmSource, utmMedium, utmCampaign]
       );
-      if (result.rows.length === 0) {
-        // Someone registered the address between the lookup and the insert.
-        // Their signup sent the link; answer as for any other signup.
-        sent();
-        return;
-      }
-      customer = result.rows[0] as { id: string; email: string; name: string };
+      createdId = (result.rows[0] as { id: string } | undefined)?.id ?? null;
+      // No row: someone registered the address between the lookup and the
+      // insert. It is then an existing account like any other.
     }
 
-    // Generate email verification token (24-hour expiry); store SHA-256 hash in DB
+    // A link (24-hour expiry; only its SHA-256 is stored), unless the address
+    // was sent one in the last hour or was verified a moment ago.
     const verifyToken = crypto.randomBytes(32).toString('hex');
-    await pool.query(INSERT_VERIFICATION_TOKEN_SQL, [customer.id, hashToken(verifyToken)]);
-
-    const verifyUrl = `${publicBaseUrl(req)}/verify-email?token=${verifyToken}`;
-
-    // Fire-and-forget: don't block the redirect
-    sendVerificationEmail(sanitizedEmail, sanitizedName, verifyUrl).catch(err =>
-      console.error('Verification email failed:', (err as Error).message)
-    );
-
-    // Claim any anonymous intake draft tied to this session (from /try
-    // preview). Best-effort: signup must still succeed if the claim
-    // fails. Clears the anon session keys so future /try calls start
-    // fresh under the customer's authenticated account.
-    if (req.session.anonSessionId) {
-      try {
-        const { claimed, buildId: claimedBuildId } = await claimAnonDraftBySessionId(
-          req.session.anonSessionId,
-          customer.id
-        );
-        if (claimed && claimedBuildId) {
-          // Stash for post-verification redirect so the user lands back on
-          // their in-progress spec instead of a brand-new /intake build.
-          req.session.claimedAnonBuildId = claimedBuildId;
-        }
-      } catch (err) {
-        console.error('anon-intake: claim on signup failed:', (err as Error).message);
-      }
-      delete req.session.anonSessionId;
-      delete req.session.anonBuildId;
+    const issued = await pool.query(ISSUE_VERIFICATION_TOKEN_SQL, [sanitizedEmail, hashToken(verifyToken)]);
+    if (issued.rows.length > 0) {
+      const verifyUrl = `${publicBaseUrl(req)}/verify-email?token=${verifyToken}`;
+      sendAfterResponse(res, 'Verification email failed', () => sendVerificationEmail(sanitizedEmail, verifyUrl));
     }
+
+    // An anonymous /try draft goes with the account this signup created. For
+    // an existing row it waits in the session until a link opened here
+    // proves the mailbox (POST /verify-email).
+    if (createdId) await claimSessionDraft(req, createdId);
 
     // Do NOT log the user in yet; require email verification first. The
     // address is not put in the redirect URL: it would end up in browser
@@ -481,7 +532,7 @@ router.post('/logout', validateCsrfToken, async (req: Request, res: Response) =>
     if (err) {
       console.error('Logout error:', err.message);
     }
-    res.clearCookie(SESSION_COOKIE_NAME);
+    res.clearCookie(SESSION_COOKIE_NAME, sessionCookieAttributes());
     res.redirect('/');
   });
 });
@@ -501,18 +552,75 @@ router.get('/verify-email-sent', (req: Request, res: Response) => {
   });
 });
 
+// Which unverified account a verification link is for, while the link is
+// still good. Read only: a cheap look before anything is spent or hashed.
+const PENDING_VERIFICATION_SQL = `SELECT c.email
+         FROM email_verification_tokens t
+         JOIN customers c ON c.id = t.customer_id
+        WHERE t.token = $1 AND t.expires_at > NOW() AND t.used_at IS NULL
+          AND c.email_verified IS NOT TRUE`;
+
+function renderMissingVerificationLink(req: Request, res: Response): void {
+  res.status(400).render('verify-email-sent', {
+    title: 'Verify Email',
+    email: '',
+    csrfToken: generateCsrfToken(req),
+    error: 'Invalid or missing verification link.',
+  });
+}
+
+function renderSpentVerificationLink(req: Request, res: Response): void {
+  res.render('login', {
+    title: 'Log In',
+    csrfToken: generateCsrfToken(req),
+    error: 'This verification link has expired or already been used. Please request a new one.',
+    email: '',
+    unverifiedEmail: null,
+    returnTo: null,
+  });
+}
+
+// Opening the emailed link spends nothing: it shows a page whose button posts
+// the token back (POST /verify-email). Mail scanners and link previews fetch
+// links, and a fetch must not verify the account in a browser that holds no
+// claim (which would replace the password; see "Unverified accounts" above).
 router.get('/verify-email', async (req: Request, res: Response) => {
   const token = field(req.query.token);
   markTokenPage(res);
 
   if (!token) {
-    const csrfToken = generateCsrfToken(req);
-    res.status(400).render('verify-email-sent', {
+    renderMissingVerificationLink(req, res);
+    return;
+  }
+
+  try {
+    const pending = await pool.query(PENDING_VERIFICATION_SQL, [hashToken(token)]);
+    if (pending.rows.length === 0) {
+      renderSpentVerificationLink(req, res);
+      return;
+    }
+    res.render('verify-email', {
+      title: 'Verify Email',
+      csrfToken: generateCsrfToken(req),
+      token,
+    });
+  } catch (err) {
+    console.error('Email verification page error:', (err as Error).message);
+    res.status(500).render('verify-email-sent', {
       title: 'Verify Email',
       email: '',
-      csrfToken,
-      error: 'Invalid or missing verification link.',
+      csrfToken: generateCsrfToken(req),
+      error: 'Something went wrong. Please try again.',
     });
+  }
+});
+
+router.post('/verify-email', validateCsrfToken, async (req: Request, res: Response) => {
+  const token = field((req.body || {}).token);
+  markTokenPage(res);
+
+  if (!token) {
+    renderMissingVerificationLink(req, res);
     return;
   }
 
@@ -521,14 +629,7 @@ router.get('/verify-email', async (req: Request, res: Response) => {
 
     // Cheap look first: which account is this link for, and is it still
     // waiting? A bogus or spent link stops here, before any bcrypt work.
-    const pending = await pool.query(
-      `SELECT c.email
-         FROM email_verification_tokens t
-         JOIN customers c ON c.id = t.customer_id
-        WHERE t.token = $1 AND t.expires_at > NOW() AND t.used_at IS NULL
-          AND c.email_verified IS NOT TRUE`,
-      [tokenHash]
-    );
+    const pending = await pool.query(PENDING_VERIFICATION_SQL, [tokenHash]);
     const pendingEmail = (pending.rows[0] as { email: string } | undefined)?.email;
     const claim = pendingEmail ? claimFor(req, pendingEmail) : null;
     // With no claim from this browser, nothing typed by whoever created the
@@ -542,7 +643,9 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     // password and name. It is atomic: two requests racing on the same link
     // cannot both succeed, and there is no moment at which the account is
     // verified while still carrying an earlier claimant's password. It only
-    // ever applies to an account that is not verified yet.
+    // ever applies to an account that is not verified yet. This browser's own
+    // claim was made on a form that accepts the terms, so it also stamps them
+    // on a row that has no stamp (an account a payment or a dispatch created).
     const result = pendingEmail
       ? await pool.query(
           `WITH claimed AS (
@@ -555,7 +658,10 @@ router.get('/verify-email', async (req: Request, res: Response) => {
               SET email_verified = TRUE,
                   password = CASE WHEN $2::text IS NOT NULL AND c.email = $2::text THEN $3::text ELSE $5::text END,
                   name = CASE WHEN $2::text IS NOT NULL AND c.email = $2::text THEN $4::text
-                              ELSE split_part(c.email, '@', 1) END
+                              ELSE split_part(c.email, '@', 1) END,
+                  terms_accepted_at = CASE WHEN $2::text IS NOT NULL AND c.email = $2::text
+                                           THEN COALESCE(c.terms_accepted_at, NOW())
+                                           ELSE c.terms_accepted_at END
              FROM claimed
             WHERE c.id = claimed.customer_id
               AND c.email_verified IS NOT TRUE
@@ -573,15 +679,7 @@ router.get('/verify-email', async (req: Request, res: Response) => {
       : { rows: [] as unknown[] };
 
     if (result.rows.length === 0) {
-      const csrfToken = generateCsrfToken(req);
-      res.render('login', {
-        title: 'Log In',
-        csrfToken,
-        error: 'This verification link has expired or already been used. Please request a new one.',
-        email: '',
-        unverifiedEmail: null,
-        returnTo: null,
-      });
+      renderSpentVerificationLink(req, res);
       return;
     }
 
@@ -596,8 +694,10 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     // A paid cookie promoted into this account stops speaking for it: the
     // mailbox has been proven, and the account is reached through its own login.
     await expirePromotedTrialCookies(pool, row.customer_id);
-    delete req.session.pendingSignup;
-    delete req.session.verificationEmail;
+    // The claim this link settled is spent. A claim this browser holds for a
+    // different address is not, and stays for that address's link.
+    if (row.own_claim) delete req.session.pendingSignup;
+    if (req.session.verificationEmail === row.email) delete req.session.verificationEmail;
 
     // Send welcome email now that they're verified
     sendWelcomeEmail(row.email, row.name).catch(err =>
@@ -621,8 +721,10 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     }
 
     // If the visitor signed up from the /try funnel, their anon draft was
-    // already claimed in POST /signup. Resume that build instead of spinning
-    // up a fresh intake.
+    // claimed in POST /signup when that signup created the account, and is
+    // claimed now when the account already existed. Resume that build instead
+    // of spinning up a fresh intake.
+    await claimSessionDraft(req, row.customer_id);
     const resumeBuildId = req.session.claimedAnonBuildId;
     delete req.session.claimedAnonBuildId;
 
@@ -631,11 +733,10 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     res.redirect(resumeBuildId ? `/intake/${encodeURIComponent(resumeBuildId)}` : '/intake');
   } catch (err) {
     console.error('Email verification error:', (err as Error).message);
-    const csrfToken = generateCsrfToken(req);
     res.status(500).render('verify-email-sent', {
       title: 'Verify Email',
       email: '',
-      csrfToken,
+      csrfToken: generateCsrfToken(req),
       error: 'Something went wrong. Please try again.',
     });
   }
@@ -654,24 +755,15 @@ router.post('/resend-verification', signupRateLimit, validateCsrfToken, async (r
   if (!sanitizedEmail) return done();
 
   try {
-    const result = await pool.query(
-      'SELECT id, name, email_verified FROM customers WHERE email = $1',
-      [sanitizedEmail]
-    );
-
-    if (result.rows.length === 0 || result.rows[0].email_verified) {
-      return done();
-    }
-
-    const customer = result.rows[0] as { id: string; name: string };
+    // The same one statement for every address: it issues a link only for an
+    // unverified account that was sent none in the last hour. The mail, when
+    // there is one, starts after the response.
     const verifyToken = crypto.randomBytes(32).toString('hex');
-    await pool.query(INSERT_VERIFICATION_TOKEN_SQL, [customer.id, hashToken(verifyToken)]);
-
-    const verifyUrl = `${publicBaseUrl(req)}/verify-email?token=${verifyToken}`;
-
-    sendVerificationEmail(sanitizedEmail, customer.name, verifyUrl).catch(err =>
-      console.error('Resend verification email failed:', (err as Error).message)
-    );
+    const issued = await pool.query(ISSUE_VERIFICATION_TOKEN_SQL, [sanitizedEmail, hashToken(verifyToken)]);
+    if (issued.rows.length > 0) {
+      const verifyUrl = `${publicBaseUrl(req)}/verify-email?token=${verifyToken}`;
+      sendAfterResponse(res, 'Resend verification email failed', () => sendVerificationEmail(sanitizedEmail, verifyUrl));
+    }
   } catch (err) {
     console.error('Resend verification error:', (err as Error).message);
   }
@@ -712,24 +804,21 @@ router.post('/forgot-password', authRateLimit, validateCsrfToken, async (req: Re
   }
 
   try {
-    const result = await pool.query(
-      'SELECT id, name FROM customers WHERE email = $1',
-      [sanitizedEmail]
-    );
-
-    if (result.rows.length === 0) {
-      return neutral();
-    }
-
-    const customer = result.rows[0] as { id: string; name: string };
+    // The same one statement for a known address and an unknown one; the
+    // mail, when there is one, starts after the response.
     const token = crypto.randomBytes(32).toString('hex');
-    const resetUrl = `${publicBaseUrl(req)}/reset-password?token=${token}`;
-
-    await pool.query(INSERT_PASSWORD_RESET_TOKEN_SQL, [customer.id, hashToken(token)]);
-
-    sendPasswordResetEmail(sanitizedEmail, customer.name, resetUrl).catch(err =>
-      console.error('[auth] Password reset email failed:', (err as Error).message)
-    );
+    const issued = await pool.query(ISSUE_PASSWORD_RESET_TOKEN_SQL, [sanitizedEmail, hashToken(token)]);
+    const account = issued.rows[0] as { name: string; email_verified: boolean | null } | undefined;
+    if (account) {
+      const resetUrl = `${publicBaseUrl(req)}/reset-password?token=${token}`;
+      // The name on an unverified row was typed by whoever created it, who
+      // may not own the address: greet by name only once the mailbox's owner
+      // has settled it (verification or a reset).
+      const greetName = account.email_verified === true ? account.name : null;
+      sendAfterResponse(res, '[auth] Password reset email failed', () =>
+        sendPasswordResetEmail(sanitizedEmail, greetName, resetUrl)
+      );
+    }
 
     return neutral();
   } catch (err) {
@@ -842,7 +931,10 @@ router.post('/reset-password', authRateLimit, validateCsrfToken, async (req: Req
     // mailbox exactly as a verification link does: the account is marked
     // verified in the same statement. (Without that, an account created for
     // a Harbor payer, which starts unverified with a random password, could
-    // set a password here and still be refused at login.)
+    // set a password here and still be refused at login.) The name on a row
+    // that was not verified was typed by whoever created it, not necessarily
+    // the mailbox's owner, so it is replaced by the address's local part, as
+    // a verification link opened without this browser's claim does.
     const updated = await pool.query(
       `WITH claimed AS (
          UPDATE password_reset_tokens
@@ -851,7 +943,9 @@ router.post('/reset-password', authRateLimit, validateCsrfToken, async (req: Req
           RETURNING customer_id
        )
        UPDATE customers c
-          SET password = $2, email_verified = TRUE
+          SET password = $2, email_verified = TRUE,
+              name = CASE WHEN c.email_verified IS TRUE THEN c.name
+                          ELSE split_part(c.email, '@', 1) END
          FROM claimed
         WHERE c.id = claimed.customer_id
         RETURNING c.id AS customer_id`,
@@ -901,11 +995,25 @@ router.post('/reset-password', authRateLimit, validateCsrfToken, async (req: Req
 
 // --- Unsubscribe ---
 
-router.get('/unsubscribe', async (req: Request, res: Response) => {
-  const token = field(req.query.token);
-  const email = field(req.query.email);
+const UNSUBSCRIBE_LINK_INVALID = 'This unsubscribe link is invalid or you are already unsubscribed.';
 
-  if (!token) {
+/**
+ * The address an unsubscribe link speaks for, or null. The link carries the
+ * address and HMAC-SHA256(SESSION_SECRET, address); the HMAC is recomputed and
+ * compared in constant time. Reads nothing from the database.
+ */
+function unsubscribeAddress(emailField: unknown, tokenField: unknown): string | null {
+  const email = field(emailField).trim().toLowerCase();
+  const token = field(tokenField);
+  if (!email || !token) return null;
+  return timingSafeEqualStrings(generateUnsubscribeToken(email), token) ? email : null;
+}
+
+// Opening the link changes nothing: it shows a page whose button posts the
+// link's values back (POST /unsubscribe), so a mail scanner or a link preview
+// fetching the URL does not unsubscribe anyone.
+router.get('/unsubscribe', (req: Request, res: Response) => {
+  if (!field(req.query.token)) {
     res.status(400).render('unsubscribe', {
       title: 'Unsubscribe',
       error: 'Invalid unsubscribe link.',
@@ -913,30 +1021,43 @@ router.get('/unsubscribe', async (req: Request, res: Response) => {
     });
     return;
   }
+  markTokenPage(res);
+  const email = unsubscribeAddress(req.query.email, req.query.token);
+  if (!email) {
+    res.render('unsubscribe', { title: 'Unsubscribe', error: UNSUBSCRIBE_LINK_INVALID, success: false });
+    return;
+  }
+  res.render('unsubscribe', {
+    title: 'Unsubscribe',
+    error: null,
+    success: false,
+    confirmation: { email, token: field(req.query.token) },
+    csrfToken: generateCsrfToken(req),
+  });
+});
+
+router.post('/unsubscribe', validateCsrfToken, async (req: Request, res: Response) => {
+  const body = (req.body || {}) as Record<string, unknown>;
+  markTokenPage(res);
 
   try {
     let matchedId: string | null = null;
 
-    if (email) {
-      // The link carries the email; recompute its HMAC and compare in
-      // constant time.
-      const sanitizedEmail = email.trim().toLowerCase();
-      const expected = generateUnsubscribeToken(sanitizedEmail);
-      if (timingSafeEqualStrings(expected, token)) {
-        const result = await pool.query(
-          'SELECT id FROM customers WHERE email = $1 AND email_unsubscribed = FALSE',
-          [sanitizedEmail]
-        );
-        if (result.rows.length > 0) {
-          matchedId = (result.rows[0] as { id: string }).id;
-        }
+    const sanitizedEmail = unsubscribeAddress(body.email, body.token);
+    if (sanitizedEmail) {
+      const result = await pool.query(
+        'SELECT id FROM customers WHERE email = $1 AND email_unsubscribed = FALSE',
+        [sanitizedEmail]
+      );
+      if (result.rows.length > 0) {
+        matchedId = (result.rows[0] as { id: string }).id;
       }
     }
 
     if (!matchedId) {
       res.render('unsubscribe', {
         title: 'Unsubscribe',
-        error: 'This unsubscribe link is invalid or you are already unsubscribed.',
+        error: UNSUBSCRIBE_LINK_INVALID,
         success: false,
       });
       return;
@@ -1195,7 +1316,7 @@ router.post('/account/delete', requireAuth, accountDeleteRateLimit, validateCsrf
 
     req.session.destroy((err) => {
       if (err) console.error('Session destroy error after account deletion:', err.message);
-      res.clearCookie(SESSION_COOKIE_NAME);
+      res.clearCookie(SESSION_COOKIE_NAME, sessionCookieAttributes());
       res.redirect('/?deleted=1');
     });
   } catch (err) {

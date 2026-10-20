@@ -533,6 +533,48 @@ describe('POST /login hardening', () => {
     expect(page.status).toBe(200);
   });
 
+  it('login CSRF: a login form token taken from one browser is refused from another, and works in its own', async () => {
+    const tokenOf = (html: string): string => (html.match(/name="_csrf" value="([^"]+)"/) || [])[1] || '';
+    // The attacker's browser loads the login page and keeps its token.
+    const attacker = request.agent(app);
+    const attackerToken = tokenOf((await attacker.get('/login')).text);
+    expect(attackerToken.split('.')).toHaveLength(3);
+
+    // The victim's browser, with a session of its own or with none, is made to post it.
+    const victim = request.agent(app);
+    await victim.get('/');
+    for (const client of [victim, request(app)]) {
+      mockQuery.mockResolvedValueOnce(await verifiedCustomer());
+      const forged = await client
+        .post('/login')
+        .type('form')
+        .send({ _csrf: attackerToken, email: 'user@example.com', password: 'mypassword' });
+      expect(forged.status).toBe(403);
+    }
+    // Refused before the route ran: the account was never looked up, so nobody was logged in.
+    expect(mockQuery).not.toHaveBeenCalled();
+    mockQuery.mockReset();
+    expect((await victim.get('/account/delete')).status).toBe(302);
+
+    // The same token, from the browser whose page it came from, logs in.
+    mockQuery.mockReset();
+    mockQuery.mockResolvedValueOnce(await verifiedCustomer());
+    const own = await attacker
+      .post('/login')
+      .type('form')
+      .send({ _csrf: attackerToken, email: 'user@example.com', password: 'mypassword' });
+    expect(own.status).toBe(302);
+    expect(own.headers.location).toBe('/dashboard');
+  });
+
+  it('a logged-out browser keeps the session its form token is bound to: rendering the page sets the session cookie', async () => {
+    const page = await request(app).get('/login');
+    expect(String(page.headers['set-cookie'])).toMatch(/^cas\.sid=/);
+    // A response that renders nothing leaves no session behind.
+    const health = await request(app).get('/robots.txt');
+    expect(health.headers['set-cookie']).toBeUndefined();
+  });
+
   it('runs a bcrypt comparison even when the email is unknown (no timing oracle)', async () => {
     const compareSpy = vi.spyOn(bcrypt, 'compare');
     try {
@@ -703,8 +745,40 @@ describe('GET /verify-email', () => {
     return agent;
   }
 
+  /**
+   * Open the emailed link the way a browser does: GET shows the confirmation
+   * page (one read, nothing spent), and its button posts the token back.
+   */
+  async function openLink(agent: ReturnType<typeof request.agent>, token: string): Promise<request.Response> {
+    const page = await agent.get(`/verify-email?token=${token}`);
+    expect(page.status).toBe(200);
+    expect(page.text).toContain('action="/verify-email"');
+    expect(page.text).toContain(`name="token" value="${token}"`);
+    const csrf = (page.text.match(/name="_csrf" value="([^"]+)"/) || [])[1];
+    return agent.post('/verify-email').type('form').send({ _csrf: csrf, token });
+  }
+
+  it('opening the link spends nothing: one read, then a page whose button posts the token back', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ email: 'user@example.test' }] });
+    const res = await request(app).get('/verify-email?token=valid-token-abc');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Confirm your email.');
+    expect(res.text).toMatch(/<form action="\/verify-email" method="POST">/);
+    expect(res.headers['cache-control']).toBe('no-store');
+    expect(res.headers['referrer-policy']).toBe('no-referrer');
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(String(mockQuery.mock.calls[0][0])).toMatch(/^SELECT c\.email/);
+  });
+
+  it('POST /verify-email needs the form\'s CSRF token', async () => {
+    const res = await request(app).post('/verify-email').type('form').send({ token: 'valid-token-abc' });
+    expect(res.status).toBe(403);
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
   it('verifies customer and redirects to /intake on valid token', async () => {
     const agent = await signedUpAgent('user@example.test', 'Test');
+    mockQuery.mockResolvedValueOnce({ rows: [{ email: 'user@example.test' }] }); // the page's look: still waiting
     mockQuery.mockResolvedValueOnce({ rows: [{ email: 'user@example.test' }] }); // which account is waiting
     // One atomic statement claims the token, verifies the customer and settles the credentials.
     mockQuery.mockResolvedValueOnce({
@@ -713,7 +787,7 @@ describe('GET /verify-email', () => {
     mockQuery.mockResolvedValueOnce({ rows: [] }); // retire other links
     mockQuery.mockResolvedValueOnce({ rows: [] }); // expire paid trial cookies promoted into the account
 
-    const res = await agent.get('/verify-email?token=valid-token-abc');
+    const res = await openLink(agent, 'valid-token-abc');
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe('/intake');
 
@@ -721,19 +795,21 @@ describe('GET /verify-email', () => {
     // cannot be spent twice by racing requests and there is no pool-level
     // BEGIN/COMMIT (which would not be a transaction: each pool.query may run
     // on a different connection).
-    expect(mockQuery).toHaveBeenCalledTimes(4);
-    const [sql, params] = mockQuery.mock.calls[1];
+    expect(mockQuery).toHaveBeenCalledTimes(5);
+    const [sql, params] = mockQuery.mock.calls[2];
     expect(sql).toContain('UPDATE email_verification_tokens');
     expect(sql).toContain('used_at IS NULL');
     expect(sql).toContain('expires_at > NOW()');
     expect(sql).toContain('SET email_verified = TRUE');
     // It never applies to an account that is already verified.
     expect(sql).toContain('AND c.email_verified IS NOT TRUE');
+    // This browser's own claim also stamps the terms on a row that has none.
+    expect(sql).toMatch(/terms_accepted_at = CASE WHEN \$2::text IS NOT NULL AND c\.email = \$2::text\s+THEN COALESCE\(c\.terms_accepted_at, NOW\(\)\)\s+ELSE c\.terms_accepted_at END/);
     // Looked up by SHA-256 of the token, never the raw value.
     expect(params[0]).toMatch(/^[0-9a-f]{64}$/);
     expect(params[0]).not.toBe('valid-token-abc');
     // A verified mailbox expires the paid trial cookies promoted into the account.
-    const [expirySql, expiryParams] = mockQuery.mock.calls[3];
+    const [expirySql, expiryParams] = mockQuery.mock.calls[4];
     expect(expirySql).toContain('UPDATE trial_keepers SET expires_at = NOW() WHERE promoted_customer_id = $1');
     expect(expiryParams).toEqual(['cust-1']);
   });
@@ -741,11 +817,12 @@ describe('GET /verify-email', () => {
   it('logs the customer in on a fresh session after verification', async () => {
     const agent = await signedUpAgent('user@example.test', 'Test');
     mockQuery.mockResolvedValueOnce({ rows: [{ email: 'user@example.test' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ email: 'user@example.test' }] });
     mockQuery.mockResolvedValueOnce({
       rows: [{ customer_id: 'cust-1', email: 'user@example.test', name: 'Test', own_claim: true }],
     });
     mockQuery.mockResolvedValueOnce({ rows: [] });
-    const res = await agent.get('/verify-email?token=valid-token-abc');
+    const res = await openLink(agent, 'valid-token-abc');
     expect(res.status).toBe(302);
     expect(String(res.headers['set-cookie'])).toContain('cas.sid=');
 
@@ -767,13 +844,11 @@ describe('POST /resend-verification', () => {
     mockQuery.mockReset();
   });
 
-  it('redirects to verify-email-sent for a valid unverified email', async () => {
-    // Customer found, not verified
-    mockQuery.mockResolvedValueOnce({
-      rows: [{ id: 'cust-1', name: 'Test', email_verified: false }],
-    });
-    // INSERT new token
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+  it('redirects to verify-email-sent for a valid unverified email, and mails the link after the response', async () => {
+    const { sendVerificationEmail } = await import('../../src/services/email');
+    (sendVerificationEmail as ReturnType<typeof vi.fn>).mockClear();
+    // The one statement inserted a token (an unverified account, no link in the last hour).
+    mockQuery.mockResolvedValueOnce({ rows: [{ customer_id: 'cust-1' }] });
 
     const csrf = getValidCsrf();
     const res = await request(app)
@@ -783,16 +858,34 @@ describe('POST /resend-verification', () => {
 
     expect(res.status).toBe(302);
     expect(res.headers.location).toContain('/verify-email-sent');
-    // New token was inserted
-    const insertCall = mockQuery.mock.calls[1];
-    expect(insertCall[0]).toContain('INSERT INTO email_verification_tokens');
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toContain('INSERT INTO email_verification_tokens');
+    expect(params[0]).toBe('test@example.com');
+    expect(params[1]).toMatch(/^[0-9a-f]{64}$/);
+    await vi.waitFor(() => expect(sendVerificationEmail).toHaveBeenCalledTimes(1));
+    // The verification mail is not given a name to print.
+    expect((sendVerificationEmail as ReturnType<typeof vi.fn>).mock.calls[0]).toEqual([
+      'test@example.com',
+      expect.stringMatching(/\/verify-email\?token=[0-9a-f]{64}$/),
+    ]);
+  });
+
+  it('the one statement inserts only for an unverified account that was sent no link in the last hour', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await request(app).post('/resend-verification').type('form').send({ _csrf: getValidCsrf(), email: 'test@example.com' });
+    const sql = String(mockQuery.mock.calls[0][0]);
+    expect(sql).toContain('c.email_verified IS NOT TRUE');
+    // A link lives 24 hours, so one issued in the last hour expires more than 23 hours from now.
+    expect(sql).toMatch(/NOT EXISTS \(\s*SELECT 1 FROM email_verification_tokens t\s+WHERE t\.customer_id = c\.id\s+AND t\.expires_at > NOW\(\) \+ INTERVAL '23 hours'\)/);
+    expect(sql).toMatch(/INSERT INTO email_verification_tokens \(customer_id, token\)\s+SELECT id, \$2 FROM target/);
   });
 
   it('redirects to verify-email-sent even for already verified email (no leak)', async () => {
-    // Customer found, already verified
-    mockQuery.mockResolvedValueOnce({
-      rows: [{ id: 'cust-1', name: 'Test', email_verified: true }],
-    });
+    const { sendVerificationEmail } = await import('../../src/services/email');
+    (sendVerificationEmail as ReturnType<typeof vi.fn>).mockClear();
+    // The statement inserted nothing: the account is verified.
+    mockQuery.mockResolvedValueOnce({ rows: [] });
 
     const csrf = getValidCsrf();
     const res = await request(app)
@@ -802,8 +895,22 @@ describe('POST /resend-verification', () => {
 
     expect(res.status).toBe(302);
     expect(res.headers.location).toContain('/verify-email-sent');
-    // No token inserted for already-verified accounts
     expect(mockQuery).toHaveBeenCalledTimes(1);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(sendVerificationEmail).not.toHaveBeenCalled();
+  });
+
+  it('runs the same statements for an unverified, a verified and an unknown address', async () => {
+    const sequences: unknown[][] = [];
+    for (const answer of [[{ customer_id: 'cust-1' }], [], []]) {
+      mockQuery.mockReset();
+      mockQuery.mockResolvedValueOnce({ rows: answer });
+      await request(app).post('/resend-verification').type('form').send({ _csrf: getValidCsrf(), email: 'someone@example.com' });
+      sequences.push(mockQuery.mock.calls.map(([sql, params]) => [sql, (params as unknown[]).length, (params as unknown[])[0]]));
+    }
+    expect(sequences[0]).toHaveLength(1);
+    expect(sequences[1]).toEqual(sequences[0]);
+    expect(sequences[2]).toEqual(sequences[0]);
   });
 
   it('redirects to verify-email-sent for unknown email (no leak)', async () => {

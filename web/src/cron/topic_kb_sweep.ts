@@ -19,21 +19,24 @@
  * rather than a no-op.
  *
  * Inputs and outputs are filtered because the corpus is other people's chat
- * text and the output is served to the public support chat:
+ * text and the output is meant for the support chat:
  *  - crisis-flagged turns and turns from bot-classified trials are not read;
  *  - at most MAX_TURN_ROWS newest turns are loaded;
- *  - a generated pair containing a link, markup or email address is rejected
- *    (`isValidCluster`), so a visitor cannot get their own URL cached as a
- *    support answer by repeating it in chat.
+ *  - a generated pair is rejected (`isValidCluster`) when it carries a URL, a
+ *    `www.` host, any other dotted host name but the product's own domain, an
+ *    IPv4 address, a tag or entity, an email address, or a run of seven or
+ *    more digits shaped like a phone number, so a visitor cannot get their own
+ *    link or number cached as a support answer by repeating it in chat. The
+ *    check reads shapes: an address spelled out in words passes it.
  *
- * Review: there is none. A pair that passes the filters is inserted and the
- * support chat (routes/support.ts) will serve it to any customer whose first
- * message overlaps the question. The filters stop links and markup; they do
- * not stop a false statement that several visitors (or one visitor with
- * several trial cookies) repeated until the model treated it as a recurring
- * topic. support_kb has no status or provenance column, so holding new rows
- * for an operator's approval is a schema change this module does not make;
- * it is the right next step for a deployment that runs the sweep.
+ * Review: a pair that passes the filters is inserted with status 'pending',
+ * and the support chat (routes/support.ts) serves only 'approved' rows, so
+ * nothing this sweep writes reaches a customer until an operator approves it.
+ * There is no admin page for that; an operator reads the pending rows and
+ * approves one by hand (the statement is next to the column in
+ * db/schema.sql). The filters do not stop a false statement that several
+ * visitors (or one visitor with several trial cookies) repeated until the
+ * model treated it as a recurring topic; the approval is what does.
  *
  * `harbor-cron-scheduler.ts` runs this on a timer. This module exposes a
  * single pure-pg sweep function so it stays test-friendly. The Haiku call is
@@ -200,9 +203,11 @@ export async function runTopicKbSweep(
       continue;
     }
     const normalized = normalizeQuestion(cluster.question);
+    // Stored as 'pending': the support chat does not serve it until an
+    // operator approves it (see "Review" at the top of this file).
     const insert = await opts.pool.query(
-      `INSERT INTO support_kb (question, question_normalized, answer)
-       SELECT $1, $2, $3
+      `INSERT INTO support_kb (question, question_normalized, answer, status)
+       SELECT $1, $2, $3, 'pending'
        WHERE NOT EXISTS (
          SELECT 1 FROM support_kb WHERE question_normalized = $2
        )`,
@@ -357,20 +362,61 @@ export function isValidCluster(cluster: TopicCluster): boolean {
   if (containsEmDash(cluster.question) || containsEmDash(cluster.answer)) {
     return false;
   }
-  // The support chat serves these answers to strangers. Visitor-typed text
-  // reaches the model through the corpus, so refuse anything that could carry
-  // a link or markup: URLs, bare domains with a path, tags, email addresses.
+  // Once approved, the support chat serves these answers to strangers.
+  // Visitor-typed text reaches the model through the corpus, so refuse
+  // anything that could carry a link, markup or a number to call.
   if (containsLinkOrMarkup(cluster.question) || containsLinkOrMarkup(cluster.answer)) {
     return false;
   }
   return true;
 }
 
-const LINK_OR_MARKUP_RE =
-  /https?:\/\/|www\.|<[a-z/!]|&lt;|\b[a-z0-9-]+\.(?:com|net|org|io|co|app|dev|xyz|ru|info|biz)\b|[^\s@]+@[^\s@]+\.[a-z]{2,}/i;
+// The email alternative looks at one character before the "@" (a longer local
+// part matches whenever its last character does), which keeps the test linear
+// on a long run of text with no "@" in it.
+const LINK_OR_MARKUP_RE = /https?:\/\/|www\.|<[a-z/!]|&lt;|[^\s@]@[^\s@]+\.[a-z]{2,}/i;
+
+/** The product's own domain, the one host name an answer may mention (with its subdomains). */
+const PRODUCT_DOMAIN = 'craftandship.io';
+
+/**
+ * True when `text` names a host: a dotted name whose last label starts with a
+ * letter and has two characters or more (paypal.me, t.me, bit.ly,
+ * example.shop), or a dotted-quad address. "e.g.", "3.5" and "$19.99" are not
+ * host names. Unicode letters count as letters and compatibility forms (a
+ * full-width dot) are folded first. Linear in the text.
+ */
+function containsHostName(text: string): boolean {
+  for (const token of text.normalize('NFKC').toLowerCase().split(/[^\p{L}\p{N}.-]+/u)) {
+    // Sentence punctuation around a name ("craftandship.io." at the end of a
+    // sentence) is not part of it; trimmed with a loop, which stays linear.
+    let start = 0;
+    let end = token.length;
+    while (start < end && (token[start] === '.' || token[start] === '-')) start += 1;
+    while (end > start && (token[end - 1] === '.' || token[end - 1] === '-')) end -= 1;
+    const host = token.slice(start, end);
+    if (!host.includes('.')) continue;
+    const labels = host.split('.');
+    const last = labels[labels.length - 1];
+    const isName = /^\p{L}[\p{L}\p{N}-]+$/u.test(last);
+    const isAddress = labels.length === 4 && labels.every((label) => /^\d{1,3}$/.test(label));
+    if (!isName && !isAddress) continue;
+    if (host === PRODUCT_DOMAIN || host.endsWith(`.${PRODUCT_DOMAIN}`)) continue;
+    return true;
+  }
+  return false;
+}
+
+/** True when `text` holds a run of seven or more digits written as one number (512-555-0100, +1 (512) 555 0100). */
+function containsPhoneNumber(text: string): boolean {
+  for (const run of text.normalize('NFKC').match(/[\d\s().+-]+/g) ?? []) {
+    if ((run.match(/\d/g) ?? []).length >= 7) return true;
+  }
+  return false;
+}
 
 export function containsLinkOrMarkup(text: string): boolean {
-  return LINK_OR_MARKUP_RE.test(text);
+  return LINK_OR_MARKUP_RE.test(text) || containsHostName(text) || containsPhoneNumber(text);
 }
 
 function containsEmDash(text: string): boolean {

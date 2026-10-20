@@ -14,7 +14,7 @@
  *   POST /lighthouse/preview/choose        -> persist the chosen template family
  *   GET  /lighthouse/lamp/:buildId         -> build status for the owner
  *   GET/POST /lighthouse/lamp/:buildId/make-public  -> Stripe Checkout for the subscription
- *   POST /lighthouse/lamp/:buildId/cancel-subscription -> cancel at period end (keeper only)
+ *   POST /lighthouse/lamp/:buildId/cancel-subscription -> cancel at period end (keeper with an account session only)
  *
  * Identity: every request passes through the trial-cookie middleware, which
  * attaches a trial identity (minting one if needed). A logged-in keeper is
@@ -40,7 +40,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import type { Pool } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
-import { trialCookie, identifyTrialCookie } from '../middleware/trial-cookie';
+import { trialCookie, identifyTrialCookie, rotateTrialCookie } from '../middleware/trial-cookie';
 import {
   turn,
   openingMessage,
@@ -89,6 +89,7 @@ import { forwardAsyncErrors } from '../utils/async-routes';
 import { renderErrorPage } from '../utils/error-page';
 import { hashUnusablePassword } from '../utils/password-hash';
 import { track } from '../services/funnel-events';
+import { publicBaseUrl } from './auth';
 import {
   dispatchHarborTrialBuild,
   dispatchHarborKeeperBuild,
@@ -706,6 +707,10 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
             });
             return;
           }
+          // The trial now carries an address, and a build can be made for it
+          // with this cookie alone: a copy of the cookie taken before this
+          // point stops speaking for the trial (middleware/trial-cookie.ts).
+          if (gateOutcome.captured) await rotateTrialCookie(pool, req, res);
         }
 
         // Funnel: is this the trial's FIRST message? (the activation metric
@@ -1002,12 +1007,14 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
       if (sessionAccountEmail && !(g.email_captured || '').trim()) {
         // Record it as the address this conversation gave, the way a typed
         // one is recorded. The make-public page later lets the trial cookie
-        // pay only into the account for that address.
-        await pool.query(
+        // pay only into the account for that address. Recording an address
+        // replaces the trial's cookie (see the email gate in the turn route).
+        const recorded = await pool.query(
           `UPDATE trial_keepers SET email_captured = $1
            WHERE trial_id = $2 AND email_captured IS NULL`,
           [sessionAccountEmail, trial.trial_id]
         );
+        if (recorded.rowCount === 1) await rotateTrialCookie(pool, req, res);
       }
 
       // Email: the delivery channel and a seriousness filter. Capture inline
@@ -1020,11 +1027,12 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
           res.status(400).json({ requiresEmail: true, error: 'invalid email format' });
           return;
         }
-        await pool.query(
+        const recorded = await pool.query(
           `UPDATE trial_keepers SET email_captured = $1
            WHERE trial_id = $2 AND email_captured IS NULL`,
           [bodyEmail, trial.trial_id]
         );
+        if (recorded.rowCount === 1) await rotateTrialCookie(pool, req, res);
         resolvedEmail = bodyEmail;
       }
       if (!resolvedEmail) {
@@ -1081,15 +1089,15 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
             dispErr.code === 'address_in_use' ||
             (dispErr.code === 'email_not_buildable' && anonymous)
           ) {
-            // The typed address belongs to a verified account, to an account
-            // that already has a conversation or a build (address_in_use), or
-            // it is one the build engine would refuse as the site's admin
-            // address. Nothing was attached to the account. account_exists and
-            // email_not_buildable are decided before the extraction, so nothing
-            // was spent on them. address_in_use is decided before the extraction
-            // too, except when a build lands on the account while the extraction
-            // runs: then the insert's lock decides it, after a model call that
-            // was paid for, and no build or start row comes of that call. Forget
+            // The typed address belongs to a verified account, to any other
+            // account (address_in_use: an anonymous dispatch attaches only to
+            // an account it creates), or it is one the build engine would
+            // refuse as the site's admin address. Nothing was attached to the
+            // account. All three are decided before the extraction, so nothing
+            // was spent on them, except when an account for the address
+            // appears while the extraction runs: then the insert transaction
+            // decides it, after a model call that was paid for, and no build,
+            // account or start row comes of that call. Forget
             // the address on this trial (it is only ever set once otherwise) so
             // the visitor can give another one. The cases get one answer, word
             // for word, so the answer adds nothing a visitor could tell them
@@ -1484,7 +1492,11 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
 
   // POST /lighthouse/lamp/:buildId/cancel-subscription
   // Cancel-at-period-end the keeper's harbor subscription. Site stays up.
-  // Keeper-only (no trial path; pre-payment trials have no subscription).
+  // Keeper-only (no trial path; pre-payment trials have no subscription), and
+  // only with an account session: the browser that paid can open the lamp
+  // with its trial cookie alone, but that cookie is a bearer token any copy
+  // of which works, so ending the subscription takes the account's password.
+  // That browser is told how to log in, or to choose a password first.
   router.post(
     '/lamp/:buildId/cancel-subscription',
     validateCsrfToken,
@@ -1497,6 +1509,15 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
         }
         if (ctx.ownerKind !== 'keeper' || !ctx.customerId) {
           res.status(403).json({ error: 'keeper_required' });
+          return;
+        }
+        if (req.session?.customerId !== ctx.customerId) {
+          renderErrorPage(res, 403, {
+            title: 'Log in to cancel',
+            heading: 'Log in to cancel the subscription.',
+            error:
+              'Cancelling takes a login to the account under the email address you paid with. If you have not chosen a password yet, choose "Forgot your password?" on the login page and we will email you a link to set one.',
+          });
           return;
         }
         const subRes = await pool.query<{ stripe_subscription_id: string | null }>(
@@ -1551,10 +1572,10 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
       // gave Haven, editable.
       const account = await paymentAccount(pool, ctx);
       const captured = await capturedTrialEmail(pool, ctx);
-      if (account && ctx.ownerKind === 'trial' && !sameAddress(account.email, captured)) {
-        // The build's account is not the one for the address this visitor
-        // gave (the POST below says when that happens and refuses it too),
-        // so that account's address is not shown to them either.
+      if (account && ctx.ownerKind === 'trial' && !trialMayPayInto(account, captured)) {
+        // The build's account is not one this cookie may pay into (the POST
+        // below says when that happens and refuses it too), so that
+        // account's address is not shown to it either.
         renderErrorPage(res, 409, { title: 'Log in to continue', error: ACCOUNT_ELSEWHERE_MESSAGE });
         return;
       }
@@ -1666,14 +1687,18 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
           typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
         const account = await paymentAccount(pool, ctx);
         let email: string;
+        let openedByAccount: string | null = ctx.ownerKind === 'keeper' ? ctx.customerId : null;
         if (account) {
-          // A trial pays only into the account for the address it gave. The
-          // build's account can be another one: an operator can dispatch a
-          // trial's build for an address of the operator's choosing, and a
-          // logged-in customer's preview goes to their own account. A
-          // cookie is no claim on such an account, so paying into it takes a
-          // login (the owner path above), and its address is not disclosed.
-          if (ctx.ownerKind === 'trial' && !sameAddress(account.email, await capturedTrialEmail(pool, ctx))) {
+          // A trial pays only into the account for the address it gave, and
+          // only while nobody has verified that account. The build's account
+          // can be another one: the operator's own when the trial gave no
+          // address, and a logged-in customer's preview goes to their own
+          // account. A cookie is no claim on such an account, nor on one
+          // whose owner proved the mailbox, so paying into it takes a login
+          // (the owner path above), and its address is not disclosed. The
+          // webhook refuses a trial cookie's payment into a verified account
+          // all the same (a session opened before the verification).
+          if (ctx.ownerKind === 'trial' && !trialMayPayInto(account, await capturedTrialEmail(pool, ctx))) {
             res.status(409).json({ error: 'account_login_required', message: ACCOUNT_ELSEWHERE_MESSAGE });
             return;
           }
@@ -1718,6 +1743,8 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
               });
               return;
             }
+            // The address is the logged-in account's own: its login opens this payment.
+            if (emailOwner.rows.length > 0) openedByAccount = sessionCustomerId;
           }
         }
         // A trial's account rests on an address somebody typed and nobody has
@@ -1747,25 +1774,23 @@ export function createLighthouseRouter(pool: Pool, opts: { makePublicMaxPerHour?
         // created at Stripe for a form that is merely submitted.
         const stripeCustomerId = await storedStripeCustomerId(pool, ctx);
 
-        // Build the absolute origin Stripe will redirect back to. Prefer the
-        // configured BASE_URL so the redirect target never depends on a
-        // request header; fall back to the request origin for local use.
-        const configuredBase = (process.env.BASE_URL || '').trim().replace(/\/+$/, '');
-        const proto = (req.headers['x-forwarded-proto'] as string) || (req.protocol || 'http');
-        const host = req.headers.host;
-        const baseUrl = /^https?:\/\/[^\s]+$/i.test(configuredBase)
-          ? configuredBase
-          : `${proto}://${host}`;
-
+        // The origin Stripe redirects back to: the one helper the emailed links
+        // use (publicBaseUrl in routes/auth.ts). It prefers BASE_URL, and
+        // otherwise takes req.protocol (which reads X-Forwarded-Proto only
+        // from a hop `trust proxy` trusts) and a Host that looks like a plain
+        // host.
         const url = await createHarborSubscriptionCheckoutSession({
           buildId: ctx.build.id,
           trialId,
-          keeperCustomerId: ctx.ownerKind === 'keeper' ? (ctx.customerId as string) : null,
+          // Recorded only for a session that a login of the account, or the
+          // browser that already paid into it, opened: the webhook reads it
+          // as the account's own payment (routes/webhooks.ts).
+          keeperCustomerId: openedByAccount,
           stripeCustomerId,
           customerEmail: email,
           monthlyAmountCents: amount,
           slidingScaleAttestation,
-          baseUrl,
+          baseUrl: publicBaseUrl(req),
         });
         res.redirect(303, url);
       } catch (err) {
@@ -1952,21 +1977,37 @@ async function resolveLampOwnership(
 async function paymentAccount(
   pool: Pool,
   ctx: LampOwnership
-): Promise<{ customerId: string; email: string; subscribed: boolean } | null> {
+): Promise<{ customerId: string; email: string; subscribed: boolean; verified: boolean } | null> {
   const customerId = ctx.ownerKind === 'keeper' ? ctx.customerId : ctx.build.customer_id;
   if (!customerId) return null;
-  const r = await pool.query<{ email: string | null; subscribed: boolean | null }>(
+  const r = await pool.query<{ email: string | null; subscribed: boolean | null; email_verified: boolean | null }>(
     `SELECT c.email,
             EXISTS (
               SELECT 1 FROM keepers k
               WHERE k.customer_id = c.id AND k.stripe_subscription_id IS NOT NULL
-            ) AS subscribed
+            ) AS subscribed,
+            c.email_verified
      FROM customers c
      WHERE c.id = $1`,
     [customerId]
   );
   if (r.rows.length === 0) return null;
-  return { customerId, email: r.rows[0].email || '', subscribed: r.rows[0].subscribed === true };
+  return {
+    customerId,
+    email: r.rows[0].email || '',
+    subscribed: r.rows[0].subscribed === true,
+    verified: r.rows[0].email_verified === true,
+  };
+}
+
+/**
+ * A trial cookie pays into the build's account only when that account is the
+ * one for the address the trial gave, and its owner has not verified it: a
+ * verified account is paid into only from its own login (the payment webhook
+ * refuses a trial cookie's session for one, routes/webhooks.ts).
+ */
+function trialMayPayInto(account: { email: string; verified: boolean }, capturedEmail: string): boolean {
+  return !account.verified && sameAddress(account.email, capturedEmail);
 }
 
 /** Two addresses are the same account address: compared trimmed and lower-cased, and an empty one equals nothing. */
@@ -2051,6 +2092,8 @@ interface EmailGateOutcome {
   status: 'pass' | 'gated' | 'invalid_email';
   turnCount: number;
   threshold: number;
+  /** True when this request recorded the trial's first address (the caller then replaces the trial's cookie). */
+  captured?: boolean;
 }
 
 /**
@@ -2096,11 +2139,11 @@ async function checkEmailGate(
     return { status: 'invalid_email', turnCount, threshold };
   }
   // Persist + pass.
-  await pool.query(
+  const recorded = await pool.query(
     `UPDATE trial_keepers SET email_captured = $1 WHERE trial_id = $2 AND email_captured IS NULL`,
     [incoming, trialId]
   );
-  return { status: 'pass', turnCount, threshold };
+  return { status: 'pass', turnCount, threshold, captured: recorded.rowCount === 1 };
 }
 
 // ---- Stripe bypass helpers ----

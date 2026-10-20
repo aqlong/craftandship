@@ -7,7 +7,8 @@
 // The stand-in implements what each statement is documented to do, which
 // makes whole sequences testable (attacker claims, owner claims, somebody
 // opens a link). That it matches what Postgres does with the real statements
-// is checked separately, by money-path.realdb.test.ts.
+// is checked separately, by money-path.realdb.test.ts and
+// auth-identity.realdb.test.ts.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
@@ -59,17 +60,22 @@ interface Customer {
   password: string;
   name: string;
   email_verified: boolean;
+  terms_accepted: boolean;
 }
 interface Token {
   customer_id: string;
   token: string;
   used: boolean;
+  /** Fake-clock minute at which it was issued. */
+  issuedAt: number;
 }
 
 let customers: Customer[];
 let verificationTokens: Token[];
 let resetTokens: Token[];
 let statements: string[];
+/** The stand-in's clock, in minutes. */
+let minute: number;
 
 const sha256 = (value: string): string => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -80,16 +86,9 @@ function fakeDatabase(sql: string, params: unknown[]): { rows: unknown[]; rowCou
   if (/^SELECT id, email_verified FROM customers WHERE email = \$1/.test(sql)) {
     return { rows: customers.filter((c) => c.email === p[0]).map((c) => ({ id: c.id, email_verified: c.email_verified })) };
   }
-  if (/UPDATE customers\s+SET password = \$2, name = \$3, terms_accepted_at = NOW\(\)\s+WHERE id = \$1 AND email_verified IS NOT TRUE/.test(sql)) {
-    const row = customers.find((c) => c.id === p[0] && !c.email_verified);
-    if (!row) return { rows: [] };
-    row.password = p[1];
-    row.name = p[2];
-    return { rows: [{ id: row.id, email: row.email, name: row.name }] };
-  }
   if (/INSERT INTO customers \(email, password, name, terms_accepted_at/.test(sql)) {
     if (customers.some((c) => c.email === p[0])) return { rows: [] };
-    const row: Customer = { id: `cust-${customers.length + 1}`, email: p[0], password: p[1], name: p[2], email_verified: false };
+    const row: Customer = { id: `cust-${customers.length + 1}`, email: p[0], password: p[1], name: p[2], email_verified: false, terms_accepted: true };
     customers.push(row);
     return { rows: [{ id: row.id, email: row.email, name: row.name }] };
   }
@@ -97,9 +96,14 @@ function fakeDatabase(sql: string, params: unknown[]): { rows: unknown[]; rowCou
     for (const token of verificationTokens) if (token.customer_id === p[0]) token.used = true;
     return { rows: [] };
   }
-  if (/INSERT INTO email_verification_tokens \(customer_id, token\)/.test(sql)) {
-    verificationTokens.push({ customer_id: p[0], token: p[1], used: false });
-    return { rows: [] };
+  // ISSUE_VERIFICATION_TOKEN_SQL: by address; only for an unverified account
+  // that was sent no link in the last hour; a row back only when it inserted.
+  if (/INSERT INTO email_verification_tokens \(customer_id, token\)\s+SELECT id, \$2 FROM target/.test(sql)) {
+    const row = customers.find((c) => c.email === p[0] && !c.email_verified);
+    if (!row) return { rows: [] };
+    if (verificationTokens.some((t) => t.customer_id === row.id && minute - t.issuedAt < 60)) return { rows: [] };
+    verificationTokens.push({ customer_id: row.id, token: p[1], used: false, issuedAt: minute });
+    return { rows: [{ customer_id: row.id }] };
   }
   if (/^SELECT c\.email\s+FROM email_verification_tokens t\s+JOIN customers c/.test(sql)) {
     const token = verificationTokens.find((t) => t.token === p[0] && !t.used);
@@ -116,33 +120,37 @@ function fakeDatabase(sql: string, params: unknown[]): { rows: unknown[]; rowCou
     row.email_verified = true;
     row.password = ownClaim ? p[2] : p[4];
     row.name = ownClaim ? p[3] : row.email.split('@')[0];
+    if (ownClaim) row.terms_accepted = true;
     return { rows: [{ customer_id: row.id, email: row.email, name: row.name, own_claim: ownClaim }] };
   }
-  if (/INSERT INTO password_reset_tokens \(customer_id, token\)/.test(sql)) {
-    resetTokens.push({ customer_id: p[0], token: p[1], used: false });
+  // ISSUE_PASSWORD_RESET_TOKEN_SQL: by address, for any account.
+  if (/INSERT INTO password_reset_tokens \(customer_id, token\)\s+SELECT id, \$2 FROM target/.test(sql)) {
+    const row = customers.find((c) => c.email === p[0]);
+    if (!row) return { rows: [] };
+    resetTokens.push({ customer_id: row.id, token: p[1], used: false, issuedAt: minute });
+    return { rows: [{ name: row.name, email_verified: row.email_verified }] };
+  }
+  // A reset link for a known account (handed over by a verification without a claim).
+  if (/INSERT INTO password_reset_tokens \(customer_id, token\)\s+VALUES \(\$1, \$2\)/.test(sql)) {
+    resetTokens.push({ customer_id: p[0], token: p[1], used: false, issuedAt: minute });
     return { rows: [] };
   }
   if (/^SELECT id FROM password_reset_tokens\s+WHERE token = \$1/.test(sql)) {
     return { rows: resetTokens.filter((t) => t.token === p[0] && !t.used).map(() => ({ id: 'reset-token' })) };
   }
-  if (/UPDATE customers c\s+SET password = \$2, email_verified = TRUE/.test(sql)) {
+  if (/UPDATE customers c\s+SET password = \$2, email_verified = TRUE,\s+name = CASE WHEN c\.email_verified IS TRUE THEN c\.name/.test(sql)) {
     const token = resetTokens.find((t) => t.token === p[0] && !t.used);
     if (!token) return { rows: [] };
     token.used = true;
     const row = customers.find((c) => c.id === token.customer_id);
     if (!row) return { rows: [] };
+    if (!row.email_verified) row.name = row.email.split('@')[0];
     row.password = p[1];
     row.email_verified = true;
     return { rows: [{ customer_id: row.id }] };
   }
   if (/^SELECT id, email, name, password, email_verified FROM customers WHERE email = \$1/.test(sql)) {
     return { rows: customers.filter((c) => c.email === p[0]).map((c) => ({ ...c })) };
-  }
-  if (/^SELECT id, name, email_verified FROM customers WHERE email = \$1/.test(sql)) {
-    return { rows: customers.filter((c) => c.email === p[0]).map((c) => ({ id: c.id, name: c.name, email_verified: c.email_verified })) };
-  }
-  if (/^SELECT id, name FROM customers WHERE email = \$1/.test(sql)) {
-    return { rows: customers.filter((c) => c.email === p[0]).map((c) => ({ id: c.id, name: c.name })) };
   }
   return { rows: [], rowCount: 0 };
 }
@@ -157,10 +165,22 @@ async function signUp(agent: Browser, email: string, password: string, name: str
 async function logIn(agent: Browser, email: string, password: string) {
   return agent.post('/login').type('form').send({ _csrf: csrf(), email, password });
 }
+/**
+ * Open an emailed verification link the way a browser does: the GET shows a
+ * page and spends nothing; its button posts the token back with the page's
+ * CSRF token (good only in this browser's session).
+ */
+async function openLink(agent: Browser, link: string) {
+  const page = await agent.get(link);
+  if (page.status !== 200 || !page.text.includes('action="/verify-email"')) return page;
+  const token = (page.text.match(/name="token" value="([^"]+)"/) || [])[1];
+  const pageCsrf = (page.text.match(/name="_csrf" value="([^"]+)"/) || [])[1];
+  return agent.post('/verify-email').type('form').send({ _csrf: pageCsrf, token });
+}
 /** The most recent verification link "sent" to the mailbox, as a path. */
 function latestVerificationLink(): string {
   const calls = mockSendVerification.mock.calls;
-  const url = String(calls[calls.length - 1][2]);
+  const url = String(calls[calls.length - 1][1]);
   return url.slice(url.indexOf('/verify-email'));
 }
 function latestResetLink(): string {
@@ -169,6 +189,10 @@ function latestResetLink(): string {
   return url.slice(url.indexOf('/reset-password'));
 }
 const account = (email: string): Customer => customers.find((c) => c.email === email) as Customer;
+/** Mail starts after the response; wait until the n-th verification mail has gone out. */
+async function verificationMails(n: number): Promise<void> {
+  await vi.waitFor(() => expect(mockSendVerification).toHaveBeenCalledTimes(n));
+}
 
 // Passwords are generated per run; nothing here is a real credential.
 const ATTACKER_PASSWORD = `attacker-${crypto.randomBytes(6).toString('hex')}`;
@@ -180,6 +204,7 @@ beforeEach(() => {
   verificationTokens = [];
   resetTokens = [];
   statements = [];
+  minute = 0;
   mockQuery.mockReset().mockImplementation((sql: unknown, params?: unknown) =>
     Promise.resolve(fakeDatabase(String(sql).trim(), Array.isArray(params) ? params : []))
   );
@@ -189,26 +214,24 @@ beforeEach(() => {
 });
 
 describe('an address claimed by someone else before its owner signs up', () => {
-  it('the owner signs up later, opens their link, and has their own password and name; the first claimant has nothing', async () => {
+  it('the owner signs up later and opens the link in the mailbox: their own password and name; the first claimant has nothing', async () => {
     const attacker = browser();
     const owner = browser();
 
     await signUp(attacker, VICTIM, ATTACKER_PASSWORD, 'Mallory');
-    const attackerLink = latestVerificationLink();
-    const attackerHash = account(VICTIM).password;
+    await verificationMails(1);
+    const before = { ...account(VICTIM) };
 
     const ownerSignup = await signUp(owner, VICTIM, OWNER_PASSWORD, 'Vera Owner');
     expect(ownerSignup.status).toBe(302);
-    // The owner's signup took over the unverified row straight away...
-    expect(account(VICTIM).password).not.toBe(attackerHash);
-    expect(await bcrypt.compare(OWNER_PASSWORD, account(VICTIM).password)).toBe(true);
-    expect(account(VICTIM).name).toBe('Vera Owner');
-    expect(account(VICTIM).email_verified).toBe(false);
-    // ...and sent the owner a link of their own.
-    const ownerLink = latestVerificationLink();
-    expect(ownerLink).not.toBe(attackerLink);
+    // The owner's signup wrote nothing to the row: the claim waits in the owner's session.
+    expect(account(VICTIM)).toEqual(before);
+    // The address was sent a link less than an hour ago, so no second one goes out;
+    // the one in the mailbox still works.
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(mockSendVerification).toHaveBeenCalledTimes(1);
 
-    const verified = await owner.get(ownerLink);
+    const verified = await openLink(owner, latestVerificationLink());
     expect(verified.status).toBe(302);
     expect(verified.headers.location).toBe('/intake');
     expect(account(VICTIM).email_verified).toBe(true);
@@ -222,30 +245,40 @@ describe('an address claimed by someone else before its owner signs up', () => {
     expect(ownerLogin.headers.location).toBe('/dashboard');
   });
 
-  it('the link issued for the first claim stops working once someone else claims the address', async () => {
-    const attacker = browser();
-    await signUp(attacker, VICTIM, ATTACKER_PASSWORD, 'Mallory');
-    const attackerLink = latestVerificationLink();
+  it('a stranger\'s signup for an unverified account writes nothing to it and spends none of its links', async () => {
+    // The owner's own account: created by their signup, a link outstanding.
     await signUp(browser(), VICTIM, OWNER_PASSWORD, 'Vera Owner');
+    await verificationMails(1);
+    const before = { ...account(VICTIM) };
+    statements = [];
 
-    // Even opened in the attacker's own browser, where their claim is stored.
-    const res = await attacker.get(attackerLink);
-    expect(res.status).toBe(200);
-    expect(res.text).toContain('expired or already been used');
-    expect(account(VICTIM).email_verified).toBe(false);
+    const res = await signUp(browser(), VICTIM, ATTACKER_PASSWORD, 'URGENT: your card was declined');
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('/verify-email-sent');
+
+    // No password, name or terms change, and no link spent.
+    expect(account(VICTIM)).toEqual(before);
+    expect(verificationTokens.every((t) => !t.used)).toBe(true);
+    expect(statements.filter((sql) => /^UPDATE/.test(sql))).toEqual([]);
+    expect(statements.filter((sql) => /INSERT INTO customers/.test(sql))).toEqual([]);
+    // Nor does the stranger get a mail sent there (one link an hour), and no mail carries a typed name.
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(mockSendVerification).toHaveBeenCalledTimes(1);
+    expect(mockSendVerification.mock.calls[0]).toHaveLength(2);
+    expect(JSON.stringify(mockSendVerification.mock.calls)).not.toContain('URGENT');
   });
 
-  it('the first claimant claims AGAIN after the owner; the owner opens the newest link and still gets their own password', async () => {
+  it('the first claimant claims AGAIN after the owner; the owner opens the link and still gets their own password', async () => {
     const attacker = browser();
     const owner = browser();
     await signUp(owner, VICTIM, OWNER_PASSWORD, 'Vera Owner');
+    await verificationMails(1);
     await signUp(attacker, VICTIM, ATTACKER_PASSWORD, 'Mallory');
-    // The row now carries the attacker's claim, and the only live link is the
-    // one the attacker's signup sent to the owner's mailbox.
-    expect(await bcrypt.compare(ATTACKER_PASSWORD, account(VICTIM).password)).toBe(true);
-    const newestLink = latestVerificationLink();
+    // The row still carries the owner's claim, and the only link is the one the owner's signup sent.
+    expect(await bcrypt.compare(OWNER_PASSWORD, account(VICTIM).password)).toBe(true);
+    const link = latestVerificationLink();
 
-    const verified = await owner.get(newestLink);
+    const verified = await openLink(owner, link);
     expect(verified.status).toBe(302);
     expect(verified.headers.location).toBe('/intake');
 
@@ -258,11 +291,12 @@ describe('an address claimed by someone else before its owner signs up', () => {
 
   it('the owner never signed up and opens a link the claimant triggered: the claimant\'s password and name do not survive, and the owner chooses a password', async () => {
     await signUp(browser(), VICTIM, ATTACKER_PASSWORD, 'Mallory');
+    await verificationMails(1);
     const attackerHash = account(VICTIM).password;
     const link = latestVerificationLink();
 
     const owner = browser();
-    const verified = await owner.get(link);
+    const verified = await openLink(owner, link);
     expect(verified.status).toBe(302);
     expect(verified.headers.location).toMatch(/^\/reset-password\?token=[0-9a-f]{64}&verified=1$/);
 
@@ -284,13 +318,77 @@ describe('an address claimed by someone else before its owner signs up', () => {
     expect(set.text).toContain('Your password is set');
     expect((await logIn(browser(), VICTIM, OWNER_PASSWORD)).status).toBe(302);
   });
+
+  it('opening the link spends nothing: a mail scanner fetching it leaves it for the owner\'s own browser', async () => {
+    const owner = browser();
+    await signUp(owner, VICTIM, OWNER_PASSWORD, 'Vera Owner');
+    await verificationMails(1);
+    const link = latestVerificationLink();
+
+    // A scanner (no claim, no cookies) fetches the link.
+    const scanned = await request(app).get(link);
+    expect(scanned.status).toBe(200);
+    expect(account(VICTIM).email_verified).toBe(false);
+    expect(verificationTokens.every((t) => !t.used)).toBe(true);
+
+    const verified = await openLink(owner, link);
+    expect(verified.headers.location).toBe('/intake');
+    expect(account(VICTIM).name).toBe('Vera Owner');
+  });
+});
+
+describe('verification mail: at most one link an hour per address, whoever asks', () => {
+  it('a second request within the hour sends nothing; after the hour one more goes out', async () => {
+    await signUp(browser(), VICTIM, OWNER_PASSWORD, 'Vera Owner');
+    await verificationMails(1);
+
+    for (const asker of [browser(), browser()]) {
+      await asker.post('/resend-verification').type('form').send({ _csrf: csrf(), email: VICTIM });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(mockSendVerification).toHaveBeenCalledTimes(1);
+    expect(verificationTokens).toHaveLength(1);
+
+    minute = 61;
+    await browser().post('/resend-verification').type('form').send({ _csrf: csrf(), email: VICTIM });
+    await verificationMails(2);
+    expect(verificationTokens).toHaveLength(2);
+    // The earlier link was not voided by the new one.
+    expect(verificationTokens.every((t) => !t.used)).toBe(true);
+  });
+});
+
+describe('opening a link clears only the claim it settled (seca-8)', () => {
+  it('a browser holding a claim for B opens a link for A: B\'s claim survives and B\'s link then logs it in', async () => {
+    const A = 'a-person@example.test';
+    const B = 'b-person@example.test';
+    // A's account exists, with a link in A's mailbox; this browser never claimed A.
+    await signUp(browser(), A, ATTACKER_PASSWORD, 'Person A');
+    await verificationMails(1);
+    const linkA = latestVerificationLink();
+
+    const b = browser();
+    await signUp(b, B, OWNER_PASSWORD, 'Person B');
+    await verificationMails(2);
+    const linkB = latestVerificationLink();
+
+    const openedA = await openLink(b, linkA);
+    expect(openedA.headers.location).toMatch(/^\/reset-password\?token=/);
+
+    const openedB = await openLink(b, linkB);
+    expect(openedB.status).toBe(302);
+    expect(openedB.headers.location).toBe('/intake');
+    expect(account(B).name).toBe('Person B');
+    expect(await bcrypt.compare(OWNER_PASSWORD, account(B).password)).toBe(true);
+  });
 });
 
 describe('a verified account is its owner\'s', () => {
   async function verifiedOwner(): Promise<void> {
     const owner = browser();
     await signUp(owner, VICTIM, OWNER_PASSWORD, 'Vera Owner');
-    await owner.get(latestVerificationLink());
+    await verificationMails(1);
+    await openLink(owner, latestVerificationLink());
     expect(account(VICTIM).email_verified).toBe(true);
     mockSendVerification.mockClear();
     statements = [];
@@ -315,11 +413,15 @@ describe('a verified account is its owner\'s', () => {
     const before = { ...account(VICTIM) };
     // A leftover, unused link for the (now verified) account.
     const raw = crypto.randomBytes(32).toString('hex');
-    verificationTokens.push({ customer_id: before.id, token: sha256(raw), used: false });
+    verificationTokens.push({ customer_id: before.id, token: sha256(raw), used: false, issuedAt: minute });
 
     const attacker = browser();
     await signUp(attacker, VICTIM, ATTACKER_PASSWORD, 'Mallory');
-    const res = await attacker.get(`/verify-email?token=${raw}`);
+    const page = await attacker.get(`/verify-email?token=${raw}`);
+    expect(page.text).toContain('expired or already been used');
+    // And straight to the POST, with a token from a page of this browser.
+    const pageCsrf = (page.text.match(/name="_csrf" value="([^"]+)"/) || [])[1];
+    const res = await attacker.post('/verify-email').type('form').send({ _csrf: pageCsrf, token: raw });
 
     expect(res.text).toContain('expired or already been used');
     expect(account(VICTIM)).toEqual(before);
@@ -333,7 +435,8 @@ describe('the signup form gives nothing away', () => {
     // verified
     const owner = browser();
     await signUp(owner, 'verified@example.test', OWNER_PASSWORD, 'Owner');
-    await owner.get(latestVerificationLink());
+    await verificationMails(2);
+    await openLink(owner, latestVerificationLink());
 
     const outcomes = [];
     for (const email of ['free@example.test', 'unverified@example.test', 'verified@example.test']) {
@@ -354,7 +457,8 @@ describe('the signup form gives nothing away', () => {
     await signUp(browser(), 'unverified@example.test', ATTACKER_PASSWORD, 'Earlier');
     const owner = browser();
     await signUp(owner, 'verified@example.test', OWNER_PASSWORD, 'Owner');
-    await owner.get(latestVerificationLink());
+    await verificationMails(2);
+    await openLink(owner, latestVerificationLink());
 
     const hashSpy = vi.spyOn(bcrypt, 'hash');
     try {
@@ -396,13 +500,15 @@ describe('the signup form gives nothing away', () => {
 describe('finishing on another device', () => {
   it('signing up in one browser and opening the link in another asks for a password instead of trusting the stored one', async () => {
     await signUp(browser(), VICTIM, OWNER_PASSWORD, 'Vera Owner');
-    const res = await browser().get(latestVerificationLink());
+    await verificationMails(1);
+    const res = await openLink(browser(), latestVerificationLink());
     expect(res.headers.location).toMatch(/^\/reset-password\?token=/);
     expect(account(VICTIM).email_verified).toBe(true);
   });
 
   it('logging in with the right password in the second browser records the claim there, so a link opened there keeps that password and name', async () => {
     await signUp(browser(), VICTIM, OWNER_PASSWORD, 'Vera Owner');
+    await verificationMails(1);
     const second = browser();
 
     const login = await logIn(second, VICTIM, OWNER_PASSWORD);
@@ -410,8 +516,9 @@ describe('finishing on another device', () => {
     expect(login.text).toContain('/verify-email-sent');
     expect(login.text).not.toContain('/verify-email-sent?email=');
 
+    // Asking again within the hour sends nothing new; the link already in the mailbox works.
     await second.post('/resend-verification').type('form').send({ _csrf: csrf(), email: VICTIM });
-    const verified = await second.get(latestVerificationLink());
+    const verified = await openLink(second, latestVerificationLink());
     expect(verified.headers.location).toBe('/intake');
     expect(account(VICTIM).name).toBe('Vera Owner');
     expect((await logIn(browser(), VICTIM, OWNER_PASSWORD)).status).toBe(302);
@@ -419,9 +526,10 @@ describe('finishing on another device', () => {
 
   it('a wrong password records no claim', async () => {
     await signUp(browser(), VICTIM, OWNER_PASSWORD, 'Vera Owner');
+    await verificationMails(1);
     const second = browser();
     await logIn(second, VICTIM, 'not-the-password');
-    const res = await second.get(latestVerificationLink());
+    const res = await openLink(second, latestVerificationLink());
     expect(res.headers.location).toMatch(/^\/reset-password\?token=/);
   });
 });
@@ -434,9 +542,11 @@ describe('a completed password reset proves the mailbox too', () => {
       password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 4),
       name: 'payer',
       email_verified: false,
+      terms_accepted: false,
     });
     const agent = browser();
     await agent.post('/forgot-password').type('form').send({ _csrf: csrf(), email: 'payer@example.test' });
+    await vi.waitFor(() => expect(mockSendReset).toHaveBeenCalledTimes(1));
     const link = latestResetLink();
     const token = new URL(link, 'http://localhost').searchParams.get('token') as string;
 
@@ -449,15 +559,20 @@ describe('a completed password reset proves the mailbox too', () => {
     expect(login.headers.location).toBe('/dashboard');
   });
 
-  it('retires verification links that were still outstanding for the account', async () => {
-    await signUp(browser(), VICTIM, ATTACKER_PASSWORD, 'Mallory');
+  it('retires verification links that were still outstanding for the account, and drops the name a stranger typed', async () => {
+    await signUp(browser(), VICTIM, ATTACKER_PASSWORD, 'URGENT: your card was declined');
+    await verificationMails(1);
     const staleLink = latestVerificationLink();
     const owner = browser();
     await owner.post('/forgot-password').type('form').send({ _csrf: csrf(), email: VICTIM });
+    await vi.waitFor(() => expect(mockSendReset).toHaveBeenCalledTimes(1));
+    // The reset mail greets nobody by name: the account is not verified, so its name is a stranger's.
+    expect(mockSendReset.mock.calls[0][1]).toBeNull();
     const token = new URL(latestResetLink(), 'http://localhost').searchParams.get('token') as string;
     await owner.post('/reset-password').type('form').send({ _csrf: csrf(), token, password: OWNER_PASSWORD });
 
     expect(verificationTokens.every((t) => t.used)).toBe(true);
+    expect(account(VICTIM).name).toBe('victim');
     const res = await browser().get(staleLink);
     expect(res.text).toContain('expired or already been used');
     expect((await logIn(browser(), VICTIM, ATTACKER_PASSWORD)).status).toBe(200);

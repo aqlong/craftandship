@@ -123,8 +123,9 @@ class CustomerService(Agent):
         if kb_gap:
             learnings.append(f"Support KB gap: customer asked about '{message[:80]}' with no matching entry")
             # Close the loop: draft an answer with Haiku and INSERT the
-            # Q&A pair into support_kb so the next keeper who asks the
-            # same thing gets the cached answer immediately.
+            # Q&A pair into support_kb so that, once an operator approves
+            # it, the next keeper who asks the same thing gets the cached
+            # answer immediately.
             kb_drafted = self._draft_and_record_kb_answer(
                 question=message, model=model, actuators=actuators,
             )
@@ -202,8 +203,8 @@ class CustomerService(Agent):
 
         # KB gap signal: questions without a KB match. When we find a
         # gap, also CLOSE it: draft a Haiku-grounded answer and INSERT
-        # into support_kb so the next keeper who asks the same thing
-        # gets a cached response. Capped at _KB_GAP_DRAFT_CAP_PER_RUN
+        # into support_kb so that, once an operator approves it, the next
+        # keeper who asks the same thing gets a cached response. Capped at _KB_GAP_DRAFT_CAP_PER_RUN
         # per agent_initiative tick to bound cost.
         kb_gap_count = 0
         kb_drafted_count = 0

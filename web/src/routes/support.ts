@@ -87,14 +87,15 @@ function calculateSimilarity(query: string, cached: string): number {
 // are not stored. The lookup below remains, over rows written by the
 // operator-side jobs (the coordinator's knowledge sync and the weekly topic
 // sweep in cron/topic_kb_sweep.ts), which pass their own content filters
-// before inserting. Those rows are still model-drafted; see the note on
-// review in topic_kb_sweep.ts.
+// before inserting. Those rows are model-drafted, and they are stored as
+// 'pending': only a row an operator has set to 'approved' is served (the
+// status column and how to approve a row are in db/schema.sql).
 async function findKnowledgeBaseAnswer(message: string): Promise<string | null> {
   // Bound the scan: this runs on the support-chat request path before the
   // model call. The most-used entries are the likeliest matches; a miss in
   // the long tail just falls through to the model.
   const result = await pool.query(
-    'SELECT id, question, answer FROM support_kb ORDER BY usage_count DESC LIMIT 500'
+    "SELECT id, question, answer FROM support_kb WHERE status = 'approved' ORDER BY usage_count DESC LIMIT 500"
   );
 
   const rows = result.rows as Array<{ id: string; question: string; answer: string }>;

@@ -2,7 +2,8 @@
  * CAS Harbor trial cookie middleware.
  *
  * On every /lighthouse/* request:
- *  - Read the `cas_harbor_trial` cookie if present.
+ *  - Read the trial cookie if present (`cas_harbor_trial` in development and
+ *    test, `__Host-cas_harbor_trial` elsewhere: TRIAL_COOKIE_NAME).
  *  - Look up the trial_keepers row by cookie token. If active and
  *    not expired, attach to req.harborTrial.
  *  - If the row was released by a payment (see "After payment" below), keep
@@ -37,7 +38,15 @@
  *
  * So a released trial's cookie keeps one narrow meaning until `expires_at`
  * (which promotion moves out to PAID_TRIAL_ACCESS_DAYS): "this browser paid
- * for the build stamped on this trial". `req.harborPaidKeeper` carries that
+ * for the build stamped on this trial". It is not the same value that went
+ * into Checkout: the first request that presents a released trial gets a new
+ * token in its place, once (`trial_keepers.cookie_rotated_at` records it),
+ * and the old value is from then on a stale cookie that gets a fresh trial.
+ * A copy of the cookie taken before the payment therefore never speaks as
+ * the keeper. (The webhook that releases the trial cannot set a cookie, so
+ * the swap waits for the paying browser's next request; of two requests
+ * that race with the old value, one swaps it and the other sets no cookie.)
+ * `req.harborPaidKeeper` carries that
  * build and its customer, and the lighthouse routes use it in two places.
  * One is the lamp pages of that one build (status, published, cancel the
  * subscription). The other is the conversation, where this browser is the
@@ -77,8 +86,10 @@
  * takes part: knowing a build id, or the Checkout session id on Stripe's
  * return URL, identifies nobody.
  *
- * Cookie flags: HttpOnly, SameSite=Lax, and Secure unless NODE_ENV is
- * "development" or "test" (same rule as the session cookie in app.ts).
+ * Cookie flags: HttpOnly, SameSite=Lax, Path=/, no Domain, and Secure unless
+ * NODE_ENV is "development" or "test" (same rule as the session cookie in
+ * app.ts); with Secure the name carries the `__Host-` prefix
+ * (hostOnlyCookieName in middleware/auth.ts).
  *
  * Minting: every request that arrives without a valid cookie inserts a
  * `trial_keepers` row, so a client that never stores cookies could create
@@ -97,11 +108,11 @@ import { assignCompanionName } from '../companion/persona';
 import { isBotUserAgent, hashUserAgent } from '../utils/bot-ua';
 import { loggablePath } from '../utils/recent-errors';
 import { rateLimitIpKey } from './companion-rate-limit';
-import { isDevOrTestEnv } from './auth';
+import { isDevOrTestEnv, hostOnlyCookieName } from './auth';
 import { PROMOTED_KEEPER_OF_TRIAL_SQL } from '../services/keeper_promotion';
 
 /** The conversation cookie's name and its lifetime from the first visit. The privacy page prints both. */
-export const TRIAL_COOKIE_NAME = 'cas_harbor_trial';
+export const TRIAL_COOKIE_NAME = hostOnlyCookieName('cas_harbor_trial');
 export const TRIAL_TTL_DAYS = 7;
 const TRIAL_TTL_MS = TRIAL_TTL_DAYS * 24 * 60 * 60 * 1000;
 
@@ -117,6 +128,11 @@ export interface TrialKeeperContext {
   released_at?: Date | null;
   /** The build dispatched from this trial's conversation, if any. */
   handoff_build_id?: string | null;
+  /**
+   * True when the trial was released after its cookie token was last replaced
+   * (see "After payment"); read with the row, absent on rows read elsewhere.
+   */
+  rotate_cookie?: boolean;
 }
 
 /**
@@ -297,12 +313,23 @@ export async function resolveTrial(
   const known = await identifyTrialCookie(pool, req);
   if (known) {
     if (known.paidKeeper) {
+      // The payment released this trial since its token was last replaced:
+      // replace it now, once (see "After payment").
+      let token: string | null = known.trial.cookie_token;
+      if (known.trial.rotate_cookie === true) {
+        token = await replaceCookieToken(pool, known.trial.trial_id, known.trial.cookie_token);
+        if (token) {
+          known.trial.cookie_token = token;
+          known.trial.rotate_cookie = false;
+        }
+      }
       // Keep the browser's copy alive for as long as the row is: the cookie
       // was set with the trial's 7-day Max-Age, and promotion moved
-      // expires_at past that.
+      // expires_at past that. No token means another request replaced it a
+      // moment ago and sets the new one; setting the old one here could undo that.
       const remainingMs = new Date(known.trial.expires_at).getTime() - Date.now();
-      if (remainingMs > 0) {
-        res.cookie(TRIAL_COOKIE_NAME, known.trial.cookie_token, {
+      if (token && remainingMs > 0) {
+        res.cookie(TRIAL_COOKIE_NAME, token, {
           ...trialCookieOptions(),
           maxAge: remainingMs,
         });
@@ -321,6 +348,44 @@ export async function resolveTrial(
     maxAge: TRIAL_TTL_MS,
   });
   return { kind: 'trial', trial, paidKeeper: null };
+}
+
+/**
+ * Replace the cookie of the request's trial (`req.harborTrial`) with a new
+ * token and set it on the response, for a step after which the cookie is
+ * trusted with more than before (an address recorded on the trial, for one).
+ * Call it once the step's own write has succeeded. The old value is from then
+ * on a stale cookie that gets a fresh trial. Returns false, setting nothing,
+ * when the request has no trial or another request replaced the token first.
+ */
+export async function rotateTrialCookie(pool: Pool, req: Request, res: Response): Promise<boolean> {
+  const trial = req.harborTrial;
+  if (!trial) return false;
+  const token = await replaceCookieToken(pool, trial.trial_id, trial.cookie_token);
+  if (!token) return false;
+  trial.cookie_token = token;
+  const remainingMs = new Date(trial.expires_at).getTime() - Date.now();
+  if (remainingMs > 0) {
+    res.cookie(TRIAL_COOKIE_NAME, token, { ...trialCookieOptions(), maxAge: remainingMs });
+  }
+  return true;
+}
+
+/**
+ * Give a trial a new cookie token. The row changes only while it still holds
+ * `currentToken`, so of two requests that race with the same old cookie one
+ * replaces it and the other gets null (and must not set a cookie, or it could
+ * put the old value back in the browser).
+ */
+async function replaceCookieToken(pool: Pool, trialId: string, currentToken: string): Promise<string | null> {
+  const token = generateToken();
+  const { rows } = await pool.query(
+    `UPDATE trial_keepers SET cookie_token = $3, cookie_rotated_at = NOW()
+      WHERE trial_id = $1 AND cookie_token = $2
+      RETURNING trial_id`,
+    [trialId, currentToken, token]
+  );
+  return rows.length > 0 ? token : null;
 }
 
 function trialCookieOptions(): { httpOnly: true; secure: boolean; sameSite: 'lax'; path: string } {
@@ -416,7 +481,9 @@ async function loadUnexpiredTrial(
 ): Promise<TrialKeeperContext | null> {
   const { rows } = await pool.query<TrialKeeperContext>(
     `SELECT trial_id, cookie_token, companion_name, companion_assigned,
-            started_at, expires_at, last_seen_at, released_at, handoff_build_id
+            started_at, expires_at, last_seen_at, released_at, handoff_build_id,
+            (released_at IS NOT NULL
+             AND (cookie_rotated_at IS NULL OR cookie_rotated_at < released_at)) AS rotate_cookie
      FROM trial_keepers
      WHERE cookie_token = $1
        AND expires_at > NOW()

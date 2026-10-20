@@ -13,14 +13,11 @@ import {
   sendReviewChangesRequestedEmail,
 } from '../services/email';
 import { deleteRailwayProject, readRailwayProjectName, RailwayApiError, isRailwayWriteEnabled } from '../services/railway';
-import { extractSpecFromConversation } from '../services/spec_extraction';
-import { translateExtractedSpecToV1 } from '../services/harbor_to_compose';
-import { dispatchFailureResponse, insertHarborBuild, isBuildableOwnerEmail } from '../services/harbor_dispatch';
+import { dispatchFailureResponse, dispatchHarborTrialBuild, isBuildableOwnerEmail } from '../services/harbor_dispatch';
 import type { MemoryOwnerColumn } from '../companion/memory_retrieval';
 import { crawlSite } from '../services/site_copy_crawl';
 import { describeCoordinatorSettings, planCoordinatorSettingsSave, COORDINATOR_SETTING_NAMES, GO_LIVE_FIELD, GO_LIVE_PHRASE, SHOWN_PREFIX } from '../services/coordinator-settings';
 import { renderErrorPage } from '../utils/error-page';
-import { hashUnusablePassword } from '../utils/password-hash';
 
 const router = forwardAsyncErrors(Router());
 const PAGE_SIZE = 50;
@@ -1879,6 +1876,15 @@ router.get('/reviews/:buildId', requireAdmin, async (req: Request, res: Response
   }
 });
 
+/** The answer to a review verdict on a build that is not at preview: nothing was recorded. */
+function refuseVerdictOffPreview(res: Response, status: string | null | undefined): void {
+  renderErrorPage(res, 409, {
+    title: 'Not at preview',
+    heading: 'This build is not at preview.',
+    error: `Its status is ${status || 'unknown'}, so no review verdict was recorded and the customer was not emailed. A verdict is given to a build at preview.`,
+  });
+}
+
 /**
  * Records a Senior Web Craftsman approval on a build.
  *
@@ -1895,6 +1901,8 @@ router.get('/reviews/:buildId', requireAdmin, async (req: Request, res: Response
  * On success: 302 redirect to /admin/reviews.
  * On DB error: 500; email NOT fired.
  * On unknown build_id: 404.
+ * On a build that is not at preview: 409, nothing recorded and no email (a
+ * verdict belongs to one arrival at preview; see REVIEW_RESET_ASSIGNMENTS).
  */
 router.post(
   '/reviews/:buildId/approve',
@@ -1906,25 +1914,34 @@ router.post(
       // The CTE reads the previous review_status under a row lock so a
       // double-click (or two admin tabs) approves once and mails the customer
       // once: the second request sees 'approved' already and sends nothing.
+      // The UPDATE writes only a build at preview; the outer SELECT returns
+      // the locked row's status either way, so a refusal can say why.
       const result = await pool.query(
         `WITH prev AS (
-           SELECT id, review_status FROM builds WHERE id = $2 FOR UPDATE
+           SELECT id, status, review_status FROM builds WHERE id = $2 FOR UPDATE
+         ), approved AS (
+           UPDATE builds b
+              SET review_status = 'approved',
+                  reviewed_at = NOW(),
+                  reviewed_by = $1,
+                  review_notes = NULL,
+                  updated_at = NOW()
+             FROM prev
+            WHERE b.id = prev.id AND b.status = 'preview'
+            RETURNING b.id, b.app_name, b.customer_id,
+                      (prev.review_status = 'approved') AS was_already_approved
          )
-         UPDATE builds b
-            SET review_status = 'approved',
-                reviewed_at = NOW(),
-                reviewed_by = $1,
-                review_notes = NULL,
-                updated_at = NOW()
-           FROM prev
-          WHERE b.id = prev.id
-          RETURNING b.id, b.app_name, b.customer_id,
-                    (prev.review_status = 'approved') AS was_already_approved`,
+         SELECT prev.status AS build_status, approved.*
+           FROM prev LEFT JOIN approved ON approved.id = prev.id`,
         [req.session.customerEmail, buildId]
       );
 
       if (result.rows.length === 0) {
         res.status(404).render('404', { title: 'Not Found' });
+        return;
+      }
+      if (!result.rows[0].id) {
+        refuseVerdictOffPreview(res, result.rows[0].build_status);
         return;
       }
 
@@ -1982,6 +1999,7 @@ router.post(
  * On success: 302 redirect to /admin/reviews.
  * On empty/whitespace notes: 400.
  * On unknown build_id: 404.
+ * On a build that is not at preview: 409, nothing recorded and no email.
  */
 router.post(
   '/reviews/:buildId/request-changes',
@@ -2001,20 +2019,33 @@ router.post(
         return;
       }
 
+      // As in the approve route: written only at preview, and the locked
+      // row's status comes back either way.
       const result = await pool.query(
-        `UPDATE builds
-            SET review_status = 'changes_requested',
-                reviewed_at = NOW(),
-                reviewed_by = $1,
-                review_notes = $2,
-                updated_at = NOW()
-          WHERE id = $3
-          RETURNING id, app_name, customer_id`,
+        `WITH prev AS (
+           SELECT id, status FROM builds WHERE id = $3 FOR UPDATE
+         ), changed AS (
+           UPDATE builds b
+              SET review_status = 'changes_requested',
+                  reviewed_at = NOW(),
+                  reviewed_by = $1,
+                  review_notes = $2,
+                  updated_at = NOW()
+             FROM prev
+            WHERE b.id = prev.id AND b.status = 'preview'
+            RETURNING b.id, b.app_name, b.customer_id
+         )
+         SELECT prev.status AS build_status, changed.*
+           FROM prev LEFT JOIN changed ON changed.id = prev.id`,
         [req.session.customerEmail, notes, buildId]
       );
 
       if (result.rows.length === 0) {
         res.status(404).render('404', { title: 'Not Found' });
+        return;
+      }
+      if (!result.rows[0].id) {
+        refuseVerdictOffPreview(res, result.rows[0].build_status);
         return;
       }
 
@@ -2727,6 +2758,43 @@ function harborConversationSql(column: MemoryOwnerColumn, ownerId: 'tk.trial_id'
             ORDER BY ct.created_at ASC LIMIT 1) AS first_keeper_text`;
 }
 
+/** One row of the inbox's "Payments needing a person" card. */
+interface HarborPaymentNeedingAPersonRow {
+  stripe_subscription_id: string;
+  stripe_customer_id: string;
+  status: string;
+  monthly_amount_cents: number;
+  created_at: Date;
+  keeper_customer_id: string;
+  email: string;
+}
+
+/** Stripe's statuses for a subscription that is over and bills nothing more. */
+const SUBSCRIPTION_STATUSES_CLOSED_AT_STRIPE = ['canceled', 'incomplete_expired'];
+
+/**
+ * Subscriptions still open at Stripe that no keeper row points at. A payment
+ * the checkout webhook could not apply is recorded in harbor_subscriptions
+ * against the account it named, and no keeper row is pointed at it
+ * (handleHarborMakePublic in routes/webhooks.ts); it is mailed to ADMIN_EMAIL
+ * once, when it arrives, and this list keeps it in front of the operator
+ * until it is refunded or cancelled in Stripe, which ends the subscription
+ * (customer.subscription.deleted moves the row to `canceled`). A keeper's
+ * earlier subscription that a newer one replaced, and that Stripe still keeps
+ * open (`unpaid`, `paused`, `incomplete`), is listed too: no keeper row uses it
+ * either. A refused payment that named no account is recorded nowhere and is
+ * not here.
+ */
+const PAYMENTS_NEEDING_A_PERSON_SQL = `
+  SELECT hs.stripe_subscription_id, hs.stripe_customer_id, hs.status, hs.monthly_amount_cents,
+         hs.created_at, hs.keeper_customer_id, c.email
+    FROM harbor_subscriptions hs
+    JOIN customers c ON c.id = hs.keeper_customer_id
+   WHERE hs.status <> ALL($1::text[])
+     AND NOT EXISTS (SELECT 1 FROM keepers k WHERE k.stripe_subscription_id = hs.stripe_subscription_id)
+   ORDER BY hs.created_at DESC
+   LIMIT $2`;
+
 const HARBOR_HANDOFF_PHRASE = /ocean[^.\n]{0,40}(will be in touch|will reach out|takes it from here)/i;
 const HARBOR_HANDOFF_MIN_TURNS = 8;
 const HARBOR_LIST_LIMIT = 200;
@@ -2865,6 +2933,22 @@ router.get('/harbor', requireAdmin, async (req: Request, res: Response): Promise
       }));
     }
 
+    // Payments needing a person, shown on every view of the inbox. A failure
+    // to read them is logged and said on the page; it does not take the
+    // trial list down with it.
+    let paymentsNeedingAPerson: HarborPaymentNeedingAPersonRow[] | null;
+    try {
+      paymentsNeedingAPerson = (
+        await pool.query<HarborPaymentNeedingAPersonRow>(PAYMENTS_NEEDING_A_PERSON_SQL, [
+          SUBSCRIPTION_STATUSES_CLOSED_AT_STRIPE,
+          HARBOR_LIST_LIMIT,
+        ])
+      ).rows;
+    } catch (paymentsErr) {
+      console.error('Admin harbor: payments needing a person could not be read:', (paymentsErr as Error).message);
+      paymentsNeedingAPerson = null;
+    }
+
     res.render('admin-harbor', {
       title: 'Harbor Inbox',
       activeTab: 'harbor',
@@ -2877,6 +2961,7 @@ router.get('/harbor', requireAdmin, async (req: Request, res: Response): Promise
       devTrialEnabled: isDevOrTestEnv(),
       trials: filteredTrials,
       keepers,
+      paymentsNeedingAPerson,
       totalUnfilteredTrials: trials.length,
       stats,
       statusFilter,
@@ -3280,25 +3365,29 @@ router.post(
 //
 // Pipeline:
 //   1. requireAdmin + validateCsrfToken.
-//   2. Validate :trial_id is a UUID + the trial exists + has memory/turns.
+//   2. Validate :trial_id is a UUID + the trial exists.
 //   3. Idempotent: if trial.handoff_build_id is already set, return it.
-//   4. Resolve customer_id: prefer existing customers row by
-//      trial.email_captured; create one (no password) when missing; fall
-//      back to admin's own customer row if no email captured (so the
-//      build at least belongs somewhere review-able). An address the build
-//      engine would refuse as the site's admin address is refused here
-//      (409 email_not_buildable), before the customer row and the call below.
-//   5. extractSpecFromConversation({ trialId }) -> Opus call (~$0.18).
-//   6. translateExtractedSpecToV1 -> v1-shape spec.
-//   7. insertHarborBuild (services/harbor_dispatch.ts): the one INSERT that
-//      creates a Harbor build, status='queued' and is_harbor=TRUE.
-//   8. UPDATE trial_keepers SET handoff_build_id, handoff_at.
-//   9. Return { buildId, warnings, costMicros, customerId }.
+//   4. Resolve the address: the one the trial captured, or, when it captured
+//      none, the operator's own (so the build at least belongs somewhere
+//      review-able). An address the build engine would refuse as the site's
+//      admin address is refused here (409 email_not_buildable), before
+//      anything is written or paid for.
+//   5. dispatchHarborTrialBuild (services/harbor_dispatch.ts): the extraction,
+//      the translation, the account, and the insert and stamp in one
+//      transaction. A captured address is one a visitor typed, so it is
+//      dispatched under the visitor's rule (`anonymous`): the build goes only
+//      to an account that dispatch creates, and an address that already has
+//      an account is refused, 409 account_exists for a verified one and
+//      address_in_use for any other; its extraction also draws on the
+//      anonymous share of the daily model-call budget, as the visitor's does.
+//      The operator's own account, for a trial with no address, is the one
+//      existing account it attaches to.
+//   6. Return { buildId, warnings, costMicros, customerId }.
 //
 // Unlike the self-serve dispatch, the operator may dispatch again for a trial
 // whose build has been deleted (handoff_build_id is NULL again while
 // handoff_at is still set): deleting a bad build and re-dispatching is an
-// operator's decision.
+// operator's decision. Nor is the operator held to the build-start limits.
 router.post(
   '/harbor/:trial_id/dispatch',
   requireAdmin,
@@ -3360,11 +3449,13 @@ router.post(
         return;
       }
 
-      // Resolve customer_id. Prefer the email captured on the trial; fall
+      // Resolve the address. Prefer the email captured on the trial; fall
       // back to the admin's own customer record so the build is at least
       // review-able even when no email was captured.
       const adminEmail = req.session.customerEmail || process.env.ADMIN_EMAIL || '';
       let resolvedEmail = (trial.email_captured || '').trim().toLowerCase();
+      // An address on the trial is one a visitor typed (step 5 above).
+      const typedAddress = resolvedEmail !== '';
       if (!resolvedEmail) {
         // Honest about the fallback: the build will live under the admin's
         // own account and Ocean must reach the keeper out-of-band.
@@ -3397,252 +3488,65 @@ router.post(
         return;
       }
 
-      // Extract the spec via Opus (trial path) and translate to v1-shape.
-      // This is the expensive call (~$0.18); do it before the transaction
-      // so we don't hold a DB connection through the network round-trip.
-      // It is also the step most likely to end the dispatch (nothing to
-      // extract, no model key, a failed call, a reply that is not a spec), so
-      // it runs before the customers row below is written: a dispatch that
-      // ends here leaves no account behind for the captured address.
-      const extraction = await extractSpecFromConversation({
-        pool,
+      const result = await dispatchHarborTrialBuild(pool, {
         trialId,
+        resolvedEmail,
+        source: 'admin',
+        // The operator decides on a thin conversation: a barren spec is
+        // dispatched, with its warning on the spec for the reviewer.
+        refuseBarrenSpec: false,
+        allowRedispatch: true,
+        skipStartLimits: true,
+        allowVerifiedAccount: !typedAddress,
+        anonymous: typedAddress,
       });
-      const translation = translateExtractedSpecToV1(
-        extraction.spec as Parameters<typeof translateExtractedSpecToV1>[0]
-      );
-      const v1Spec = translation.spec;
-      const warnings = [...extraction.warnings, ...translation.warnings];
-
-      // Find or create the customer row. Race-safe: ON CONFLICT DO NOTHING
-      // returns no row when a concurrent INSERT (e.g. another dispatch or
-      // a /signup with the same email) already created the row, so we
-      // re-SELECT to pick it up. Without this guard the UNIQUE(email)
-      // constraint on customers throws and the dispatch 500s.
-      //
-      // The customers schema enforces `password NOT NULL` + `name NOT NULL`,
-      // so even when ON CONFLICT DO NOTHING is going to skip the insert,
-      // Postgres validates the input row first and rejects NULL values.
-      // We provide:
-      //   - password: bcrypt-hashed random 64-byte secret. Unguessable;
-      //     the keeper can never log in via password (we never share the
-      //     plaintext). They reach their account via the magic link the
-      //     worker emails after the build is reviewed, or via the
-      //     standard password-reset flow on the login page.
-      //   - name: derived from the email local part (everything before @),
-      //     truncated to 60 chars. Falls back to "Trial Keeper" for the
-      //     pathological empty-local-part case.
-      const ephemeralPassword = await hashUnusablePassword();
-      const localPart = resolvedEmail.split('@')[0] || '';
-      const ephemeralName = (localPart || 'Trial Keeper').slice(0, 60);
-      let customerId: string;
-      const upsertRes = await pool.query<{ id: string }>(
-        `INSERT INTO customers (email, password, email_verified, name)
-         VALUES ($1, $2, FALSE, $3)
-         ON CONFLICT (email) DO NOTHING
-         RETURNING id`,
-        [resolvedEmail, ephemeralPassword, ephemeralName]
-      );
-      if (upsertRes.rows.length > 0) {
-        customerId = upsertRes.rows[0].id;
-      } else {
-        const existingRes = await pool.query<{ id: string }>(
-          `SELECT id FROM customers WHERE email = $1 LIMIT 1`,
-          [resolvedEmail]
-        );
-        if (existingRes.rows.length === 0) {
-          throw new Error(
-            'customer row vanished between INSERT ON CONFLICT and re-SELECT'
-          );
-        }
-        customerId = existingRes.rows[0].id;
-      }
-
-      // Merge any operator-set harbor_meta_overrides (e.g. faithful-copy
-      // crawl result captured via POST /admin/harbor/:trial_id/crawl-source-
-      // site) into the Opus-extracted spec's _harbor_meta. Operator overrides
-      // win over Opus inferences for the same key; that's the entire point
-      // of the override channel. JSONB column on trial_keepers; null when
-      // operator hasn't run any pre-dispatch tooling. Push the audit
-      // line into BOTH `warnings` (response payload) and
-      // `translation.warnings` (persisted on builds.spec._translation_warnings
-      // by the existing serialization step below) so SE reviewers see it.
-      if (
-        trial.harbor_meta_overrides &&
-        typeof trial.harbor_meta_overrides === 'object' &&
-        !Array.isArray(trial.harbor_meta_overrides)
-      ) {
-        const v1WithMeta = v1Spec as unknown as Record<string, unknown> & {
-          _harbor_meta?: Record<string, unknown>;
-        };
-        const existingMeta =
-          v1WithMeta._harbor_meta && typeof v1WithMeta._harbor_meta === 'object'
-            ? v1WithMeta._harbor_meta
-            : {};
-        v1WithMeta._harbor_meta = {
-          ...existingMeta,
-          ...trial.harbor_meta_overrides,
-        };
-        const overrideKeys = Object.keys(trial.harbor_meta_overrides).join(', ');
-        if (overrideKeys) {
-          const mergeNote =
-            `dispatch: applied harbor_meta_overrides keys=[${overrideKeys}] from operator pre-dispatch tooling`;
-          warnings.push(mergeNote);
-          translation.warnings.push(mergeNote);
-        }
-      }
-
-      const appName = v1Spec.app_name || `harbor-${trialId.slice(0, 8)}`;
-      // Validate tier: the worker validates downstream, but a clear error
-      // here saves an Opus call's worth of debugging on a malformed Opus
-      // response.
-      const ALLOWED_TIERS = new Set(['build', 'grow', 'scale']);
-      const rawTier = (v1Spec.tier ?? 'build').toString();
-      const tier = ALLOWED_TIERS.has(rawTier) ? rawTier : 'build';
-      if (rawTier !== tier) {
-        warnings.push(
-          `dispatch: Opus returned tier='${rawTier}'; coerced to 'build'`
-        );
-      }
-
-      // Persist the dispatch-time warnings (extraction + translation +
-      // tier coercion) into builds.spec so they survive into
-      // /admin/reviews and aren't lost when the dispatch handler returns.
-      // Closes an earlier end-to-end finding: 13 warnings flowed
-      // into the dispatch JSON response but only the 2 produced by
-      // compose.intake.translate_v1_spec at build time were persisted.
-      // We merge into the existing arrays (Opus may have populated
-      // _extraction_warnings already; harbor_to_compose populates none
-      // by default but this is defensive). Distinct sub-arrays preserve
-      // the source of each warning.
-      const v1WithWarnings = v1Spec as unknown as Record<string, unknown> & {
-        _extraction_warnings?: unknown;
-        _translation_warnings?: unknown;
-      };
-      const existingExtraction = Array.isArray(v1WithWarnings._extraction_warnings)
-        ? v1WithWarnings._extraction_warnings as unknown[]
-        : [];
-      const existingTranslation = Array.isArray(v1WithWarnings._translation_warnings)
-        ? v1WithWarnings._translation_warnings as unknown[]
-        : [];
-      v1WithWarnings._extraction_warnings = [
-        ...existingExtraction,
-        ...extraction.warnings,
-      ];
-      v1WithWarnings._translation_warnings = [
-        ...existingTranslation,
-        ...translation.warnings,
-        ...(rawTier !== tier
-          ? [`dispatch: Opus returned tier='${rawTier}'; coerced to 'build'`]
-          : []),
-      ];
-
-      // Wrap build INSERT + trial UPDATE in a transaction so a partial
-      // failure (process kill, DB blip) can't leave a queued build
-      // without the corresponding handoff_build_id stamp on the trial,
-      // which would let a second click create a second orphan build.
-      const client = await pool.connect();
-      let buildId: string;
-      let lostRace = false;
-      try {
-        await client.query('BEGIN');
-        // The shared insert: queued, and marked as a Harbor build, which is
-        // what makes the customer's own publish require a subscription.
-        buildId = await insertHarborBuild(client, { customerId, tier, spec: v1Spec, appName });
-        // `handoff_build_id IS NULL` makes the stamp a compare-and-set. The
-        // check at the top of this handler happens before a slow model call,
-        // so two clicks can both get here; the second UPDATE waits for the
-        // first to commit, then matches no row and rolls its build back.
-        const stamped = await client.query(
-          `UPDATE trial_keepers
-           SET handoff_build_id = $1, handoff_at = NOW()
-           WHERE trial_id = $2 AND handoff_build_id IS NULL`,
-          [buildId, trialId]
-        );
-        if (stamped.rowCount === 0) {
-          lostRace = true;
-          await client.query('ROLLBACK');
-        } else {
-          await client.query('COMMIT');
-        }
-      } catch (txErr) {
-        await client.query('ROLLBACK').catch(() => undefined);
-        throw txErr;
-      } finally {
-        client.release();
-      }
-
-      if (lostRace) {
-        const winner = await pool.query<{ handoff_build_id: string | null }>(
-          'SELECT handoff_build_id FROM trial_keepers WHERE trial_id = $1',
-          [trialId]
-        );
-        console.warn(
-          '[admin/harbor/dispatch] lost a double-dispatch race for trial=%s; build already dispatched',
-          trialId
-        );
-        res.json({
-          buildId: winner.rows[0]?.handoff_build_id ?? null,
-          alreadyDispatched: true,
-          warnings: [],
-        });
+      if (result.alreadyDispatched) {
+        // Another dispatch of this trial (a second click, or the visitor's
+        // own) stamped it first; its build is the one returned.
+        res.json({ buildId: result.buildId, alreadyDispatched: true, warnings: [] });
         return;
       }
 
       console.log(
         '[admin/harbor/dispatch] dispatched build=%s for trial=%s by=%s tier=%s warnings=%d',
-        buildId,
+        result.buildId,
         trialId,
         adminEmail,
-        tier,
-        warnings.length
+        result.tier,
+        result.warnings.length
       );
 
       // Self-learn loop: feed BARREN_SPEC / THIN_SPEC translation warnings
       // into agent_learnings so the operator can see which keeper
-      // conversations produced thin specs. Awaited so unit tests can deterministically assert
-      // the row was written; the helper itself swallows errors so a
-      // learning-write failure cannot fail the dispatch response.
-      await recordHarborExtractionLearning(trialId, warnings);
-
-      // Self-learn loop: when Opus's raw archetype guess didn't survive
-      // the translator's KNOWN_ARCHETYPES coercion (e.g. Opus invented
-      // "music-instructor" instead of selecting "coach-consultant"),
-      // record the delta so the architect agent can propose
-      // detect_archetype() keyword expansions. The translator drops
-      // unknown archetype values, so a mismatch means Opus's vocabulary
-      // is broader than the worker's classifier.
-      const opusArchetype =
-        typeof extraction.spec.archetype === 'string'
-          ? extraction.spec.archetype
-          : undefined;
-      const harborMeta = (v1Spec as { _harbor_meta?: unknown })._harbor_meta;
-      const coercedArchetype =
-        harborMeta &&
-        typeof harborMeta === 'object' &&
-        typeof (harborMeta as Record<string, unknown>).archetype_hint === 'string'
-          ? ((harborMeta as Record<string, unknown>).archetype_hint as string)
-          : undefined;
+      // conversations produced thin specs, and record an archetype the
+      // translator did not keep (the model's guess against the hint written
+      // on the spec). Awaited so unit tests can deterministically assert the
+      // rows were written; both helpers swallow errors so a learning-write
+      // failure cannot fail the dispatch response.
+      await recordHarborExtractionLearning(trialId, result.warnings);
       await recordHarborArchetypeCorrectionLearning(
         trialId,
-        opusArchetype,
-        coercedArchetype
+        result.extraction?.modelArchetype,
+        result.extraction?.archetypeHint
       );
 
       res.json({
-        buildId,
-        customerId,
-        warnings,
-        costMicros: extraction.costMicros,
-        contextSize: extraction.contextSize,
+        buildId: result.buildId,
+        customerId: result.customerId,
+        warnings: result.warnings,
+        costMicros: result.extraction?.costMicros,
+        contextSize: result.extraction?.contextSize,
       });
     } catch (err) {
-      // The failures that are not server faults get the answer the self-serve
-      // route gives them (dispatchFailureResponse, services/harbor_dispatch.ts):
-      // nothing the extraction may read is 409, a failed model call or a reply
-      // that is not a spec is 502, a spent daily model-call budget is 503, and
-      // no model key on this server is the 503 the chat routes give. None of
-      // them has written a customers row, a build or a stamp.
+      // The failures that are not server faults are answered from the table
+      // the self-serve route uses (dispatchFailureResponse,
+      // services/harbor_dispatch.ts), with the dispatch's own sentence: a
+      // captured address that already has an account is 409 (account_exists
+      // for a verified one, address_in_use otherwise), nothing the extraction
+      // may read is 409, a failed model call or a reply that is not a spec is
+      // 502, a spent daily model-call budget is 503, and no model key on this
+      // server is the 503 the chat routes give. None of them has written a
+      // customers row, a build or a stamp.
       const answer = dispatchFailureResponse(err);
       if (answer) {
         const body =

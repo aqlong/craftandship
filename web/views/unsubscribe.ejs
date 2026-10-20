@@ -1,15 +1,27 @@
 <%
   var unsubSuccess = typeof success !== 'undefined' && success;
   var unsubError = typeof error !== 'undefined' ? error : null;
+  // Set when the link checked out: the page asks before anything changes.
+  var unsubConfirm = typeof confirmation !== 'undefined' && confirmation ? confirmation : null;
 %>
 
 <section style="padding:64px 0 96px;">
   <div class="max-site" style="max-width:560px;">
     <div style="background:var(--color-companion-paper); padding:48px; box-shadow:var(--shadow-letter); border-radius: 5px;">
       <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:10px;">Email,</span>
-      <h1 class="display" style="font-size:36px; line-height:1.05; margin:0 0 18px; letter-spacing:-0.012em;">Unsubscribed.</h1>
+      <h1 class="display" style="font-size:36px; line-height:1.05; margin:0 0 18px; letter-spacing:-0.012em;"><%= unsubConfirm ? 'Unsubscribe?' : 'Unsubscribed.' %></h1>
 
-      <% if (unsubSuccess) { %>
+      <% if (unsubConfirm) { %>
+        <p style="font-size:17px; color:var(--color-ink-soft); line-height:1.65; margin:0 0 22px;">
+          Press the button to stop our emails to <strong style="font-weight:600; color:var(--color-ink);"><%= unsubConfirm.email %></strong>.
+        </p>
+        <form action="/unsubscribe" method="POST">
+          <%- include('_csrf-field') %>
+          <input type="hidden" name="email" value="<%= unsubConfirm.email %>" />
+          <input type="hidden" name="token" value="<%= unsubConfirm.token %>" />
+          <button type="submit" class="btn btn-primary">Unsubscribe</button>
+        </form>
+      <% } else if (unsubSuccess) { %>
         <p style="font-size:17px; color:var(--color-ink-soft); line-height:1.65; margin:0 0 14px;">
           You're off the list. We won't email you again.
         </p>

@@ -1,0 +1,39 @@
+<%
+  var verifyToken = typeof token !== 'undefined' ? token : '';
+%>
+<%# Opening the emailed link shows this page and spends nothing; the button
+    posts the token back to POST /verify-email, which verifies the address. %>
+
+<section class="harbor-auth">
+  <div class="harbor-auth__inner">
+    <div class="harbor-auth__card" style="text-align:center;">
+      <span class="eyebrow" style="font-size:18px; display:block; margin-bottom:10px;">One more step,</span>
+      <h1 class="display harbor-auth__title">Confirm your email.</h1>
+      <p style="font-size:18px; color:var(--color-ink-soft); line-height:1.55; margin:18px 0 24px;">
+        Press the button to verify your email address and activate your account.
+      </p>
+
+      <form action="/verify-email" method="POST">
+        <%- include('_csrf-field') %>
+        <input type="hidden" name="token" value="<%= verifyToken %>" />
+        <button type="submit" class="btn btn-primary">Verify my email</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<style>
+  .harbor-auth { padding:64px 0 96px; }
+  .harbor-auth__inner { max-width:560px; margin:0 auto; padding: 0 20px; box-sizing: border-box; }
+  .harbor-auth__card {
+    background:var(--color-companion-paper);
+    padding:48px 48px 44px;
+    box-shadow:var(--shadow-letter);
+    border-radius: 5px;
+  }
+  .harbor-auth__title { font-size:44px; line-height:1.04; margin:0; letter-spacing:-0.012em; }
+  @media (max-width: 600px) {
+    .harbor-auth__card { padding:32px 24px 28px; }
+    .harbor-auth__title { font-size:32px; }
+  }
+</style>

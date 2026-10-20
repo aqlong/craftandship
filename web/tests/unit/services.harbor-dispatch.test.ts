@@ -57,7 +57,9 @@ const mockTranslate = translateExtractedSpecToV1 as unknown as ReturnType<typeof
  *  - the early "does this address have an account" read (before the upsert)
  *    answers `knownAccount` (default: no account);
  *  - the budget read answers `budget` (default: nothing active, no starts);
- *  - the advisory lock and the ledger insert succeed.
+ *  - the advisory lock and the ledger insert succeed;
+ *  - the account's verification, read again under a share lock in the insert
+ *    transaction, answers `verifiedUnderLock` (default: not verified).
  *
  * `allCalls` and `allClientCalls` record every statement, these included.
  */
@@ -65,6 +67,7 @@ function makePool(
   opts: {
     knownAccount?: { id: string; email_verified: boolean } | null;
     budget?: { active: number; starts_today: number };
+    verifiedUnderLock?: boolean;
   } = {}
 ) {
   const query = vi.fn();
@@ -77,6 +80,9 @@ function makePool(
     if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
     if (/FROM build_start_events/.test(sql)) return budgetRow;
     if (/INSERT INTO build_start_events/.test(sql)) return { rows: [] };
+    if (/SELECT email_verified FROM customers WHERE id = \$1 FOR SHARE/.test(sql)) {
+      return { rows: [{ email_verified: opts.verifiedUnderLock === true }] };
+    }
     return undefined;
   };
   const poolQuery = vi.fn(async (sql: string, params?: unknown[]) => {
@@ -183,7 +189,7 @@ describe('dispatchHarborTrialBuild', () => {
     // column the customer's publish gate reads.
     const insertCall = clientQuery.mock.calls.find((c) => /INSERT INTO builds/.test(c[0]));
     expect(insertCall[0]).toMatch(
-      /\(customer_id, tier, status, spec, app_name, is_harbor\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE\)/
+      /\(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE, \$5\)/
     );
     // trial stamped with handoff_build_id, and with handoff_at in the same statement
     const updateCall = clientQuery.mock.calls.find((c) => /UPDATE trial_keepers/.test(c[0]));
@@ -296,7 +302,7 @@ describe('dispatchHarborTrialBuild', () => {
     expect(sqls.some((q) => /INSERT INTO builds/.test(q))).toBe(false);
   });
 
-  it('still attaches to an existing account that nobody has verified (the visitor\'s own earlier preview)', async () => {
+  it('a dispatch that is not anonymous still attaches to an existing account that nobody has verified', async () => {
     const { pool, query, clientQuery } = makePool();
     query.mockResolvedValueOnce({ rows: [trialRow()] });
     query.mockResolvedValueOnce({ rows: [] });
@@ -658,7 +664,7 @@ describe('a dispatch is a build start: the lock, the limits and the ledger, in o
       .mockResolvedValueOnce({});
   }
 
-  it('trial: BEGIN, the customer lock, the row lock, the counts, the insert, the stamp, the ledger row, COMMIT', async () => {
+  it('trial: BEGIN, the customer lock, the row lock, the account read again, the counts, the insert, the stamp, the ledger row, COMMIT', async () => {
     const p = makePool();
     scriptTrialHappyPath(p);
     await dispatchHarborTrialBuild(p.pool, { trialId: TRIAL, resolvedEmail: 'maya@example.com', source: 'self_serve' });
@@ -670,17 +676,19 @@ describe('a dispatch is a build start: the lock, the limits and the ledger, in o
           ? 'customer-lock'
           : /FOR UPDATE/.test(sql)
             ? 'row-lock'
-            : /FROM build_start_events/.test(sql)
-              ? 'counts'
-              : /INSERT INTO builds /.test(sql)
-                ? 'insert-build'
-                : /UPDATE trial_keepers/.test(sql)
-                  ? 'stamp'
-                  : /INSERT INTO build_start_events/.test(sql)
-                    ? 'ledger'
-                    : `other: ${sql}`
+            : /FROM customers WHERE id = \$1 FOR SHARE/.test(sql)
+              ? 'account-share-lock'
+              : /FROM build_start_events/.test(sql)
+                ? 'counts'
+                : /INSERT INTO builds /.test(sql)
+                  ? 'insert-build'
+                  : /UPDATE trial_keepers/.test(sql)
+                    ? 'stamp'
+                    : /INSERT INTO build_start_events/.test(sql)
+                      ? 'ledger'
+                      : `other: ${sql}`
     );
-    expect(order).toEqual(['BEGIN', 'customer-lock', 'row-lock', 'counts', 'insert-build', 'stamp', 'ledger', 'COMMIT']);
+    expect(order).toEqual(['BEGIN', 'customer-lock', 'row-lock', 'account-share-lock', 'counts', 'insert-build', 'stamp', 'ledger', 'COMMIT']);
     const lock = p.allClientCalls.find(([sql]) => /pg_advisory_xact_lock/.test(sql));
     expect(lock?.[0]).toBe(BUILD_START_LOCK_SQL);
     expect(lock?.[1]).toEqual(['cust-1']);
@@ -765,6 +773,157 @@ describe('a dispatch is a build start: the lock, the limits and the ledger, in o
     expect(lock?.[1]).toEqual([KEEPER]);
     const ledger = ok.allClientCalls.find(([sql]) => /INSERT INTO build_start_events/.test(sql));
     expect(ledger?.[1]).toEqual([KEEPER, 'build-k', HARBOR_DISPATCH_START_KIND]);
+  });
+});
+
+/** Each statement of the insert transaction, by what it does. */
+function transactionSteps(calls: Array<[string, unknown[] | undefined]>): string[] {
+  return calls.map(([sql]) =>
+    sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK'
+      ? sql
+      : /pg_advisory_xact_lock/.test(sql)
+        ? 'customer-lock'
+        : /FOR UPDATE/.test(sql)
+          ? 'row-lock'
+          : /FROM customers WHERE id = \$1 FOR SHARE/.test(sql)
+            ? 'account-share-lock'
+            : /INSERT INTO customers/.test(sql)
+              ? 'create-account'
+              : /FROM build_start_events/.test(sql)
+                ? 'counts'
+                : /INSERT INTO builds /.test(sql)
+                  ? 'insert-build'
+                  : /UPDATE trial_keepers/.test(sql)
+                    ? 'stamp'
+                    : /INSERT INTO build_start_events/.test(sql)
+                      ? 'ledger'
+                      : `other: ${sql}`
+  );
+}
+
+describe('an anonymous dispatch attaches only to an account it creates, in the insert transaction', () => {
+  beforeEach(() => {
+    mockExtract.mockReset();
+    mockTranslate.mockReset();
+    mockExtract.mockResolvedValue({ spec: { pages: [] }, warnings: [], costMicros: 0 });
+    mockTranslate.mockReturnValue({
+      spec: { app_name: 'Maya Reiki', tier: 'build', _seed_settings: { about_body: 'I teach breathwork.' } },
+      warnings: [],
+    });
+    resetDailyCallBudget();
+  });
+  const anonymous = { trialId: TRIAL, resolvedEmail: 'maya@example.com', source: 'self_serve', anonymous: true };
+
+  it.each([
+    ['an unverified account with no build and no keeper row', { id: 'cust-bare', email_verified: false }, 'address_in_use'],
+    ['a verified account', { id: 'cust-owner', email_verified: true }, 'account_exists'],
+  ] as const)('%s: refused before the extraction, and nothing is written', async (_label, known, code) => {
+    const p = makePool({ knownAccount: known });
+    p.query.mockResolvedValueOnce({ rows: [trialRow()] });
+    await expect(dispatchHarborTrialBuild(p.pool, anonymous)).rejects.toMatchObject({ code });
+    expect(mockExtract).not.toHaveBeenCalled();
+    expect(p.connect).not.toHaveBeenCalled();
+    expect(p.allCalls.some(([sql]) => /INSERT INTO|UPDATE /.test(sql))).toBe(false);
+  });
+
+  it('a new address: the account row is created in the transaction that inserts the build, and the build records it', async () => {
+    const p = makePool();
+    p.query.mockResolvedValueOnce({ rows: [trialRow()] });
+    p.clientQuery
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [{ handoff_build_id: null, handoff_at: null }] }) // row lock
+      .mockResolvedValueOnce({ rows: [{ id: 'cust-new' }] }) // INSERT customers ... ON CONFLICT DO NOTHING RETURNING id
+      .mockResolvedValueOnce({ rows: [{ id: 'build-new' }] }) // INSERT build
+      .mockResolvedValueOnce({}) // stamp
+      .mockResolvedValueOnce({}); // COMMIT
+    const res = await dispatchHarborTrialBuild(p.pool, anonymous);
+    expect(res).toMatchObject({ buildId: 'build-new', customerId: 'cust-new', alreadyDispatched: false });
+    // The row nobody else can see yet has no builds and no starts to count, so no lock and no counts; the start is recorded.
+    expect(transactionSteps(p.allClientCalls)).toEqual(['BEGIN', 'row-lock', 'create-account', 'insert-build', 'stamp', 'ledger', 'COMMIT']);
+    const create = p.allClientCalls.find(([sql]) => /INSERT INTO customers/.test(sql));
+    expect(create?.[0]).toMatch(/ON CONFLICT \(email\) DO NOTHING\s+RETURNING id/);
+    expect(create?.[1]?.[0]).toBe('maya@example.com');
+    const insert = p.allClientCalls.find(([sql]) => /INSERT INTO builds /.test(sql));
+    expect(insert?.[1]).toEqual(['cust-new', 'build', expect.any(String), 'Maya Reiki', true]);
+    const ledger = p.allClientCalls.find(([sql]) => /INSERT INTO build_start_events/.test(sql));
+    expect(ledger?.[1]).toEqual(['cust-new', 'build-new', HARBOR_DISPATCH_START_KIND]);
+    // No account was written outside that transaction.
+    expect(p.allCalls.some(([sql]) => /INSERT INTO customers/.test(sql))).toBe(false);
+  });
+
+  it('an address that gained an account while the model ran: the INSERT returns nothing, address_in_use, and the transaction is rolled back with no build', async () => {
+    const p = makePool();
+    p.query.mockResolvedValueOnce({ rows: [trialRow()] });
+    p.clientQuery
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [{ handoff_build_id: null, handoff_at: null }] }) // row lock
+      .mockResolvedValueOnce({ rows: [] }) // INSERT customers: the address is taken
+      .mockResolvedValueOnce({}); // ROLLBACK
+    await expect(dispatchHarborTrialBuild(p.pool, anonymous)).rejects.toMatchObject({ code: 'address_in_use' });
+    expect(mockExtract).toHaveBeenCalledTimes(1);
+    expect(transactionSteps(p.allClientCalls)).toEqual(['BEGIN', 'row-lock', 'create-account', 'ROLLBACK']);
+    expect(p.client.release).toHaveBeenCalled();
+  });
+
+  it('a concurrent dispatch of the same conversation stamped it first: its build is returned and no account is made', async () => {
+    const p = makePool();
+    p.query.mockResolvedValueOnce({ rows: [trialRow()] });
+    p.clientQuery
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [{ handoff_build_id: 'winner-build', handoff_at: new Date() }] })
+      .mockResolvedValueOnce({}); // COMMIT
+    const res = await dispatchHarborTrialBuild(p.pool, anonymous);
+    expect(res).toMatchObject({ buildId: 'winner-build', alreadyDispatched: true });
+    expect(transactionSteps(p.allClientCalls)).toEqual(['BEGIN', 'row-lock', 'COMMIT']);
+  });
+});
+
+describe('a dispatch that may not attach to a verified account reads it again under a share lock', () => {
+  beforeEach(() => {
+    mockExtract.mockReset();
+    mockTranslate.mockReset();
+    mockExtract.mockResolvedValue({ spec: { pages: [] }, warnings: [], costMicros: 0 });
+    mockTranslate.mockReturnValue({ spec: { app_name: 'Maya Reiki', tier: 'build' }, warnings: [] });
+  });
+
+  it('an account verified while the model ran: account_exists, and no build', async () => {
+    const p = makePool({ verifiedUnderLock: true });
+    p.query.mockResolvedValueOnce({ rows: [trialRow()] });
+    p.query.mockResolvedValueOnce({ rows: [] }); // upsert: the address has an account
+    p.query.mockResolvedValueOnce({ rows: [{ id: 'cust-1', email_verified: false }] }); // re-SELECT: not verified yet
+    p.clientQuery
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [{ handoff_build_id: null, handoff_at: null }] }) // row lock
+      .mockResolvedValueOnce({}); // ROLLBACK
+    await expect(
+      dispatchHarborTrialBuild(p.pool, { trialId: TRIAL, resolvedEmail: 'maya@example.com', source: 'self_serve' })
+    ).rejects.toMatchObject({ code: 'account_exists' });
+    expect(transactionSteps(p.allClientCalls)).toEqual(['BEGIN', 'customer-lock', 'row-lock', 'account-share-lock', 'ROLLBACK']);
+    const share = p.allClientCalls.find(([sql]) => /FOR SHARE/.test(sql));
+    expect(share?.[1]).toEqual(['cust-1']);
+  });
+
+  it('a caller that proved the account (allowVerifiedAccount) does not ask', async () => {
+    const p = makePool({ verifiedUnderLock: true });
+    p.query.mockResolvedValueOnce({ rows: [trialRow()] });
+    p.query.mockResolvedValueOnce({ rows: [] });
+    p.query.mockResolvedValueOnce({ rows: [{ id: 'cust-own', email_verified: true }] });
+    p.clientQuery
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ handoff_build_id: null, handoff_at: null }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'build-own' }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+    const res = await dispatchHarborTrialBuild(p.pool, {
+      trialId: TRIAL,
+      resolvedEmail: 'own@example.com',
+      source: 'self_serve',
+      allowVerifiedAccount: true,
+    });
+    expect(res.buildId).toBe('build-own');
+    expect(p.allClientCalls.some(([sql]) => /FOR SHARE/.test(sql))).toBe(false);
+    const insert = p.allClientCalls.find(([sql]) => /INSERT INTO builds /.test(sql));
+    expect(insert?.[1]?.[4]).toBe(false);
   });
 });
 
@@ -1008,7 +1167,7 @@ describe('dispatchHarborKeeperBuild (the keeper path of POST /lighthouse/build)'
     expect(query.mock.calls[0][0]).toMatch(/SELECT k\.customer_id, k\.handoff_build_id, k\.handoff_at, c\.email\s+FROM keepers k\s+JOIN customers c ON c\.id = k\.customer_id\s+WHERE k\.customer_id = \$1/);
     expect(clientQuery.mock.calls[1][0]).toMatch(/FROM keepers WHERE customer_id = \$1 FOR UPDATE/);
     const insert = clientQuery.mock.calls.find((c) => /INSERT INTO builds/.test(c[0]));
-    expect(insert[0]).toMatch(/is_harbor\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE\)/);
+    expect(insert[0]).toMatch(/is_harbor, owner_created_by_dispatch\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE, \$5\)/);
     expect(insert[1][0]).toBe(KEEPER);
     // Dispatch-time warnings are kept on the spec for the reviewer, as on the trial path.
     expect(JSON.parse(insert[1][2])._extraction_warnings).toEqual(['extraction: note']);
@@ -1071,8 +1230,8 @@ describe('insertHarborBuild', () => {
       appName: 'x',
     });
     expect(id).toBe('build-x');
-    expect(query.mock.calls[0][0]).toMatch(/INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE\)/);
-    expect(query.mock.calls[0][1]).toEqual(['cust-1', 'build', '{"app_name":"x"}', 'x']);
+    expect(query.mock.calls[0][0]).toMatch(/INSERT INTO builds \(customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch\)\s+VALUES \(\$1, \$2, 'queued', \$3, \$4, TRUE, \$5\)/);
+    expect(query.mock.calls[0][1]).toEqual(['cust-1', 'build', '{"app_name":"x"}', 'x', false]);
   });
 
   it('no other web route inserts a Harbor root build by its own statement', async () => {

@@ -543,6 +543,8 @@ describe('promoteTrialInTransaction (runs inside the caller\'s transaction)', ()
       client.queue.push({
         rows: [{ trial_id: TRIAL_ID, companion_name: 'Haven', companion_assigned: 'Haven', released_at: null, handoff_build_id: stamped }],
       });
+      // With a build named, the account must be the one that build's dispatch created.
+      if (buildId) client.queue.push({ rows: [{ '?column?': 1 }] });
       client.queue.push(CLAIMED);
       client.queue.push({ rows: [] }); // SELECT existing sub
       client.queue.push({ rows: [] }); // INSERT harbor_subscriptions
@@ -552,6 +554,42 @@ describe('promoteTrialInTransaction (runs inside the caller\'s transaction)', ()
       const result = await promoteTrialInTransaction(client as unknown as PoolClient, { ...VALID_OPTS, buildId });
       expect(result).toMatchObject({ promoted: true, refusal: null });
     }
+  });
+
+  describe('the account must be one that came into being for the trial', () => {
+    const stamped = 'bbbbbbbb-1111-2222-3333-444444444444';
+    const stampedTrial = {
+      rows: [{ trial_id: TRIAL_ID, companion_name: 'Haven', companion_assigned: 'Haven', released_at: null, handoff_build_id: stamped }],
+    };
+
+    it('an account the build\'s dispatch did not create is refused, after the build match and before anything is written', async () => {
+      const client = makeMockClient();
+      client.queue.push(stampedTrial);
+      client.queue.push({ rows: [] }); // not the account that build's dispatch created
+      const result = await promoteTrialInTransaction(client as unknown as PoolClient, { ...VALID_OPTS, buildId: stamped });
+      expect(result).toMatchObject({ promoted: false, refusal: 'account_not_created_for_trial', trialFound: true });
+      expect(client.query).toHaveBeenCalledTimes(2);
+      const [sql, params] = client.query.mock.calls[1] as [string, unknown[]];
+      expect(sql).toMatch(/FROM builds WHERE id = \$1 AND customer_id = \$2 AND owner_created_by_dispatch/);
+      expect(params).toEqual([stamped, CUSTOMER_ID]);
+    });
+
+    it.each([
+      ['the account\'s own login opened the payment', { openedByAccount: true }],
+      ['the payment itself created the account', { accountCreatedByPayment: true }],
+    ])('not asked when %s', async (_label, flags) => {
+      const client = makeMockClient();
+      client.queue.push(stampedTrial);
+      client.queue.push(CLAIMED);
+      client.queue.push({ rows: [] }); // SELECT existing sub
+      client.queue.push({ rows: [] }); // INSERT harbor_subscriptions
+      client.queue.push({ rows: [], rowCount: 0 });
+      client.queue.push({ rows: [], rowCount: 0 });
+      client.queue.push({ rows: [] }); // release
+      const result = await promoteTrialInTransaction(client as unknown as PoolClient, { ...VALID_OPTS, buildId: stamped, ...flags });
+      expect(result).toMatchObject({ promoted: true, refusal: null });
+      expect(client.query.mock.calls.some((c) => /owner_created_by_dispatch/.test(String(c[0])))).toBe(false);
+    });
   });
 
   it('reports a missing trial instead of throwing, and writes nothing', async () => {

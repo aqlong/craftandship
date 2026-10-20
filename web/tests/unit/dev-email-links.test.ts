@@ -49,11 +49,13 @@ function answerAuthQueries(): void {
       return Promise.resolve({ rows: [{ id: 'cust-1', email: 'new@example.com', name: 'New Person' }], rowCount: 1 });
     }
     if (text.includes('SELECT id FROM customers WHERE email')) return Promise.resolve({ rows: [], rowCount: 0 });
-    if (text.includes('SELECT id, name, email_verified FROM customers')) {
-      return Promise.resolve({ rows: [{ id: 'cust-1', name: 'New Person', email_verified: false }], rowCount: 1 });
+    // The one statement that issues a verification link (it returns a row when it inserted one).
+    if (text.includes('INSERT INTO email_verification_tokens')) {
+      return Promise.resolve({ rows: [{ customer_id: 'cust-1' }], rowCount: 1 });
     }
-    if (text.includes('SELECT id, name FROM customers WHERE email')) {
-      return Promise.resolve({ rows: [{ id: 'cust-1', name: 'New Person' }], rowCount: 1 });
+    // The one statement that issues a reset link (the account's name and whether it is verified).
+    if (text.includes('INSERT INTO password_reset_tokens')) {
+      return Promise.resolve({ rows: [{ name: 'New Person', email_verified: false }], rowCount: 1 });
     }
     return Promise.resolve({ rows: [], rowCount: 0 });
   });

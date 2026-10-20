@@ -2,8 +2,8 @@
 //
 // POST /lighthouse/build creates a v2 build from a Harbor conversation
 // through this module, for both of its callers:
-//   - a cookie-only trial (dispatchHarborTrialBuild): race-safe customer
-//     upsert, then the shared steps;
+//   - a trial (dispatchHarborTrialBuild): the account for the address is
+//     found or created, then the shared steps;
 //   - a promoted keeper with an account session (dispatchHarborKeeperBuild):
 //     the customer already exists, then the shared steps.
 // The shared steps are the Opus extraction, the deterministic translation,
@@ -11,7 +11,7 @@
 // transaction that inserts the build and stamps the conversation's row under
 // a row lock.
 //
-// Four rules live here:
+// Five rules live here:
 //   - A build is dispatched only for an account whose email the build engine
 //     will accept as the site's admin address: see "The address a build is
 //     owned by" below.
@@ -28,14 +28,18 @@
 //     counts against the same per-customer limits
 //     (services/build-start-limits.ts): see "Build-start limits on a
 //     dispatch" below.
+//   - A build is attached to an existing account only by a caller that has
+//     shown the account is theirs: see "An anonymous dispatch attaches only
+//     to an account it creates" below.
 //
 // The operator route (POST /admin/harbor/:trial_id/dispatch in
-// routes/admin.ts) still carries its own, older copy of the steps before the
-// insert; it calls insertHarborBuild for the row itself, and like the admin's
-// rebuilds it is not subject to the build-start limits. The `source`,
-// `allowVerifiedAccount`, `allowRedispatch` and `skipStartLimits` options
-// exist so that it can be moved onto dispatchHarborTrialBuild; until then a
-// change to the extraction or translation steps has to be made in both places.
+// routes/admin.ts) dispatches through dispatchHarborTrialBuild as well, with
+// `source: 'admin'`, `allowRedispatch` and `skipStartLimits` (like the admin's
+// rebuilds it is not subject to the build-start limits). The address a trial
+// captured is one a visitor typed, so the operator's dispatch of it is an
+// anonymous one (`anonymous`, no `allowVerifiedAccount`); only the operator's
+// own account, used when the trial captured no address, is attached to as an
+// existing account.
 //
 // The caller resolves the email (self-serve REQUIRES a captured email) and
 // does its own post-dispatch hooks; this service does the core dispatch and
@@ -134,42 +138,45 @@ function emailNotBuildable(): HarborDispatchError {
 // and the daily model-call budget the extraction draws on.
 
 // ---------------------------------------------------------------------------
-// An anonymous dispatch does not attach to an account in use
+// An anonymous dispatch attaches only to an account it creates
 // ---------------------------------------------------------------------------
 //
 // A visitor with no account session has proved nothing about the address they
-// typed. The account that address names may be unverified and still belong to
-// someone else: a payer's account is made at checkout unverified, and a signup
-// can sit unverified indefinitely. An account is in use when it has a keeper
-// row (a paid conversation) or any build. An anonymous dispatch to such an
-// account is refused with address_in_use (409 in dispatchFailureResponse), so
-// that no build, no start row and no stamp on the conversation is written for
-// the account, and the builds and start limits it already has stay its owner's.
+// typed, and any account that address already names may belong to someone
+// else, verified or not: a payer's account is made at checkout unverified, a
+// signup can sit unverified indefinitely, and POST /signup makes one for any
+// address. A build attached to such an account would put the visitor's
+// conversation into it, and after payment their keeper row, their
+// subscription and the account's one self-serve build (keepers.handoff_at).
+// So an anonymous dispatch attaches its build only to a customers row that the
+// dispatch itself creates. An address that already has a row is refused with
+// account_exists when that account is verified and address_in_use otherwise
+// (both 409 in dispatchFailureResponse), and no build, no start row and no
+// stamp on the conversation is written.
 //
-// The check runs twice. The early one is made before the extraction is paid
-// for. The authoritative one runs inside the insert transaction, under the
-// account's build-start lock, so a build that lands on the account while the
-// extraction runs is seen there, and the model call has already been paid for.
+// The rule is applied twice. The early check is made before the extraction is
+// paid for. The one that decides is the INSERT ... ON CONFLICT DO NOTHING that
+// creates the row, made in the transaction that inserts the build and stamps
+// the conversation (insertBuildAndStamp), under the conversation's row lock:
+// when a row for the address appeared while the extraction ran (a signup,
+// another conversation that gave the same address), that INSERT returns
+// nothing and the dispatch is refused there, after a model call that was paid
+// for. The row and the build commit together, so a dispatch that fails after
+// the INSERT leaves no account behind, and nobody can verify the account
+// between the two. The build records that its dispatch created the owner row
+// (builds.owner_created_by_dispatch), which is what the payment checks
+// (promoteTrialInTransaction in services/keeper_promotion.ts).
 //
-// What this does not cover: an unverified account with neither a keeper row
-// nor a build still takes an anonymous dispatch's first build, and that start
-// counts against the account. The route answers a visitor in the same words
-// for an account in use and for a verified one (see POST /lighthouse/build).
-
-/** True when the account has a keeper row or any build. Reads; takes no lock. */
-async function accountInUse(db: Queryable, customerId: string): Promise<boolean> {
-  const res = await db.query<{ in_use: boolean }>(
-    `SELECT (EXISTS (SELECT 1 FROM keepers WHERE customer_id = $1)
-          OR EXISTS (SELECT 1 FROM builds WHERE customer_id = $1)) AS in_use`,
-    [customerId]
-  );
-  return res.rows[0]?.in_use === true;
-}
+// What this does not cover: the account the dispatch created belongs to the
+// address, and whoever later proves that mailbox (a signup that is verified,
+// or a password reset) owns it with the build on it. The route answers a
+// visitor in the same words for every address it will not use (see POST
+// /lighthouse/build).
 
 function addressInUse(): HarborDispatchError {
   return new HarborDispatchError(
     'address_in_use',
-    'The address belongs to an account that already has a conversation or a build; a build is not attached to it on the strength of a typed address.'
+    'That address already has an account, and a typed address is not proof of owning it: a build is attached to an existing account only from that account\'s own login.'
   );
 }
 
@@ -270,12 +277,13 @@ export interface DispatchOptions {
    * (empty/garbage conversation) so a self-serve visitor never gets a build made
    * from nothing. Admin sets false (the operator decides). */
   refuseBarrenSpec?: boolean;
-  /** The email here is whatever an anonymous visitor typed; nobody has shown
-   * they can read that mailbox. By default the build may therefore be attached
-   * to a brand-new account or to one that is itself still unverified, but
-   * never to an account whose owner has verified the address: that would put
-   * a stranger's build (and, after payment, their conversation) into a real
-   * customer's account. Set true only where an operator chose the address. */
+  /** By default the build is never attached to an account whose owner has
+   * verified the address: that would put a stranger's build (and, after
+   * payment, their conversation) into a real customer's account. The check is
+   * made before the extraction and again under the insert's locks. Set true
+   * only where the caller has shown the account is theirs: a logged-in
+   * customer's own account, or the operator's own account when the trial
+   * captured no address. */
   allowVerifiedAccount?: boolean;
   /** A trial that has already had a build dispatched (handoff_at is set) and
    * whose build has since been deleted is refused with `build_already_used`.
@@ -286,13 +294,15 @@ export interface DispatchOptions {
    * true only for an operator, who is exempt from them the way the admin is
    * in routes/builds.ts. */
   skipStartLimits?: boolean;
-  /** The caller is a visitor with no account session. The extraction then has
-   * to fit in the part of the daily model-call budget that anonymous callers
-   * may use (services/llm-budget.ts), so that anonymous traffic cannot spend
-   * the calls held back for customers with an account. The dispatch also
-   * refuses an account that is in use (a keeper row or a build), with
-   * address_in_use; see "An anonymous dispatch does not attach to an account
-   * in use" above. */
+  /** The address is one a visitor typed: the visitor's own dispatch with no
+   * account session, and the operator's dispatch of the address a trial
+   * captured. The build is then attached only to an account row this dispatch
+   * creates, and an address that already has one is refused (account_exists
+   * or address_in_use); see "An anonymous dispatch attaches only to an
+   * account it creates" above. The extraction also has to fit in the part of
+   * the daily model-call budget that anonymous callers may use
+   * (services/llm-budget.ts), so that anonymous traffic cannot spend the calls
+   * held back for customers with an account. */
   anonymous?: boolean;
 }
 
@@ -309,25 +319,37 @@ export interface DispatchResult {
   warnings: string[];
   customerId: string;
   tier: string;
+  /** What the extraction reported, when this call created the build (the operator's route returns and learns from it). */
+  extraction?: {
+    costMicros: number;
+    contextSize: { memoryRows: number; turns: number };
+    /** The archetype id the model named, before the translator's coercion. */
+    modelArchetype: string | undefined;
+    /** The archetype hint on the spec that was written (after the operator's overrides). */
+    archetypeHint: string | undefined;
+  };
 }
 
 type Queryable = Pick<PoolClient, 'query'>;
 
 /**
  * The one statement that creates a Harbor build: queued, and marked
- * `is_harbor`. Every dispatch path calls it (the two functions below and the
- * operator route), on the client of the transaction that also stamps the
- * trial or keeper row. Returns the new build id.
+ * `is_harbor`. Every dispatch path calls it (the two functions below, for the
+ * visitor, the keeper and the operator), on the client of the transaction
+ * that also stamps the trial or keeper row. `ownerCreatedByDispatch` is TRUE
+ * only when that same transaction created the owning customers row (see "An
+ * anonymous dispatch attaches only to an account it creates"). Returns the new
+ * build id.
  */
 export async function insertHarborBuild(
   client: Queryable,
-  build: { customerId: string; tier: string; spec: unknown; appName: string }
+  build: { customerId: string; tier: string; spec: unknown; appName: string; ownerCreatedByDispatch?: boolean }
 ): Promise<string> {
   const inserted = await client.query<{ id: string }>(
-    `INSERT INTO builds (customer_id, tier, status, spec, app_name, is_harbor)
-     VALUES ($1, $2, 'queued', $3, $4, TRUE)
+    `INSERT INTO builds (customer_id, tier, status, spec, app_name, is_harbor, owner_created_by_dispatch)
+     VALUES ($1, $2, 'queued', $3, $4, TRUE, $5)
      RETURNING id`,
-    [build.customerId, build.tier, JSON.stringify(build.spec), build.appName]
+    [build.customerId, build.tier, JSON.stringify(build.spec), build.appName, build.ownerCreatedByDispatch === true]
   );
   return inserted.rows[0].id;
 }
@@ -398,11 +420,10 @@ export async function dispatchHarborTrialBuild(
 
   // 4a. Everything that can refuse this dispatch on account of the address is
   //    asked BEFORE the extraction is paid for. The first check reads nothing
-  //    and decides for good. The other two are repeated after the extraction,
-  //    where they are authoritative (the account one against the row the
-  //    upsert finds, the limits under the customer's lock); these early reads
-  //    only keep a request that is going to be refused from costing a model
-  //    call first.
+  //    and decides for good. The others are repeated after the extraction,
+  //    where they decide (the account ones in the insert transaction, the
+  //    limits under the customer's lock); these early reads only keep a
+  //    request that is going to be refused from costing a model call first.
   //      - The engine would refuse the address as the build's admin address
   //        (see "The address a build is owned by" above). The account this
   //        build would be owned by is the one whose email is exactly
@@ -413,6 +434,8 @@ export async function dispatchHarborTrialBuild(
   //        allowVerifiedAccount. Refusing here, and not after the extraction,
   //        also means this answer costs the server nothing, so it cannot be
   //        used to spend money one probe at a time.
+  //      - The dispatch is anonymous and the address has any account: see
+  //        "An anonymous dispatch attaches only to an account it creates".
   //      - That customer is already at a build-start limit.
   if (!isBuildableOwnerEmail(resolvedEmail)) throw emailNotBuildable();
   const known = await pool.query<{ id: string; email_verified: boolean | null }>(
@@ -421,7 +444,7 @@ export async function dispatchHarborTrialBuild(
   );
   if (known.rows.length > 0) {
     if (known.rows[0].email_verified === true && !opts.allowVerifiedAccount) throw accountExists();
-    if (opts.anonymous && (await accountInUse(pool, known.rows[0].id))) throw addressInUse();
+    if (opts.anonymous) throw addressInUse();
     if (!opts.skipStartLimits) {
       const refusal = await startLimitRefusal(pool, known.rows[0].id);
       if (refusal) throw new HarborDispatchError('build_limit', refusal);
@@ -465,59 +488,66 @@ export async function dispatchHarborTrialBuild(
     throw prepareErr;
   }
 
-  // 10. Race-safe customer upsert, done only now that the spec passed the
-  //     guards, so a refused attempt leaves no unverified customers row behind
-  //     for whatever address was typed into the email field. ON CONFLICT DO
-  //     NOTHING returns no row when a concurrent INSERT already created it, so
-  //     re-SELECT. password + name are NOT NULL in the schema; provide an
-  //     unguessable ephemeral password (the keeper reaches their account via
-  //     magic link / password reset, never this plaintext) and a name derived
-  //     from the email local part.
+  // 10. The account the build is owned by, done only now that the spec passed
+  //     the guards, so a refused attempt leaves no unverified customers row
+  //     behind for whatever address was typed into the email field.
+  //     password + name are NOT NULL in the schema; provide an unguessable
+  //     ephemeral password (the keeper reaches their account via magic link /
+  //     password reset, never this plaintext) and a name derived from the
+  //     email local part.
+  //       - Anonymous: the row is created inside the insert transaction
+  //         (step 11), and only a row that INSERT creates is used.
+  //       - Otherwise a race-safe upsert: ON CONFLICT DO NOTHING returns no
+  //         row when the address already has one (or a concurrent INSERT
+  //         created it), so re-SELECT.
   const ephemeralPassword = await hashUnusablePassword();
   const localPart = resolvedEmail.split('@')[0] || '';
   const ephemeralName = (localPart || 'Keeper').slice(0, 60);
-  let customerId: string;
-  const upsertRes = await pool.query<{ id: string }>(
-    `INSERT INTO customers (email, password, email_verified, name)
-     VALUES ($1, $2, FALSE, $3)
-     ON CONFLICT (email) DO NOTHING
-     RETURNING id`,
-    [resolvedEmail, ephemeralPassword, ephemeralName]
-  );
-  if (upsertRes.rows.length > 0) {
-    customerId = upsertRes.rows[0].id;
+  let owner: BuildOwner;
+  if (opts.anonymous) {
+    owner = { newAccount: { email: resolvedEmail, password: ephemeralPassword, name: ephemeralName } };
   } else {
-    const existing = await pool.query<{ id: string; email_verified: boolean | null }>(
-      `SELECT id, email_verified FROM customers WHERE email = $1 LIMIT 1`,
-      [resolvedEmail]
-    );
-    if (existing.rows.length === 0) {
-      throw new Error('customer row vanished between INSERT ON CONFLICT and re-SELECT');
+    const upsertRes = await pool.query<{ id: string }>(INSERT_ACCOUNT_FOR_ADDRESS_SQL, [
+      resolvedEmail,
+      ephemeralPassword,
+      ephemeralName,
+    ]);
+    if (upsertRes.rows.length > 0) {
+      owner = { customerId: upsertRes.rows[0].id };
+    } else {
+      const existing = await pool.query<{ id: string; email_verified: boolean | null }>(
+        `SELECT id, email_verified FROM customers WHERE email = $1 LIMIT 1`,
+        [resolvedEmail]
+      );
+      if (existing.rows.length === 0) {
+        throw new Error('customer row vanished between INSERT ON CONFLICT and re-SELECT');
+      }
+      // The address already has an account. If its owner verified it, a
+      // typed email is not enough to attach anything to it (see
+      // allowVerifiedAccount). Step 4a normally refuses this before the
+      // extraction; this is the same rule applied to the row as it is now, in
+      // case the account was verified while the extraction ran, and step 11
+      // applies it once more under the row's share lock.
+      if (existing.rows[0].email_verified === true && !opts.allowVerifiedAccount) {
+        throw accountExists();
+      }
+      owner = { customerId: existing.rows[0].id };
     }
-    // The address already has an account. If its owner verified it, a typed
-    // email is not enough to attach anything to it (see allowVerifiedAccount).
-    // Step 4a normally refuses this before the extraction; this is the same
-    // rule applied to the row as it is now, in case the account was verified
-    // while the extraction ran.
-    if (existing.rows[0].email_verified === true && !opts.allowVerifiedAccount) {
-      throw accountExists();
-    }
-    customerId = existing.rows[0].id;
   }
 
-  // 11. Insert the build and stamp the trial, in one transaction, under the
-  //     customer's build-start lock.
+  // 11. Create the account (anonymous), insert the build and stamp the trial,
+  //     in one transaction; insertBuildAndStamp says which locks it takes.
   const outcome = await insertBuildAndStamp(pool, TRIAL_HANDOFF, trialId, {
-    customerId,
+    owner,
     tier: prepared.tier,
     spec: prepared.spec,
     appName: prepared.appName,
     allowRedispatch: opts.allowRedispatch === true,
     enforceStartLimits: opts.skipStartLimits !== true,
-    refuseAccountInUse: opts.anonymous === true,
+    refuseVerifiedAccount: opts.allowVerifiedAccount !== true,
   });
   if (!outcome.created) {
-    return { buildId: outcome.buildId, alreadyDispatched: true, warnings: [], customerId, tier: prepared.tier };
+    return { buildId: outcome.buildId, alreadyDispatched: true, warnings: [], customerId: outcome.customerId, tier: prepared.tier };
   }
 
   console.log(
@@ -533,8 +563,9 @@ export async function dispatchHarborTrialBuild(
     buildId: outcome.buildId,
     alreadyDispatched: false,
     warnings: prepared.warnings,
-    customerId,
+    customerId: outcome.customerId,
     tier: prepared.tier,
+    extraction: prepared.extraction,
   };
 }
 
@@ -597,13 +628,13 @@ export async function dispatchHarborKeeperBuild(
   });
 
   const outcome = await insertBuildAndStamp(pool, KEEPER_HANDOFF, customerId, {
-    customerId,
+    owner: { customerId },
     tier: prepared.tier,
     spec: prepared.spec,
     appName: prepared.appName,
     allowRedispatch: false,
     enforceStartLimits: true,
-    refuseAccountInUse: false,
+    refuseVerifiedAccount: false,
   });
   if (!outcome.created) {
     return { buildId: outcome.buildId, alreadyDispatched: true, warnings: [], customerId, tier: prepared.tier };
@@ -641,7 +672,7 @@ function buildAlreadyUsed(): HarborDispatchError {
 function accountExists(): HarborDispatchError {
   return new HarborDispatchError(
     'account_exists',
-    'The address belongs to a verified account; a build is not attached to it on the strength of a typed address.'
+    'That address has a verified account; the owner must log in and build from their account.'
   );
 }
 
@@ -650,6 +681,7 @@ interface PreparedSpec {
   appName: string;
   tier: string;
   warnings: string[];
+  extraction: NonNullable<DispatchResult['extraction']>;
 }
 
 /**
@@ -748,7 +780,24 @@ async function prepareHarborSpec(
     ...(rawTier !== tier ? [tierNote] : []),
   ];
 
-  return { spec: v1WithWarnings, appName, tier, warnings };
+  const finalMeta = (v1WithWarnings as { _harbor_meta?: unknown })._harbor_meta;
+  const archetypeHint =
+    finalMeta && typeof finalMeta === 'object' && typeof (finalMeta as Record<string, unknown>).archetype_hint === 'string'
+      ? ((finalMeta as Record<string, unknown>).archetype_hint as string)
+      : undefined;
+  const modelArchetype = (extraction.spec as { archetype?: unknown }).archetype;
+  return {
+    spec: v1WithWarnings,
+    appName,
+    tier,
+    warnings,
+    extraction: {
+      costMicros: extraction.costMicros,
+      contextSize: extraction.contextSize,
+      modelArchetype: typeof modelArchetype === 'string' ? modelArchetype : undefined,
+      archetypeHint,
+    },
+  };
 }
 
 /**
@@ -776,6 +825,21 @@ const KEEPER_HANDOFF: HandoffStatements = {
   missing: () => new HarborDispatchError('keeper_not_found', 'No keeper for this account.'),
 };
 
+/** The customers row a dispatch makes for an address: unverified, with an unusable password. Returns no row when the address already has one. */
+const INSERT_ACCOUNT_FOR_ADDRESS_SQL = `INSERT INTO customers (email, password, email_verified, name)
+   VALUES ($1, $2, FALSE, $3)
+   ON CONFLICT (email) DO NOTHING
+   RETURNING id`;
+
+interface NewAccount {
+  email: string;
+  password: string;
+  name: string;
+}
+
+/** The account a build is attached to: one that exists, or (an anonymous dispatch) one the insert transaction creates. */
+type BuildOwner = { customerId: string } | { newAccount: NewAccount };
+
 /**
  * Insert the build and stamp the trial or keeper row in one transaction, so a
  * partial failure cannot leave a queued build without its stamp (which would
@@ -796,30 +860,45 @@ const KEEPER_HANDOFF: HandoffStatements = {
  * dispatch racing a rebuild in routes/builds.ts, cannot both read "one build
  * active" and both queue another. It is taken before the row lock because
  * routes/builds.ts takes it before touching any row; the payment webhook
- * locks a build and then the trial row and never waits for this lock, so no
- * cycle is possible. An accepted dispatch writes its ledger row here too, and
- * a refusal rolls everything back.
+ * locks a build, takes a share lock on the customer row and then locks the
+ * trial row, and never waits for this lock, so no cycle is possible. An
+ * accepted dispatch writes its ledger row here too, and a refusal rolls
+ * everything back.
+ *
+ * The account rules are applied here too, under the conversation's row lock:
+ *   - an existing account the caller may not attach to once it is verified
+ *     (`refuseVerifiedAccount`) is read again under a share lock, which a
+ *     verification or a password reset (an UPDATE of the row) must wait for,
+ *     so a verification that committed while the extraction ran is seen and
+ *     one that starts now waits for this transaction;
+ *   - an anonymous dispatch (`owner.newAccount`) creates its account row here
+ *     and is refused when the address already has one, so the row and the
+ *     build commit together or not at all. That row has no builds and no
+ *     starts, and no other transaction can see it before COMMIT, so the
+ *     limits have nothing to count and its lock would order nothing; the
+ *     start is recorded all the same.
  */
 async function insertBuildAndStamp(
   pool: Pool,
   handoff: HandoffStatements,
   ownerId: string,
   build: {
-    customerId: string;
+    owner: BuildOwner;
     tier: string;
     spec: unknown;
     appName: string;
     allowRedispatch: boolean;
     enforceStartLimits: boolean;
-    /** An anonymous dispatch: refuse an account that is in use (see "An anonymous dispatch"). */
-    refuseAccountInUse: boolean;
+    /** Refuse an existing account whose address was verified (see DispatchOptions.allowVerifiedAccount). */
+    refuseVerifiedAccount: boolean;
   }
-): Promise<{ buildId: string; created: boolean }> {
+): Promise<{ buildId: string; created: boolean; customerId: string }> {
+  const existingOwner = 'customerId' in build.owner ? build.owner.customerId : null;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    if (build.enforceStartLimits) {
-      await client.query(BUILD_START_LOCK_SQL, [build.customerId]);
+    if (existingOwner && build.enforceStartLimits) {
+      await client.query(BUILD_START_LOCK_SQL, [existingOwner]);
     }
     const lockRes = await client.query<{ handoff_build_id: string | null; handoff_at: Date | null }>(
       handoff.lock,
@@ -829,23 +908,44 @@ async function insertBuildAndStamp(
     const { handoff_build_id: existingHandoff, handoff_at: handoffAt } = lockRes.rows[0];
     if (existingHandoff) {
       await client.query('COMMIT');
-      return { buildId: existingHandoff, created: false };
+      return { buildId: existingHandoff, created: false, customerId: existingOwner ?? '' };
     }
     if (handoffAt && !build.allowRedispatch) throw buildAlreadyUsed();
-    if (build.refuseAccountInUse && (await accountInUse(client, build.customerId))) throw addressInUse();
 
-    if (build.enforceStartLimits) {
-      const refusal = await startLimitRefusal(client, build.customerId);
-      if (refusal) throw new HarborDispatchError('build_limit', refusal);
+    let customerId: string;
+    if (existingOwner) {
+      customerId = existingOwner;
+      if (build.refuseVerifiedAccount) {
+        const account = await client.query<{ email_verified: boolean | null }>(
+          `SELECT email_verified FROM customers WHERE id = $1 FOR SHARE`,
+          [customerId]
+        );
+        if (account.rows[0]?.email_verified === true) throw accountExists();
+      }
+      if (build.enforceStartLimits) {
+        const refusal = await startLimitRefusal(client, customerId);
+        if (refusal) throw new HarborDispatchError('build_limit', refusal);
+      }
+    } else {
+      const { email, password, name } = (build.owner as { newAccount: NewAccount }).newAccount;
+      const created = await client.query<{ id: string }>(INSERT_ACCOUNT_FOR_ADDRESS_SQL, [email, password, name]);
+      if (created.rows.length === 0) throw addressInUse();
+      customerId = created.rows[0].id;
     }
 
-    const buildId = await insertHarborBuild(client, build);
+    const buildId = await insertHarborBuild(client, {
+      customerId,
+      tier: build.tier,
+      spec: build.spec,
+      appName: build.appName,
+      ownerCreatedByDispatch: existingOwner === null,
+    });
     await client.query(handoff.stamp, [buildId, ownerId]);
     if (build.enforceStartLimits) {
-      await recordBuildStart(client, build.customerId, buildId, HARBOR_DISPATCH_START_KIND);
+      await recordBuildStart(client, customerId, buildId, HARBOR_DISPATCH_START_KIND);
     }
     await client.query('COMMIT');
-    return { buildId, created: true };
+    return { buildId, created: true, customerId };
   } catch (txErr) {
     await client.query('ROLLBACK').catch(() => undefined);
     throw txErr;

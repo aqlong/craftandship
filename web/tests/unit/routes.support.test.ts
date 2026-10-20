@@ -155,6 +155,27 @@ describe('POST /api/support/chat', () => {
     expect(res.body.source).toBe('cache');
   });
 
+  it('looks up approved knowledge-base rows only (a drafted answer waits for an operator)', async () => {
+    // A customer of its own: the per-minute support limiter is keyed on the
+    // customer id, and the other tests here use most of one customer's minute.
+    const agent = supertest.agent(app);
+    mockPool.query.mockResolvedValueOnce({
+      rows: [{ id: 'cust-kb-status', email: 'kb-status@example.com', name: 'KB', password: await bcrypt.hash('password123', 1), email_verified: true }],
+    });
+    await agent
+      .post('/login')
+      .type('form')
+      .send({ _csrf: getValidCsrf(), email: 'kb-status@example.com', password: 'password123' });
+    mockPool.query.mockResolvedValueOnce({ rows: [] });
+    const res = await agent
+      .post('/api/support/chat')
+      .set('x-csrf-token', getValidCsrf())
+      .send({ message: 'How much does it cost?' });
+    expect(res.status).toBe(200);
+    const lookup = mockPool.query.mock.calls.map(([sql]: [unknown]) => String(sql)).find((sql: string) => /FROM support_kb/.test(sql));
+    expect(lookup).toMatch(/FROM support_kb WHERE status = 'approved' ORDER BY/);
+  });
+
   it('skips cache when conversation has history', async () => {
     const agent = await makeAuthenticatedAgent();
     const csrf = getValidCsrf();

@@ -307,12 +307,21 @@
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" id="fix-csrf" />
       <input type="hidden" name="force_new" value="" id="fix-force-new" />
 
+      <%# The analysis is model output over a build log that can carry text a
+          visitor wrote, so it is shown for the admin to read and copy from and is
+          never the form's text: the description starts empty. %>
+      <% var fixSuggestion = (build.ai_analysis && build.ai_analysis.fix_summary) ? String(build.ai_analysis.fix_summary) : ''; %>
+      <div id="queue-fix-suggestion-panel" class="mb-3" <%- fixSuggestion ? '' : 'style="display:none"' %>>
+        <div class="text-xs text-subtle mb-1">Suggested by the analysis (model output over the build log; copy into the description only what you have checked)</div>
+        <div id="queue-fix-suggestion" class="bg-black rounded-[8px] px-3 py-2 text-sm text-gray-200 whitespace-pre-wrap"><%= fixSuggestion %></div>
+      </div>
+
       <label class="block text-xs text-subtle mb-1" for="rebuild_request">Fix description (sent to build pipeline)</label>
       <textarea id="rebuild_request" name="rebuild_request" rows="4"
                 class="w-full bg-bg text-gray-100 border border-border rounded-md px-3 py-2 text-sm mb-3"
                 placeholder="Describe what the pipeline should fix..."
                 data-no-submit-guard
-                required minlength="1"><% if (build.ai_analysis && build.ai_analysis.fix_summary) { %><%= build.ai_analysis.fix_summary %><% } %></textarea>
+                required minlength="1"></textarea>
 
       <div class="text-xs text-subtle mb-3" id="action-description">
         <% if (defaultAction === 'reset') { %>
@@ -490,12 +499,16 @@
     resultEl.style.display = '';
   }
 
+  // The fix summary is shown as text beside the form, never put into it: the
+  // description the pipeline receives is what the admin types (see the panel).
   function showQueueFixPanel(analysis) {
     var panel = document.getElementById('queue-fix-panel');
     if (panel) panel.style.display = '';
-    var textarea = document.getElementById('rebuild_request');
-    if (textarea && !textarea.value.trim() && analysis && analysis.fix_summary) {
-      textarea.value = analysis.fix_summary;
+    var suggestionPanel = document.getElementById('queue-fix-suggestion-panel');
+    var suggestion = document.getElementById('queue-fix-suggestion');
+    if (suggestion && analysis && analysis.fix_summary) {
+      suggestion.textContent = String(analysis.fix_summary);
+      if (suggestionPanel) suggestionPanel.style.display = '';
     }
   }
 

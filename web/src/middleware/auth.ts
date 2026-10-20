@@ -6,6 +6,11 @@ declare module 'express-session' {
   interface SessionData {
     /** Epoch milliseconds at which this session was authenticated (login or email verification). */
     authenticatedAt: number;
+    /**
+     * Written when a page is rendered, so that the session (and the CSRF
+     * tokens bound to it) outlives the page: see keepSessionForRenderedPage.
+     */
+    csrfBound: boolean;
   }
 }
 
@@ -30,9 +35,32 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
 export const SESSION_ABSOLUTE_MAX_MS = 30 * 24 * 60 * 60 * 1000;
 
+/**
+ * The name a cookie of this application carries in this environment. Outside
+ * development and test every cookie it sets is Secure, has Path=/ and no
+ * Domain, so it takes the `__Host-` prefix: a browser then accepts that name
+ * only from this host over HTTPS, never from a sibling subdomain setting
+ * `Domain=` and never over plain HTTP. Development and test keep the bare
+ * name, because there the cookie is not Secure (plain http://localhost) and a
+ * browser refuses a `__Host-` cookie that is not. Read once, at import, like
+ * the cookie's Secure flag in app.ts.
+ */
+export function hostOnlyCookieName(name: string, env: Record<string, string | undefined> = process.env): string {
+  return isDevOrTestEnv(env) ? name : `__Host-${name}`;
+}
+
 /** The session cookie's name and its rolling idle timeout (the cookie's Max-Age). app.ts builds the session from these, and the privacy page prints them. */
-export const SESSION_COOKIE_NAME = 'cas.sid';
+export const SESSION_COOKIE_NAME = hostOnlyCookieName('cas.sid');
 export const SESSION_IDLE_TIMEOUT_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The session cookie's attributes, for app.ts (which adds the Max-Age) and for
+ * the routes that clear the cookie: a browser ignores an attempt to clear a
+ * `__Host-` cookie that does not repeat Secure and Path=/.
+ */
+export function sessionCookieAttributes(): { httpOnly: true; secure: boolean; sameSite: 'lax'; path: '/' } {
+  return { httpOnly: true, secure: !isDevOrTestEnv(), sameSite: 'lax', path: '/' };
+}
 
 export function isSessionPastAbsoluteLifetime(
   session: { customerId?: string; authenticatedAt?: number } | undefined,
@@ -334,18 +362,72 @@ export function safeReturnTo(raw: unknown): string | null {
 //    This is the layer that actually stops a forged cross-site request, and it
 //    covers every route, including the JSON ones.
 //
-// 2. A stateless HMAC token: `nonce.hmac` where hmac = HMAC-SHA256(nonce,
-//    SESSION_SECRET). It needs no session storage and stays valid until the
-//    secret changes. It is NOT bound to a session or a user: anyone who can
-//    load a page can obtain a valid token, so on its own it only proves "this
-//    request came from something that read one of our pages". Treat it as a
-//    second factor behind layer 1 and the SameSite=Lax session cookie, not as
-//    the primary defense.
+// 2. A token bound to the session: `nonce.tag.mac`, where tag is the first 32
+//    hex characters of HMAC-SHA256(SESSION_SECRET, "csrf-session|" + session
+//    id) and mac = HMAC-SHA256(SESSION_SECRET, nonce + "|" + tag). It needs no
+//    storage of its own and stays valid until the secret changes or the
+//    session ends. validateCsrfToken accepts it only from the session it was
+//    issued in, so a token read from one browser's page (an attacker's own,
+//    for instance) is refused from every other browser: a forged login
+//    (login CSRF) fails here even where layer 1 cannot see where the request
+//    came from. For that to work for a visitor who is not logged in, the
+//    session has to outlive the page, so rendering a page keeps it
+//    (keepSessionForRenderedPage). The tag travels in the token so that
+//    verifyHmacToken(token), which a few JSON routes call without the request,
+//    can still check that this application issued the token.
+//
+//    A token minted with no session id at all (tag NO_SESSION_TAG) is accepted
+//    from any session. Every request that reaches a route has passed the
+//    session middleware and has an id, so the application never issues one;
+//    only code that calls generateCsrfToken outside a request (the unit tests)
+//    does.
 
-export function generateCsrfToken(_req: Request): string {
+/** The tag of a token minted with no session id (see above). */
+const NO_SESSION_TAG = 'nosession';
+
+function csrfSessionTag(sessionId: string): string {
+  return crypto.createHmac('sha256', getSessionSecret()).update(`csrf-session|${sessionId}`).digest('hex').slice(0, 32);
+}
+
+function csrfTokenMac(nonce: string, tag: string): string {
+  return crypto.createHmac('sha256', getSessionSecret()).update(`${nonce}|${tag}`).digest('hex');
+}
+
+/** The request's session id, or null when it has none (no session middleware ran). */
+function sessionIdOf(req: Request | undefined): string | null {
+  const id = (req as { sessionID?: unknown } | undefined)?.sessionID;
+  return typeof id === 'string' && id !== '' ? id : null;
+}
+
+const sessionKeptForRender = new WeakSet<Response>();
+
+/**
+ * A token is good only in the session it names, so that session has to
+ * outlive the page that carries the token. express-session (saveUninitialized
+ * false) stores a session, and sets its cookie, only once something is written
+ * to it, and for a visitor who is not logged in usually nothing is. So the
+ * response's render is wrapped: rendering a page writes `csrfBound` to the
+ * session first, which stores it and sets the cookie. A response that renders
+ * nothing (a webhook, a health check, a JSON answer, a redirect) leaves no
+ * session behind.
+ */
+function keepSessionForRenderedPage(req: Request): void {
+  const res = (req as { res?: Response }).res;
+  if (!res || typeof res.render !== 'function' || sessionKeptForRender.has(res)) return;
+  sessionKeptForRender.add(res);
+  const render = res.render as (...args: unknown[]) => void;
+  res.render = function renderKeepingSession(this: Response, ...args: unknown[]): void {
+    if (req.session && req.session.csrfBound !== true) req.session.csrfBound = true;
+    render.apply(this, args);
+  } as Response['render'];
+}
+
+export function generateCsrfToken(req: Request): string {
   const nonce = crypto.randomBytes(16).toString('hex');
-  const mac = crypto.createHmac('sha256', getSessionSecret()).update(nonce).digest('hex');
-  return `${nonce}.${mac}`;
+  const sessionId = sessionIdOf(req);
+  const tag = sessionId ? csrfSessionTag(sessionId) : NO_SESSION_TAG;
+  if (sessionId) keepSessionForRenderedPage(req);
+  return `${nonce}.${tag}.${csrfTokenMac(nonce, tag)}`;
 }
 
 export function validateCsrfToken(req: Request, res: Response, next: NextFunction): void {
@@ -353,7 +435,7 @@ export function validateCsrfToken(req: Request, res: Response, next: NextFunctio
   const headerToken = req.headers['x-csrf-token'] as unknown;
   const submittedToken = bodyToken || headerToken;
 
-  if (typeof submittedToken !== 'string' || !verifyToken(submittedToken)) {
+  if (typeof submittedToken !== 'string' || !verifyToken(submittedToken, req)) {
     // A script (the x-csrf-token header, a JSON body, a JSON route) expects
     // JSON, not the HTML page: the one rule is isJsonRequest.
     if (isJsonRequest(req)) {
@@ -369,25 +451,31 @@ export function validateCsrfToken(req: Request, res: Response, next: NextFunctio
   next();
 }
 
-export function verifyHmacToken(token: unknown): boolean {
-  return typeof token === 'string' && verifyToken(token);
+/**
+ * True when this application issued the token. Given the request, also that it
+ * was issued in the request's session (what validateCsrfToken checks); without
+ * it, only the first, so pass the request wherever there is one.
+ */
+export function verifyHmacToken(token: unknown, req?: Request): boolean {
+  return typeof token === 'string' && verifyToken(token, req);
 }
 
-function verifyToken(token: string): boolean {
-  const dot = token.lastIndexOf('.');
-  if (dot === -1) return false;
-  const nonce = token.slice(0, dot);
-  const mac = token.slice(dot + 1);
-  if (!nonce || !mac) return false;
-  const expected = crypto.createHmac('sha256', getSessionSecret()).update(nonce).digest('hex');
+function verifyToken(token: string, req?: Request): boolean {
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  const [nonce, tag, mac] = parts;
+  if (!nonce || !tag || !mac) return false;
   // Constant-time comparison to prevent timing attacks. Buffer.from(hex)
   // silently truncates at the first non-hex character, so a malformed mac
   // yields a shorter buffer and timingSafeEqual throws: treat that as invalid.
   try {
-    return crypto.timingSafeEqual(Buffer.from(mac, 'hex'), Buffer.from(expected, 'hex'));
+    if (!crypto.timingSafeEqual(Buffer.from(mac, 'hex'), Buffer.from(csrfTokenMac(nonce, tag), 'hex'))) return false;
   } catch {
     return false;
   }
+  if (!req || tag === NO_SESSION_TAG) return true;
+  const sessionId = sessionIdOf(req);
+  return sessionId !== null && timingSafeEqualStrings(tag, csrfSessionTag(sessionId));
 }
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);

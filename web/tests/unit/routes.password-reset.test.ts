@@ -101,12 +101,11 @@ describe('POST /forgot-password', () => {
   });
 
   it('creates a token in DB, fires email, and returns neutral message for a valid email', async () => {
-    // DB finds the customer
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'cust-1', name: 'Alice' }] });
-    // INSERT token
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    // The one statement found the (verified) account and inserted a token.
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: 'Alice', email_verified: true }] });
 
     const { sendPasswordResetEmail } = await import('../../src/services/email');
+    (sendPasswordResetEmail as ReturnType<typeof vi.fn>).mockClear();
 
     const csrf = getValidCsrf();
     const res = await request(app)
@@ -117,14 +116,13 @@ describe('POST /forgot-password', () => {
     expect(res.status).toBe(200);
     expect(res.text).toContain('check your inbox');
 
-    // Token was inserted
-    expect(mockQuery).toHaveBeenCalledTimes(2);
-    const insertCall = mockQuery.mock.calls[1];
+    // Token was inserted, by the one statement
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    const insertCall = mockQuery.mock.calls[0];
     expect(insertCall[0]).toContain('INSERT INTO password_reset_tokens');
 
-    // Email was scheduled (fire-and-forget, but the mock is called)
-    // We allow a small tick for the fire-and-forget promise to schedule
-    await new Promise(r => setTimeout(r, 10));
+    // The mail starts once the response has gone out.
+    await vi.waitFor(() => expect(sendPasswordResetEmail).toHaveBeenCalledTimes(1));
     expect(sendPasswordResetEmail).toHaveBeenCalledWith(
       'alice@example.com',
       'Alice',
@@ -138,15 +136,61 @@ describe('POST /forgot-password', () => {
     expect(res.text).not.toContain('receive the email?');
   });
 
+  it('greets an unverified account by no name: whoever created the row typed it', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: 'URGENT: pay at evil.example', email_verified: false }] });
+    const { sendPasswordResetEmail } = await import('../../src/services/email');
+    (sendPasswordResetEmail as ReturnType<typeof vi.fn>).mockClear();
+
+    await request(app).post('/forgot-password').type('form').send({ _csrf: getValidCsrf(), email: 'alice@example.com' });
+
+    await vi.waitFor(() => expect(sendPasswordResetEmail).toHaveBeenCalledTimes(1));
+    expect((sendPasswordResetEmail as ReturnType<typeof vi.fn>).mock.calls[0][1]).toBeNull();
+  });
+
+  it('runs the same one statement for a known address and an unknown one, and mails only after the response', async () => {
+    const { sendPasswordResetEmail } = await import('../../src/services/email');
+    const sequences: unknown[][] = [];
+    // The order in which the page was rendered and the mail was started.
+    const events: string[] = [];
+    const render = app.render.bind(app);
+    const renderSpy = vi.spyOn(app, 'render').mockImplementation(((...args: Parameters<typeof app.render>) => {
+      events.push('render');
+      return render(...args);
+    }) as typeof app.render);
+    try {
+      for (const answer of [[{ name: 'Alice', email_verified: true }], []]) {
+        mockQuery.mockReset();
+        mockQuery.mockResolvedValueOnce({ rows: answer });
+        (sendPasswordResetEmail as ReturnType<typeof vi.fn>).mockClear();
+        (sendPasswordResetEmail as ReturnType<typeof vi.fn>).mockImplementationOnce(async () => {
+          events.push('mail');
+        });
+        const res = await request(app).post('/forgot-password').type('form').send({ _csrf: getValidCsrf(), email: 'someone@example.com' });
+        expect(res.status).toBe(200);
+        sequences.push(mockQuery.mock.calls.map(([sql, params]) => [sql, (params as unknown[]).length, (params as unknown[])[0]]));
+      }
+      await vi.waitFor(() => expect(events).toContain('mail'));
+    } finally {
+      renderSpy.mockRestore();
+    }
+    // Known address: the page (the view, then the layout), then the mail. Unknown: the page only.
+    expect(events.join(',')).toMatch(/^(render,)+mail(,render)+$/);
+    expect(sequences[0]).toHaveLength(1);
+    expect(sequences[1]).toEqual(sequences[0]);
+    const sql = String((sequences[0][0] as unknown[])[0]);
+    // It inserts only for an address that has an account, and returns the account only then.
+    expect(sql).toMatch(/target AS \(\s*SELECT id, name, email_verified FROM customers WHERE email = \$1\s*\)/);
+    expect(sql).toMatch(/INSERT INTO password_reset_tokens \(customer_id, token\)\s+SELECT id, \$2 FROM target/);
+  });
+
   it('answers an existing account and an unknown one with the same page', async () => {
     // Strip the per-request values (CSRF tokens, CSP nonce) and compare.
     const normalize = (html: string): string =>
       html
-        .replace(/[0-9a-f]{32}\.[0-9a-f]{64}/g, 'CSRF')
+        .replace(/[0-9a-f]{32}\.(?:[0-9a-f]{32}|nosession)\.[0-9a-f]{64}/g, 'CSRF')
         .replace(/nonce="[^"]*"/g, 'nonce=""');
 
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'cust-1', name: 'Alice' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: 'Alice', email_verified: true }] });
     const known = await request(app)
       .post('/forgot-password')
       .type('form')
@@ -215,20 +259,19 @@ describe('POST /forgot-password', () => {
   });
 
   it('prunes long-expired tokens in the same statement that issues a new one', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'cust-1', name: 'Alice' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: 'Alice', email_verified: true }] });
 
     await request(app)
       .post('/forgot-password')
       .type('form')
       .send({ _csrf: getValidCsrf(), email: 'alice@example.com' });
 
-    const sql = mockQuery.mock.calls[1][0] as string;
+    const sql = mockQuery.mock.calls[0][0] as string;
     expect(sql).toContain('DELETE FROM password_reset_tokens');
     expect(sql).toContain("expires_at < NOW() - INTERVAL '1 day'");
     expect(sql).toContain('INSERT INTO password_reset_tokens');
     // The raw token is never stored: the parameter is its SHA-256 hex digest.
-    expect(mockQuery.mock.calls[1][1][1]).toMatch(/^[0-9a-f]{64}$/);
+    expect(mockQuery.mock.calls[0][1][1]).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('does not crash on a non-string email field', async () => {
@@ -477,16 +520,34 @@ describe('GET /unsubscribe', () => {
     expect(res.text).toContain('invalid');
   });
 
-  it('marks customer unsubscribed and renders confirmation on valid token with email', async () => {
-    // Direct lookup: email + token provided, HMAC verified, single indexed query.
+  it('opening a valid link changes nothing: it shows a page whose button posts the link back', async () => {
     // Our mock of generateUnsubscribeToken returns `hmac-token-for-${email}`.
+    const res = await request(app).get('/unsubscribe?token=hmac-token-for-alice%40example.com&email=alice%40example.com');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Unsubscribe?');
+    expect(res.text).toContain('<form action="/unsubscribe" method="POST">');
+    expect(res.text).toContain('name="email" value="alice@example.com"');
+    expect(res.text).toContain('name="token" value="hmac-token-for-alice@example.com"');
+    expect(res.headers['cache-control']).toBe('no-store');
+    // Nothing is read or written by opening it.
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('marks customer unsubscribed and renders confirmation when the page\'s button is pressed', async () => {
+    const agent = request.agent(app);
+    const page = await agent.get('/unsubscribe?token=hmac-token-for-alice%40example.com&email=alice%40example.com');
+    const csrf = (page.text.match(/name="_csrf" value="([^"]+)"/) || [])[1];
+    // Direct lookup: email + token provided, HMAC verified, single indexed query.
     mockQuery.mockResolvedValueOnce({
       rows: [{ id: 'cust-1' }],
     });
     // UPDATE customers SET email_unsubscribed
     mockQuery.mockResolvedValueOnce({ rows: [] });
 
-    const res = await request(app).get('/unsubscribe?token=hmac-token-for-alice%40example.com&email=alice%40example.com');
+    const res = await agent
+      .post('/unsubscribe')
+      .type('form')
+      .send({ _csrf: csrf, email: 'alice@example.com', token: 'hmac-token-for-alice@example.com' });
     expect(res.status).toBe(200);
 
     // The UPDATE query was called
@@ -495,7 +556,24 @@ describe('GET /unsubscribe', () => {
     expect(updateCall[1][0]).toBe('cust-1');
 
     // Page shows confirmation
+    expect(res.text).toContain('off the list');
     expect(res.text).not.toContain('invalid');
+  });
+
+  it('POST /unsubscribe needs the page\'s CSRF token, and a link whose HMAC does not match changes nothing', async () => {
+    const noToken = await request(app)
+      .post('/unsubscribe')
+      .type('form')
+      .send({ email: 'alice@example.com', token: 'hmac-token-for-alice@example.com' });
+    expect(noToken.status).toBe(403);
+
+    const forged = await request(app)
+      .post('/unsubscribe')
+      .type('form')
+      .send({ _csrf: getValidCsrf(), email: 'alice@example.com', token: 'hmac-token-for-bob@example.com' });
+    expect(forged.status).toBe(200);
+    expect(forged.text).toContain('invalid');
+    expect(mockQuery).not.toHaveBeenCalled();
   });
 
   it('returns error when token provided without email', async () => {
