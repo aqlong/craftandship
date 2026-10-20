@@ -278,7 +278,7 @@ Sends build lifecycle emails via Resend REST API. The module defines `send_previ
 - `send_review_pending()`: notifies admin when a build reaches preview and needs SE review; includes deep link to `/admin/reviews/:buildId`. `_process_job` sends it after `_set_preview_status` moved the build, so once per arrival at preview (again after every rebuild), never for a duplicate call that matched no row, and not at all when `CAS_HARBOR_AUTO_REVIEW=true`.
 - The build-queued, review-ready and review-changes-requested emails are sent by the web tier (`sendBuildQueuedEmail`, `sendReviewReadyEmail`, `sendReviewChangesRequestedEmail` in `web/src/services/email.ts`), not by this module.
 
-`_send` checks unsubscribe status (skipped for internal mail to the admin) and logs every attempt to the `email_log` table; with no `RESEND_API_KEY` the attempt is logged as `skipped`. Unlike the web tier's `sendEmail()`, this module does not redact `token=` values from the stored HTML.
+`_send` checks unsubscribe status (skipped for internal mail to the admin) and logs every attempt to the `email_log` table; with no `RESEND_API_KEY` the attempt is logged as `skipped`. Before it stores the HTML, `_log_email` redacts token values with `_redact_secret_params`, a port of the web tier's `redactSecretParams` (`test_the_redaction_is_the_web_apps` in `tests/test_mailer.py` compares the two on one corpus), so the stored body of the preview-ready email holds `/magic?token=[redacted]`. The login link itself is not written to `build_logs`: `_announce_preview` writes `LOGIN_LINK_EMAILED_LOG_LINE`, which says the link is in the email.
 
 ---
 

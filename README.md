@@ -24,7 +24,7 @@ I'm Ocean Longnion ([LinkedIn](https://www.linkedin.com/in/aaronlongnion)). I ha
 - **What to build, and for whom.** I chose the audience and kept simplifying toward it. In April 2026 the product became one companion, one subscription and one price, sliding from $39 to $19 a month.
 - **When to take the model out.** When model-written apps kept coming back with the same classes of bug, I removed the model from the build path entirely (the v2 engine, decided 20 April 2026).
 - **How much to automate.** Early on I reviewed much of the agent's code myself, and found it accurate and trustworthy as long as I had it review and revise its own work several times. That became the rule, and autonomy grew as it was earned: self-healing, and in June 2026 an automated review mode. The limits came after a background agent with write access deleted production in April 2026.
-- **Proof, not claims.** I had the agent review, test and audit its own work throughout (code, security, accessibility, UX), and before publishing I ran six adversarial review rounds with fresh-context reviewers.
+- **Proof, not claims.** I had the agent review, test and audit its own work throughout (code, security, accessibility, UX), and before publishing I ran six adversarial review rounds with fresh-context reviewers. After publishing I had a deep security review run on the public code and its findings fixed with tests ([what it found](docs/PRE_RELEASE_REVIEW.md#found-by-the-security-review-after-publication)).
 - **Taste.** Once the agent's code had earned that trust, I reviewed outcomes in the browser more than diffs: how it looked, how simple it was for its users, how the flow felt. When the interface looked AI-made, I redesigned the graphics and UI with Claude Design for the spa and wellness community, and had real customers give feedback on it.
 - **The rules.** I had the agent analyze how I worked with it and what the code needed, then write and maintain its own working agreement, [CLAUDE.md](CLAUDE.md).
 
@@ -50,9 +50,9 @@ What I did not do: review every diff, or write the planning documents (the agent
 
 Much of the hardening came from the adversarial review I ran after the wind-down, so each item says whether it ran in production or came from that review.
 
-1. [compose/build.py](compose/build.py), at [`_spec_safety_errors`](compose/build.py#L857) and [`_safe_output_path`](compose/build.py#L11902): a code generator that treats its input as hostile, and [compose/tests/test_spec_hardening.py](compose/tests/test_spec_hardening.py), which feeds it hostile specs and compiles what comes out. *Added in review; as it ran, the engine trusted its spec.*
-2. [queue/worker_pg.py](queue/worker_pg.py), at [`_claim_next_job`](queue/worker_pg.py#L615), [`_set_status`](queue/worker_pg.py#L1286) and [`_fail_build`](queue/worker_pg.py#L5728): Postgres as a job queue and a status machine made of guarded `UPDATE` statements. [tests/test_worker_pg_realdb.py](tests/test_worker_pg_realdb.py) runs that SQL on a real database. *The queue ran in production; the forward-only status machine, the attempt token and the real-database tests were added in review.*
-3. [web/src/middleware/auth.ts](web/src/middleware/auth.ts): session secret resolution, CSRF, the cross-origin write guard, and the single definition of "admin". *The CSRF token ran in production; the other three were added in review.*
+1. [compose/build.py](compose/build.py), at [`_spec_safety_errors`](compose/build.py#L863) and [`_safe_output_path`](compose/build.py#L12010): a code generator that treats its input as hostile, and [compose/tests/test_spec_hardening.py](compose/tests/test_spec_hardening.py), which feeds it hostile specs and compiles what comes out. *Added in review; as it ran, the engine trusted its spec.*
+2. [queue/worker_pg.py](queue/worker_pg.py), at [`_claim_next_job`](queue/worker_pg.py#L615), [`_set_status`](queue/worker_pg.py#L1286) and [`_fail_build`](queue/worker_pg.py#L5741): Postgres as a job queue and a status machine made of guarded `UPDATE` statements. [tests/test_worker_pg_realdb.py](tests/test_worker_pg_realdb.py) runs that SQL on a real database. *The queue ran in production; the forward-only status machine, the attempt token and the real-database tests were added in review.*
+3. [web/src/middleware/auth.ts](web/src/middleware/auth.ts): session secret resolution, CSRF, the cross-origin write guard, and the single definition of "admin". *The CSRF token ran in production, unbound to a session (the security review after publication bound it); the other three were added in review.*
 4. [web/src/companion/runtime.ts](web/src/companion/runtime.ts): one conversation turn, in the order that matters: a local crisis scan, cost caps, an input rail, the model call, an output rail. *The rails and the per-person cap ran in production; putting the crisis scan ahead of everything else, and the shared cap, were added in review.* The scan is a list of regular expressions, not a clinical safeguard. Measured only on phrasings a language model wrote, none from real conversations: 39 of 40 plain disclosures in a set held back until the patterns were final, and 79% and 70% of two earlier sets, the second written to be indirect ([measured limits](docs/KNOWN_LIMITATIONS.md#harbor-companion)).
 5. [coordinator/actuators.py](coordinator/actuators.py): the permission table that automation has to act through. *The table ran in production; the review made it the path for every write, send and model call of the coordinator's agents (the legacy ops agent, which runs only when the coordinator is off, has no permission table) and made it fail closed.*
 6. [compose/data/](compose/data/archetypes.json), the decision files the v2 engine composes sites from. *As they ran, apart from comments and sample names.* The decision record for replacing v1 is [docs/internals/CAS_V2_STATIC_COMPOSE_PLAN.md](docs/internals/CAS_V2_STATIC_COMPOSE_PLAN.md); [docs/internals/MW_BUG_RECURRENCE_RCA.md](docs/internals/MW_BUG_RECURRENCE_RCA.md) documents the recurring v1 bugs.
@@ -119,7 +119,7 @@ What to try, from a second terminal or a browser:
 
 - `http://localhost:4000/health` answers `{"status":"ok", ...}` with `"db":"connected"`.
 - The public site at `/` and the companion page at `/lighthouse/table`.
-- **Sign up at `/signup`.** With no mail provider, the server prints the verification link to its console (`[dev] Email is not configured. Verification link: ...`). Open it in the browser you signed up in: you land on the companion page, logged in.
+- **Sign up at `/signup`.** With no mail provider, the server prints the verification link to its console (`[dev] Email is not configured. Verification link: ...`). Open it in the browser you signed up in and press the button on the page it shows: you land on the companion page, logged in.
 - **Admin pages:** the example environment sets `ADMIN_EMAIL=admin@example.com`. Sign up with that address and open `/admin/builds`. To use your own account instead, set `ADMIN_EMAIL` in `web/.env` to its address (lower case), restart, and log in again.
 
 ![The admin build list, running locally on the browser suite's seed data; a fresh quickstart shows an empty list](docs/images/admin-builds.png)
@@ -167,7 +167,7 @@ createdb craftandship_integration
 cd web
 CAS_SCHEMA_TEST_DATABASE_URL=postgresql://localhost:5432/craftandship_integration \
 CAS_WORKER_PYTHON=../.venv/bin/python \
-  npx vitest run --no-file-parallelism tests/unit/schema.idempotency.test.ts tests/unit/money-path.realdb.test.ts tests/unit/crisis-phrasing.realdb.test.ts
+  npx vitest run --no-file-parallelism tests/unit/schema.idempotency.test.ts tests/unit/*.realdb.test.ts
 ```
 
 ```bash
@@ -190,18 +190,18 @@ Measured on this commit on macOS with Node 25 and Python 3.12 (CI runs Node 24 a
 
 | Suite | Result |
 |---|---|
-| Hostile specs through the build engine ([test_spec_hardening.py](compose/tests/test_spec_hardening.py)) | 305 passed |
-| Worker SQL on a real Postgres ([test_worker_pg_realdb.py](tests/test_worker_pg_realdb.py), [test_worker_lifecycle_realdb.py](tests/test_worker_lifecycle_realdb.py)) | 180 passed |
-| Web integration on a real Postgres (the third block above) | 449 passed |
+| Hostile specs through the build engine ([test_spec_hardening.py](compose/tests/test_spec_hardening.py)) | 307 passed |
+| Worker SQL on a real Postgres ([test_worker_pg_realdb.py](tests/test_worker_pg_realdb.py), [test_worker_lifecycle_realdb.py](tests/test_worker_lifecycle_realdb.py)) | 181 passed |
+| Web integration on a real Postgres (the third block above) | 500 passed |
 
 The first two rows are `python3 -m pytest` on the files they name, from the repository root. And the full runs (the web unit run leaves out its real-Postgres files, and the two Python runs differ in scope):
 
 | Suite | Result |
 |---|---|
-| Web unit (Vitest, database mocked) | 131 files passed, 4 skipped; 4297 tests passed, 189 skipped |
-| Python, default | 8276 passed, 119 skipped, 4 xfailed |
-| Python, v1 mode | 7635 passed, 25 skipped, 6 xfailed |
-| Browser (Playwright) | 45 passed, 8 skipped |
+| Web unit (Vitest, database mocked) | 136 files passed, 6 skipped; 4401 tests passed, 223 skipped |
+| Python, default | 8328 passed, 120 skipped, 4 xfailed |
+| Python, v1 mode | 7669 passed, 25 skipped, 6 xfailed |
+| Browser (Playwright) | 48 passed, 8 skipped |
 
 Why tests skip ([tests/README.md](tests/README.md) has the detail):
 
@@ -209,7 +209,7 @@ Why tests skip ([tests/README.md](tests/README.md) has the detail):
 - **Python, default:** the tests that boot a generated site need a sample site built first (two commands; CI runs them), and one end-to-end module is opt-in.
 - **Browser:** the skipped specs need fixtures the block above does not set (an admin login, a reset token, and the variables of the keyboard and screen-reader specs).
 
-Statement coverage of the web app under the unit suite is 88% (85% of branches), measured with the database mocked (`cd web && npx vitest run --coverage`); the two files that only start the process (`src/server.ts`, `src/db/index.ts`) are left out of the denominator.
+Statement coverage of the web app under the unit suite is 88.7% (85.6% of branches), measured with the database mocked (`cd web && npx vitest run --coverage`); the two files that only start the process (`src/server.ts`, `src/db/index.ts`) are left out of the denominator.
 <!-- results:end -->
 
 CI ([test.yml](.github/workflows/test.yml)) runs all of the above on Linux, plus a job that performs Option A on a clean runner and requests the home page, a job that builds the worker's Docker image and checks that its `pg_dump` can dump the database version the platform provisions, a gitleaks scan, and an advisory dependency audit. CI's first run on the release commit (`6144c8f`, 12 October 2026) passed all seven jobs ([the run](https://github.com/aqlong/craftandship/actions/runs/38287911118)). That includes the worker image: it was built and its `pg_dump` checked, though it was never run as a worker. [The review](docs/PRE_RELEASE_REVIEW.md) says what else was not run.

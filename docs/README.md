@@ -8,7 +8,7 @@ The numeric prefixes on a few files (`02_`, `06_`, `08_`, `15_`) come from an ea
 
 - [DECISIONS.md](DECISIONS.md): the calls the author made as the agent's director, with what each cost.
 - [WHAT_RAN_AND_WHAT_CHANGED.md](WHAT_RAN_AND_WHAT_CHANGED.md): the engineering highlights, split into what ran in production and what the pre-release review added, and what the guarantees do not cover.
-- [PRE_RELEASE_REVIEW.md](PRE_RELEASE_REVIEW.md): how the code was reviewed before this publication, what was found and changed, and what was not verified.
+- [PRE_RELEASE_REVIEW.md](PRE_RELEASE_REVIEW.md): how the code was reviewed before this publication, and by the security review after it, what was found and changed, and what was not verified.
 - [THREAT_MODEL.md](THREAT_MODEL.md): what the code defends against, control by control, with the file and the test for each, and the switches that weaken it.
 - [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md): what it does not defend against, grouped by area.
 - [GLOSSARY.md](GLOSSARY.md): the product's vocabulary (Harbor, Haven, keeper, lamp, spec, archetype).

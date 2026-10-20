@@ -4,7 +4,7 @@
 
 Craft & Ship sends email via the [Resend](https://resend.com) REST API using Node's built-in `fetch` (Node 18+). Web-tier mail goes through one function, `sendEmail()` in `web/src/services/email.ts`, and every attempt it makes, successful or not, is written to the `email_log` database table so the email can be audited, previewed, and debugged from the admin panel.
 
-Two kinds of sender do not use `sendEmail()` or this log's redaction: the contact form (`POST /contact` in `web/src/app.ts` posts straight to Resend, to `ADMIN_EMAIL` only, and writes no `email_log` row; the page confirms with "Thank you" only when Resend answers 2xx, a provider error or network failure re-renders the form with the typed values and an error at HTTP 502, and a missing `RESEND_API_KEY` or `ADMIN_EMAIL` does the same at HTTP 503, naming the two variables only in development or test), and the Python services (`queue/mailer.py` for build lifecycle mail, which does check unsubscribe status and log to `email_log` but does not redact tokens; `coordinator/actuators.py`, `monitor/diagnose.py` and `ops/alerter.py` for operator alerts).
+Two kinds of sender do not use `sendEmail()` or this log's redaction: the contact form (`POST /contact` in `web/src/app.ts` posts straight to Resend, to `ADMIN_EMAIL` only, and writes no `email_log` row; the page confirms with "Thank you" only when Resend answers 2xx, a provider error or network failure re-renders the form with the typed values and an error at HTTP 502, and a missing `RESEND_API_KEY` or `ADMIN_EMAIL` does the same at HTTP 503, naming the two variables only in development or test), and the Python services (`queue/mailer.py` for build lifecycle mail, which checks unsubscribe status and logs to `email_log` with token values redacted by its own port of the redaction, `_redact_secret_params`; `coordinator/actuators.py`, `monitor/diagnose.py` and `ops/alerter.py` for operator alerts).
 
 Key properties of every outbound email:
 - **From:** `Craft & Ship <noreply@craftandship.io>` (overridable via `RESEND_FROM_EMAIL`)
@@ -35,17 +35,17 @@ Each template has a named sender helper in `web/src/services/email.ts`. The temp
 
 | Template | Helper | Trigger | Transactional |
 |---|---|---|---|
-| `welcome` | `sendWelcomeEmail` | email verification succeeds (`GET /verify-email`) | no |
+| `welcome` | `sendWelcomeEmail` | email verification succeeds (`POST /verify-email`, from the page the link opens) | no |
 | `welcome_how_it_works`, `welcome_use_cases`, `welcome_beta_urgency` | `sendWelcome*Email` | the scheduled welcome sequence (`services/email-scheduler.ts`) | no |
-| `email_verification` | `sendVerificationEmail` | `POST /signup` (for an address with no account or an unverified one), `POST /resend-verification` | yes |
-| `password_reset` | `sendPasswordResetEmail` | `POST /forgot-password` for a known address | yes |
+| `email_verification` | `sendVerificationEmail` | `POST /signup` (for an address with no account or an unverified one), `POST /resend-verification`; at most one link per address per hour, whoever asks; greets "Hi there," with no name; sent after the response | yes |
+| `password_reset` | `sendPasswordResetEmail` | `POST /forgot-password` for a known address; greets by name only a verified account; sent after the response | yes |
 | `build_queued` | `sendBuildQueuedEmail` | a feature request is queued (`routes/features.ts`); the Stripe webhook no longer sends it | no |
 | `preview_ready` | `sendPreviewReadyEmail` | the optional `POST /webhooks/build-status` hook with `status: 'preview'` and a `preview_url` (or the older `live_url`); the bundled worker does not call that hook and sends its own mail (`send_preview_ready` in `queue/mailer.py`) | no |
 | `app_live` | `sendAppLiveEmail` | the build becomes live through `POST /builds/:buildId/approve`, which mails the build's owner even when the admin approves; the `build-status` hook rejects `live` with a 400 and sends nothing | no |
 | `build_failed` | `sendBuildFailedEmail` | the optional `POST /webhooks/build-status` hook with `status: 'failed'` (a call that matches no build in an allowed prior status sends nothing); the bundled worker sends its own mail (`send_build_failed` in `queue/mailer.py`) | no |
 | `review_ready`, `review_changes_requested` | `sendReviewReadyEmail`, `sendReviewChangesRequestedEmail` | the reviewer's decision at `/admin/reviews` | no |
 | `harbor_made_public` | `sendHarborMadePublicEmail` | the make-public Stripe webhook (`handleHarborMakePublic` in `routes/webhooks.ts`); sent after the event's transaction commits, so it is lost if the process dies between the commit and the send | no |
-| `harbor_payment_not_applied` | `sendPaymentNotAppliedEmail` | the make-public Stripe webhook, when a paid session cannot be applied (the account's keeper already has a subscription this payment may not replace, the trial is not the build's own, the build is not publishable, the build or the account cannot be found); sent after the event's transaction commits to `ADMIN_EMAIL` only, with the ids and no address, and it carries no unsubscribe link | yes |
+| `harbor_payment_not_applied` | `sendPaymentNotAppliedEmail` | the make-public Stripe webhook, when a paid session cannot be applied (the account's keeper already has a subscription this payment may not replace, the trial is not the build's own, the session was opened by no login of a verified account, the trial's dispatch did not create the account, the build is not publishable, the build or the account cannot be found; a recorded refusal is also listed on `/admin/harbor` under "Payments needing a person"); sent after the event's transaction commits to `ADMIN_EMAIL` only, with the ids and no address, and it carries no unsubscribe link | yes |
 | `harbor_live` | `sendHarborLiveEmail` | helper defined; no caller in this repository | no |
 | `abandon_nudge` | `sendAbandonNudgeEmail` | `services/abandon-check.ts` | no |
 | `post_build_check_in`, `post_build_testimonial` | `sendPostBuild*Email` | the scheduled post-build sequence | no |
@@ -88,8 +88,8 @@ The secret comes from `getSessionSecret()` in `web/src/middleware/auth.ts`, neve
 ## Unsubscribe Flow
 
 1. Every marketing and lifecycle email footer includes an absolute link: `{BASE_URL}/unsubscribe?email={email}&token={generateUnsubscribeToken(email)}` (the same URL is sent in the `List-Unsubscribe` header). Transactional emails carry no such link.
-2. `GET /unsubscribe?email=...&token=...` (`web/src/routes/auth.ts`) lower-cases the email, recomputes the HMAC, and compares it with the provided token using `timingSafeEqualStrings`; it then looks up a customer with that email whose `email_unsubscribed = FALSE`.
-3. On match, sets `email_unsubscribed = TRUE` on that customer row.
+2. `GET /unsubscribe?email=...&token=...` (`web/src/routes/auth.ts`) lower-cases the email, recomputes the HMAC, and compares it with the provided token using `timingSafeEqualStrings`, without reading the database. On a match it renders `views/unsubscribe.ejs` as a confirmation page ("Unsubscribe?") whose button posts the address and token back; opening the link changes nothing, so a mail scanner that fetches it does not unsubscribe anyone.
+3. `POST /unsubscribe` (CSRF-checked) repeats the HMAC check, looks up a customer with that email whose `email_unsubscribed = FALSE`, and on a match sets `email_unsubscribed = TRUE` on that row.
 4. Renders `views/unsubscribe.ejs` with a success message.
 5. Before every future send of a non-transactional template, `isUnsubscribed(email)` queries the `email_unsubscribed` column. If `TRUE`, the email is skipped and logged as `skipped` with `errorMessage = 'unsubscribed'`.
 
@@ -100,12 +100,12 @@ DB column: `customers.email_unsubscribed BOOLEAN DEFAULT FALSE`
 ## Password Reset Flow
 
 1. Customer visits `/forgot-password` and submits their email.
-2. `POST /forgot-password`: looks up the customer. Whether or not the email exists, the response is the same neutral message: "If that email exists, check your inbox for a reset link." This prevents user enumeration.
-3. If the customer exists: generates a 32-byte random hex token via `crypto.randomBytes(32).toString('hex')`, inserts its SHA-256 hash into `password_reset_tokens` with a 1-hour expiry (the same statement prunes tokens that expired more than a day ago), and fires `sendPasswordResetEmail` (fire-and-forget). A successful reset also deletes the customer's rows in `user_sessions`, so every existing login is invalidated.
+2. `POST /forgot-password`: whether or not the email exists, the response is the same neutral message: "If that email exists, check your inbox for a reset link." This prevents user enumeration.
+3. It generates a 32-byte random hex token via `crypto.randomBytes(32).toString('hex')` and runs one statement whatever the address (`ISSUE_PASSWORD_RESET_TOKEN_SQL`), which inserts its SHA-256 hash into `password_reset_tokens` with a 1-hour expiry only when there is an account (and prunes tokens that expired more than a day ago). When it inserted one, `sendPasswordResetEmail` starts after the response has been sent (`sendAfterResponse`). A successful reset also deletes the customer's rows in `user_sessions`, so every existing login is invalidated.
 4. Customer clicks the link in their email: `GET /reset-password?token=...`
 5. Server hashes the presented token and validates it: `WHERE token = $1 AND expires_at > NOW() AND used_at IS NULL`. Renders the form on success, or an error if invalid/expired.
 6. Customer submits new password (min 8 chars): `POST /reset-password`
-7. Server re-validates token, hashes the new password with bcrypt (12 rounds), and in one statement marks `password_reset_tokens.used_at = NOW()` (single-use), updates `customers.password` and sets `email_verified = TRUE`: a reset link went to the account's mailbox, so completing it proves the mailbox exactly as a verification link does. Outstanding reset and verification links for the account are then voided and the customer's sessions are deleted.
+7. Server re-validates token, hashes the new password with bcrypt (12 rounds), and in one statement marks `password_reset_tokens.used_at = NOW()` (single-use), updates `customers.password` and sets `email_verified = TRUE`: a reset link went to the account's mailbox, so completing it proves the mailbox exactly as a verification link does. On an account that was not verified it also replaces the name with the address's local part, because that name was typed by whoever created the row. Outstanding reset and verification links for the account are then voided and the customer's sessions are deleted.
 8. Renders a success confirmation. Customer can then log in with their new password.
 
 DB table: `password_reset_tokens (id, customer_id, token, expires_at, used_at)`
@@ -116,8 +116,8 @@ DB table: `password_reset_tokens (id, customer_id, token, expires_at, used_at)`
 
 Rule (the "Unverified accounts" comment block in `web/src/routes/auth.ts`): until the mailbox is proven, the password and name on an account are only a claim, and the claim that counts is the one made in the browser that proves the mailbox.
 
-1. `POST /signup` keeps what was typed (password hash and name) in that browser's server-side session. For an address with no account, or an unverified one, it also writes it to the row and voids verification links issued for earlier claims; a verified account is never touched. The response is the same in all three cases, and the address is held in the session, never in a redirect URL (`/verify-email-sent` ignores `?email=`).
-2. The 24-hour verification token is stored as a SHA-256 hash in `email_verification_tokens`. `GET /verify-email` spends the link, verifies the account and settles its password and name in one statement: to this browser's own claim when it has one for that address (the visitor is then logged in), otherwise to an unusable random password and a neutral name, and the visitor is sent to `/reset-password` to choose a password. Whatever an earlier claimant typed does not survive verification unless it was typed in the verifying browser.
+1. `POST /signup` keeps what was typed (password hash and name) in that browser's server-side session. For an address with no account it creates the row with them; an existing row, verified or not, is not written to, and no earlier link is voided. The response is the same in all three cases, and the address is held in the session, never in a redirect URL (`/verify-email-sent` ignores `?email=`).
+2. The 24-hour verification token is stored as a SHA-256 hash in `email_verification_tokens`. At most one is issued to an address per hour, from signup or resend, whoever asks (`ISSUE_VERIFICATION_TOKEN_SQL`). `GET /verify-email` spends nothing: it renders `views/verify-email.ejs`, whose button posts the token back. `POST /verify-email` spends the link, verifies the account and settles its password and name in one statement: to this browser's own claim when it has one for that address (the visitor is then logged in), otherwise to an unusable random password and a neutral name, and the visitor is sent to `/reset-password` to choose a password. Whatever an earlier claimant typed does not survive verification unless it was typed in the verifying browser.
 3. A correct password at `POST /login` for an unverified account records the same claim before the "verify first" page, so someone who signed up on one device can finish on another.
 4. The `welcome` email and the welcome sequence are scheduled when verification succeeds.
 

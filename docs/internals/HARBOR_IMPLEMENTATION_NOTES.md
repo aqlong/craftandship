@@ -35,7 +35,7 @@ their inline dates; trust the code over this file.
       - `embeddings.ts` (OpenAI text-embedding-3-small via fetch, no SDK dependency),
       - `cosine.ts` (pure cosine similarity helper).
     - Companion runtime is invoked by the `/lighthouse/*` routes only; everything is gated by `CAS_HARBOR_ENABLED=true`.
-- `src/middleware/trial-cookie.ts`: mints + reads `cas_harbor_trial` cookie (an opaque random bearer token, 32 bytes hex, looked up in `trial_keepers.cookie_token`; it is not signed, and the database lookup is the whole validation; 7-day TTL, HttpOnly/Secure-unless-development-or-test/SameSite=Lax).
+- `src/middleware/trial-cookie.ts`: mints + reads `cas_harbor_trial` cookie (named `__Host-cas_harbor_trial` outside development and test in the published code; an opaque random bearer token, 32 bytes hex, looked up in `trial_keepers.cookie_token`; it is not signed, and the database lookup is the whole validation; 7-day TTL, HttpOnly/Secure-unless-development-or-test/SameSite=Lax).
   - Each fresh visitor gets a row in `trial_keepers` with companion_name='Haven'.
   - The cookie is the identity for Phase 1; no email, no password, no card. Phase 2 layers trial-to-keeper conversion + Stripe.
   - After a payment releases the trial, the cookie keeps one narrow meaning until `expires_at` (promotion moves it to `PAID_TRIAL_ACCESS_DAYS`, 30, from payment): "this browser paid for the build stamped on this trial".
