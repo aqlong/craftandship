@@ -1,6 +1,6 @@
 # Documentation index
 
-Start with [ARCHITECTURE.md](../ARCHITECTURE.md), which describes the code as it stands, and [SECURITY.md](../SECURITY.md), which says what "preview", "review" and "live" mean in this system. Almost everything in this folder is a dated snapshot written while the system was running (March to July 2026) and not kept current afterwards. Where a file here disagrees with the code, the code is right.
+Start with [ARCHITECTURE.md](../ARCHITECTURE.md), which describes the code as it stands, and [SECURITY.md](../SECURITY.md), which says what "preview", "review" and "live" mean in this system. Almost everything in this folder is a dated snapshot written while the system was being developed (March to July 2026) and not kept current afterwards. Where a file here disagrees with the code, the code is right.
 
 The numeric prefixes on a few files (`02_`, `06_`, `08_`, `15_`) come from an earlier numbered series; the gaps are documents that are not part of this repository.
 
