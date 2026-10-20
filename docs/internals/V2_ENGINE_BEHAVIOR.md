@@ -1,6 +1,6 @@
 # Worker env vars + v2 engine behavior (migrated from CLAUDE.md, 2026-07-03)
 
-> Historical document from July 2026; the system was wound down in July 2026.
+> Historical document from July 2026; the system is no longer developed and the site is still online.
 
 Full behavioral narrative for worker environment variables and the v2 compose engine's
 worker integration (fix-loop skips, health checks, recovery probes, translator contract).

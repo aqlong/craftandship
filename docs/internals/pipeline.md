@@ -1,6 +1,6 @@
 # Build pipeline: cli/ modules
 
-> Historical document from April 2026; the system was wound down in July 2026.
+> Historical document from April 2026; the system is no longer developed and the site is still online.
 
 > **Scope:** per-module detail for every `cli/*.py` module in the build pipeline. Extracted from CLAUDE.md to keep the root context file focused on load-bearing decisions. Consult this file when you need to understand a specific pipeline module's responsibilities, public functions, or invariants.
 >

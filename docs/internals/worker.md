@@ -1,6 +1,6 @@
 # Build queue worker: queue/worker_pg.py
 
-> Historical document from April 2026; the system was wound down in July 2026.
+> Historical document from April 2026; the system is no longer developed and the site is still online.
 
 > **Scope:** detailed behavior of the PostgreSQL-backed build queue worker. Extracted from CLAUDE.md to keep the root context file focused on load-bearing decisions. Consult this file when investigating retry logic, concurrency, timeouts, orphan recovery, or any worker-internal behavior.
 >

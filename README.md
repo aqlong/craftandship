@@ -3,7 +3,7 @@
 [![Tests](https://github.com/aqlong/craftandship/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/aqlong/craftandship/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Craft & Ship turned a conversation into a deployed website for healers, therapists and event producers. A visitor talked to an AI companion, a model extracted a structured spec from the conversation, code with no model in it composed a complete Express, EJS and Postgres site from that spec, a worker deployed it to its own Railway project, and a review step decided whether it could be marked live. It ran in production from March to July 2026. Real customers used it and gave feedback; none had become a paying subscriber when I wound it down.
+Craft & Ship turned a conversation into a deployed website for healers, therapists and event producers. A visitor talked to an AI companion, a model extracted a structured spec from the conversation, code with no model in it composed a complete Express, EJS and Postgres site from that spec, a worker deployed it to its own Railway project, and a review step decided whether it could be marked live. It ran in production from March 2026. Real customers used it and gave feedback; none had become a paying subscriber when I stopped developing it. It is no longer developed and the site is still online.
 
 I built it as the director of an AI coding agent, which wrote the code. I chose what to build and for whom, decided how much to automate, and made the agent prove its work. [How I built this](#how-i-built-this) says what that covered and what it did not.
 
@@ -14,7 +14,7 @@ I built it as the director of an AI coding agent, which wrote the code. I chose 
 **Read this with:**
 
 - **Archived.** Nothing is deployed from this repository and it is not maintained. It is published so the engineering can be read, run locally and judged, limits included.
-- **Not a snapshot of production.** A six-round adversarial review I ran after the wind-down changed the code, in places substantially. [What ran in production, and what the review changed](docs/WHAT_RAN_AND_WHAT_CHANGED.md) keeps the two apart.
+- **Not a snapshot of production.** A six-round adversarial review I ran after development stopped changed the code, in places substantially. [What ran in production, and what the review changed](docs/WHAT_RAN_AND_WHAT_CHANGED.md) keeps the two apart.
 - **A short public history.** The working history is private because it contains customer data. The first commit is the clean export; the commits after it are a portfolio pass the agent made at my direction and merged through [pull requests](https://github.com/aqlong/craftandship/pulls?q=is%3Apr+is%3Amerged).
 
 ## How I built this
@@ -48,7 +48,7 @@ What I did not do: review every diff, or write the planning documents (the agent
 
 ## Start with these files
 
-Much of the hardening came from the adversarial review I ran after the wind-down, so each item says whether it ran in production or came from that review.
+Much of the hardening came from the adversarial review I ran after development stopped, so each item says whether it ran in production or came from that review.
 
 1. [compose/build.py](compose/build.py), at [`_spec_safety_errors`](compose/build.py#L863) and [`_safe_output_path`](compose/build.py#L12010): a code generator that treats its input as hostile, and [compose/tests/test_spec_hardening.py](compose/tests/test_spec_hardening.py), which feeds it hostile specs and compiles what comes out. *Added in review; as it ran, the engine trusted its spec.*
 2. [queue/worker_pg.py](queue/worker_pg.py), at [`_claim_next_job`](queue/worker_pg.py#L615), [`_set_status`](queue/worker_pg.py#L1286) and [`_fail_build`](queue/worker_pg.py#L5741): Postgres as a job queue and a status machine made of guarded `UPDATE` statements. [tests/test_worker_pg_realdb.py](tests/test_worker_pg_realdb.py) runs that SQL on a real database. *The queue ran in production; the forward-only status machine, the attempt token and the real-database tests were added in review.*

@@ -1,6 +1,6 @@
 # CAS Local Roadmap Executor
 
-> Historical document (April to May 2026); the system was wound down in July 2026. The executor scripts remain in `scripts/` as a reference; nothing here is running.
+> Historical document (April to May 2026); the system is no longer developed and the site is still online. The executor scripts remain in `scripts/` as a reference; nothing here is running.
 
 ## Overview
 

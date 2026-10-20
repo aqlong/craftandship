@@ -6,7 +6,7 @@
 
 Craft & Ship is an agentic web-app creation platform. Customers describe a web app in plain English through a chat intake flow. The platform produces a structured JSON spec, builds the app, tests it and deploys it to Railway. Three product words mean less than they suggest: **preview** and **live** are statuses in the platform database (a preview is a public site, and marking a build live changes nothing on it), and **review** is a verdict recorded on the build row (a human reviewer by design; see the note under Craft Quality Policy for the automated review mode added in June 2026). `SECURITY.md`, "Preview, review and live", has the definitions.
 
-The system ran in production from March to July 2026 and was then wound down; this repository is the archived codebase.
+The system ran in production from March 2026. It is no longer developed and the site is still online; this repository is the archived codebase.
 
 Two build engines exist side by side:
 
@@ -415,7 +415,7 @@ At the start of a non-trivial session, skim the deferred-checks log. For each it
 
 Craft & Ship's core tenet: human experience and AI capability work together. Every site is co-created, not merely generated, and every build receives a Senior Web Craftsman review before delivery. This commitment is non-negotiable. If demand exceeds review capacity, raise prices or add reviewers; never skip, shorten or automate away the human review.
 
-> Note for readers of the public repository: the paragraph above is the policy as the agent was given it. In June 2026, shortly before the wind-down, an automated review mode was added that departs from it: with `CAS_HARBOR_AUTO_REVIEW=true` the worker queues a finished build as `ai_review_queued` instead of `pending`, for an automated review loop that ran outside this repository and is not included here. The schema comments in `web/src/db/schema.sql` and `_initial_review_status` in `queue/worker_pg.py` are what remains of it. This repository does not record which production builds were reviewed by a person and which by that loop. What the code enforces is narrower than the policy: a recorded verdict (`review_status = 'approved'`) before the owner or a payment can mark a build live, and the web app's customer copy in this release was rewritten to say no more than that.
+> Note for readers of the public repository: the paragraph above is the policy as the agent was given it. In June 2026, shortly before development stopped, an automated review mode was added that departs from it: with `CAS_HARBOR_AUTO_REVIEW=true` the worker queues a finished build as `ai_review_queued` instead of `pending`, for an automated review loop that ran outside this repository and is not included here. The schema comments in `web/src/db/schema.sql` and `_initial_review_status` in `queue/worker_pg.py` are what remains of it. This repository does not record which production builds were reviewed by a person and which by that loop. What the code enforces is narrower than the policy: a recorded verdict (`review_status = 'approved'`) before the owner or a payment can mark a build live, and the web app's customer copy in this release was rewritten to say no more than that.
 
 ## Communication model
 

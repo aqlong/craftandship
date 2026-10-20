@@ -1,6 +1,6 @@
 # Security
 
-Craft & Ship ran in production from March to July 2026 and was then wound down. This repository is the archived codebase of that system. Nobody operates it, no instance of it is maintained, and there is no bug bounty and no response-time commitment.
+Craft & Ship ran in production from March 2026. It is no longer developed and the site is still online, but nothing here is maintained for deployment. This repository is the archived codebase of that system, and the code the site runs may differ from it. There is no bug bounty and no response-time commitment.
 
 This file has the status of the repository, how to report a problem, and the definitions of three product words that every other security statement depends on. The detail is in two documents:
 
@@ -14,7 +14,7 @@ Two names that can mislead: `/lighthouse` and `lighthouse.ts` are the product's 
 ## Status and reporting
 
 - To report a vulnerability in this code, use GitHub's private vulnerability reporting: the **Security** tab of the repository, then **Report a vulnerability**. A finding that is not sensitive (a documentation error, a hardening suggestion, a dependency advisory) can be opened as an ordinary issue. [CONTRIBUTING.md](CONTRIBUTING.md) points here.
-- The repository is archived. Depending on its settings at the time, GitHub may not accept new reports or issues. If neither route is open there is no other channel, because nobody is operating this software.
+- The codebase is no longer developed. Depending on the repository's settings at the time, GitHub may not accept new reports or issues. If neither route is open there is no other channel, because nothing here is being developed or maintained.
 - Anyone who deploys this code is responsible for their own review. The limitations in [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) are real, several of them are deliberate trade-offs for a single-instance deployment with one operator who was also the reviewer, and they do not carry over unchanged to a different deployment.
 - The older audit documents under [docs/](docs/README.md) are dated snapshots. This file and the two documents it points to reflect the code as published.
 

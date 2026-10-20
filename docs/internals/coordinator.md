@@ -1,6 +1,6 @@
 # Master Coordinator: coordinator/
 
-> Historical document from April 2026; the system was wound down in July 2026.
+> Historical document from April 2026; the system is no longer developed and the site is still online.
 
 > **Scope:** autonomous operations framework. Most role agents are rule-based Python; only a few call a model (see the model-usage note under Agents). Extracted from CLAUDE.md to keep the root context file focused on load-bearing decisions. Consult this file for agent architecture, scoring, budget, work detection, and per-agent responsibilities.
 >

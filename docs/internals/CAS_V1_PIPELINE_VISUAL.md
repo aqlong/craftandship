@@ -1,6 +1,6 @@
 # CAS v1 build pipeline: visual reference
 
-> Historical document from April 2026; the system was wound down in July 2026.
+> Historical document from April 2026; the system is no longer developed and the site is still online.
 
 **Tag:** `v1-beta-frozen` (a git tag in the original development
 history; not carried into this export). This is the current-state

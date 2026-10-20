@@ -1,6 +1,6 @@
 # Craft & Ship Brand Voice
 
-> Historical document from April 2026; the system was wound down in July 2026. It is kept because the pre-commit lint (`scripts/check_brand_voice.py`) and several tests enforce its hard rules.
+> Historical document from April 2026; the system is no longer developed and the site is still online. It is kept because the pre-commit lint (`scripts/check_brand_voice.py`) and several tests enforce its hard rules.
 
 This is the authoritative voice guide for every customer-facing surface: landing, pricing, how-it-works, gallery, intake, chat, status, dashboard, payment, contact, auth views, emails, meta tags, legal copy (tone only, not the binding terms), and the support knowledge base. Read this before touching any copy. The pre-commit hook enforces the hard rules; the rest is taste.
 
@@ -197,7 +197,7 @@ The unified subscription price is the headline. Multi-tier card grids and TCO ca
 
 ### The Craft Promise
 
-The review before a website goes live is the brand. Every mention of "how we build" includes it, in the words the product uses: "Every website is reviewed before it goes live." Do not describe the build as unreviewed. Do not say that a named person, a "Senior Web Craftsman" or "a human" reads every page: the policy the agents worked under said so, but the code only records a verdict, an automated review mode (`CAS_HARBOR_AUTO_REVIEW`) was added shortly before the wind-down, and the repository does not show which builds a person reviewed (see the Craft Quality Policy note in `CLAUDE.md`). The review time is not stated to customers (rule 4), and nothing in the code enforces a review window.
+The review before a website goes live is the brand. Every mention of "how we build" includes it, in the words the product uses: "Every website is reviewed before it goes live." Do not describe the build as unreviewed. Do not say that a named person, a "Senior Web Craftsman" or "a human" reads every page: the policy the agents worked under said so, but the code only records a verdict, an automated review mode (`CAS_HARBOR_AUTO_REVIEW`) was added shortly before development stopped, and the repository does not show which builds a person reviewed (see the Craft Quality Policy note in `CLAUDE.md`). The review time is not stated to customers (rule 4), and nothing in the code enforces a review window.
 
 ---
 

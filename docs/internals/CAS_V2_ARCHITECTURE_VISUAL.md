@@ -1,6 +1,6 @@
 # CAS v2: static-compose architecture (general proposal)
 
-> Historical document from April 2026; the system was wound down in July 2026.
+> Historical document from April 2026; the system is no longer developed and the site is still online.
 
 **Status:** GENERAL PROPOSAL. This document is the initial shape
 of v2 architecture that will be refined during the Phase 1 audit
