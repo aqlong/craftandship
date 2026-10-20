@@ -99,6 +99,14 @@ PROTECTED_PATHS = (
     rb"[^/]+\.(py|pyc|pyd|so|pth)",
     rb"[^/]+/__init__\.py",
     rb"[^/]+\.(dist|egg)-info/.*",
+    # Compiled Python at any depth. Python imports a module from its bytecode
+    # in __pycache__ (a hash-based .pyc marked unchecked is never compared with
+    # the source), from a .pyc where the source would be, and from an
+    # extension module ahead of a .py of the same name, so committed bytecode
+    # would run code that no source in the diff shows (the bytecode of
+    # tests/__init__.py, for one, would run before the first test).
+    rb"(.*/)?__pycache__/.*",
+    rb"(.*/)?[^/]+\.(pyc|pyo|pyd|so)",
     # Files a version-manager shim reads to choose the interpreter.
     rb"(.*/)?\.(python-version|tool-versions|node-version|nvmrc)",
     # JavaScript that tools evaluate while the gate or a deploy runs them:

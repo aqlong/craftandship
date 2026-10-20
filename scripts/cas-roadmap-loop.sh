@@ -23,8 +23,9 @@
 # worktree was created from; the merge guard (scripts/cas-merge-guard.py:
 # nothing under scripts/, .githooks/, .github/ or .claude/, no CLAUDE.md,
 # roadmap.json, package manifest, npm configuration, test-runner configuration
-# or setup file, Tailwind or Playwright configuration, top-level Python module
-# or anything under a node_modules, no Dockerfile, .dockerignore, Railway or
+# or setup file, Tailwind or Playwright configuration, top-level Python module,
+# compiled Python at any depth (__pycache__, .pyc, .pyo, .pyd, .so) or
+# anything under a node_modules, no Dockerfile, .dockerignore, Railway or
 # nixpacks configuration, requirements file, Makefile or compose file, not
 # web/src/db/schema.sql or migrate.ts, no deleted file under a directory named
 # tests, no path that is not plain ASCII, and no symlink or submodule link in
@@ -452,9 +453,18 @@ gate_npm_test() { cd "$1/web" && npm test; }
 gate_pytest() {
     cd "$1" || return 1
     # shellcheck disable=SC2086  # GATE_PYTEST_DIRS is a list of directories
-    env -u PYTHONPATH -u PYTEST_ADDOPTS -u PYTEST_PLUGINS \
-        python3 -P -m pytest -c "$2" --rootdir "$1" --confcutdir "$1" \
+    env -u PYTHONPATH -u PYTEST_ADDOPTS -u PYTEST_PLUGINS PYTHONDONTWRITEBYTECODE=1 \
+        python3 -P -B --check-hash-based-pycs always -m pytest -c "$2" --rootdir "$1" --confcutdir "$1" \
         --disable-plugin-autoload -p no:cacheprovider $GATE_PYTEST_DIRS -q
+}
+# Remove compiled Python from the gate checkout $1: everything named
+# __pycache__ and every .pyc or .pyo file, in any letter case (on a filesystem
+# that ignores case, Python finds __PYCACHE__ under either spelling). Prints
+# what it removes. Returns 1 when any is left.
+gate_remove_bytecode() {
+    find "$1" \( -iname __pycache__ -prune -print -exec rm -rf {} + \) \
+        -o \( \( -iname '*.pyc' -o -iname '*.pyo' \) -print -exec rm -f {} + \)
+    [ -z "$(find "$1" \( -iname __pycache__ -o -iname '*.pyc' -o -iname '*.pyo' \) -print)" ]
 }
 
 # The paths of the main checkout that have an unmerged index entry: a stash pop
@@ -1703,6 +1713,18 @@ retry() {
 #   - pytest plugins: --disable-plugin-autoload loads no installed plugin (the
 #     suite needs none), PYTEST_PLUGINS is unset, and no conftest.py names one.
 #     -p no:cacheprovider keeps pytest from reading or writing a cache.
+#   - compiled Python: Python imports a module from bytecode in __pycache__
+#     that it takes to be current (a hash-based .pyc marked unchecked is taken
+#     to be current without a look at the source; pytest reads its own
+#     rewritten bytecode of a test file or conftest.py there when the recorded
+#     time and size match the source), so bytecode the commit carries would
+#     run in place of the source it shows.
+#     The merge guard refuses it in the branch's diff; here every __pycache__,
+#     .pyc and .pyo in the checkout is removed before anything runs
+#     (gate_remove_bytecode), --check-hash-based-pycs always makes Python
+#     compare any hash-based .pyc with its source, and -B with
+#     PYTHONDONTWRITEBYTECODE=1 (which the Python processes the tests start
+#     inherit) keeps the run from writing bytecode of its own.
 # What is left is what the guard covers by path (conftest.py, top-level Python
 # modules and package inits, which pytest imports once it has put the root on
 # sys.path) and the tests themselves.
@@ -1720,6 +1742,10 @@ run_test_gate() {
     release_git_setup_lock
     if [ "$(git -C "$gate_path" rev-parse HEAD 2>/dev/null || true)" != "$sha" ]; then
         echo "The test gate checkout is not at $sha" | tee -a "$log_file"
+        ok=0
+    fi
+    if [ "$ok" -eq 1 ] && ! gate_remove_bytecode "$gate_path" >> "$log_file" 2>&1; then
+        echo "Could not remove compiled Python from the test gate checkout" | tee -a "$log_file"
         ok=0
     fi
     if [ -d "$PROJECT_DIR/web/node_modules" ]; then
@@ -1741,8 +1767,8 @@ run_test_gate() {
         if ! git -C "$gate_path" show "$base:pytest.ini" > "$gate_ini" 2>/dev/null; then
             printf '[pytest]\n' > "$gate_ini"
         fi
-        if ! python3 -P -c 'import sys' >/dev/null 2>&1; then
-            echo "python3 does not accept -P (Python 3.11 or newer is needed), so the Python tests cannot be run safely" | tee -a "$log_file"
+        if ! python3 -P -B --check-hash-based-pycs always -c 'import sys' >/dev/null 2>&1; then
+            echo "python3 does not accept -P -B --check-hash-based-pycs always (Python 3.11 or newer is needed), so the Python tests cannot be run safely" | tee -a "$log_file"
             echo "Python tests failed" | tee -a "$log_file"
             ok=0
         elif ! with_timeout "$GATE_TIMEOUT_SEC" gate_pytest "$gate_path" "$gate_ini" >> "$log_file" 2>&1; then

@@ -10,21 +10,26 @@ Covers (each is a bug that was found by running the script, not by reading it):
   - scripts/com.cas.executor-watchdog.plist.template: renders to a launchd job
     that runs the watchdog every 30 minutes; `make test` runs tests/ and
     compose/tests/.
-  - scripts/cas-exec: rejects a non-numeric `parallel` argument.
+  - scripts/cas-exec: rejects a non-numeric `parallel` argument, and reads and
+    writes the config of a checkout whose path has a quote and a space.
   - scripts/verify_hooks.sh and `make hooks`: .githooks/ holds the two gates
     (pre-commit, pre-push) and nothing else, and a hook added beside them is
     reported.
   - scripts/promote_staging.sh: rollback restores the tagged tree and its push
     carries CAS_PROMOTE=1.
-  - CI: the `quickstart` job and the single web-test run; Dockerfile.worker and
-    .dockerignore invariants; every script path referenced by hooks, workflows
-    and the Makefile exists.
+  - CI: the `quickstart` job and the single web-test run; no checkout step
+    keeps the token; the gitleaks allowlist hides a hash in the golden snapshot
+    and nothing else (run with gitleaks); Dockerfile.worker and .dockerignore
+    invariants; every script path referenced by hooks, workflows and the
+    Makefile exists.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -321,6 +326,56 @@ def test_cas_exec_pause_until_requires_a_timestamp():
     assert result.returncode == 2
 
 
+@pytest.fixture
+def quoted_checkout(tmp_path):
+    """cas-exec in a checkout whose path has a quote and a space, next to a
+    config whose values each write subcommand changes."""
+    checkout = tmp_path / "it's a checkout"
+    (checkout / "scripts").mkdir(parents=True)
+    (checkout / "coordinator").mkdir()
+    shutil.copy(SCRIPTS / "cas-exec", checkout / "scripts" / "cas-exec")
+    config = {**json.loads((SCRIPTS / "cas-executor-config.json").read_text()),
+              "enabled": None, "pause_until": "2029-12-31T00:00:00+00:00", "interval_minutes": 5, "max_parallel": 1}
+    (checkout / "scripts" / "cas-executor-config.json").write_text(json.dumps(config))
+    (checkout / "coordinator" / "roadmap.json").write_text(json.dumps(
+        {"items": [{"id": "held", "title": "Held back", "status": "deferred", "deferred_reason": "waits"}]}))
+    return checkout, config
+
+
+def _cas_exec(checkout, *args):
+    return subprocess.run([BASH, str(checkout / "scripts" / "cas-exec"), *args],
+                          capture_output=True, text=True, env=_clean_env(), timeout=60)
+
+
+@pytest.mark.parametrize("args,changed", [
+    (["fast"], {"interval_minutes": 10}),
+    (["slow"], {"interval_minutes": 60}),
+    (["normal"], {"interval_minutes": 20}),
+    (["parallel", "3"], {"max_parallel": 3}),
+    (["pause"], {"enabled": False}),
+    (["resume"], {"enabled": True, "pause_until": None}),
+    (["pause-until", "2030-01-31T09:00:00+00:00"], {"pause_until": "2030-01-31T09:00:00+00:00"}),
+], ids=lambda value: " ".join(value) if isinstance(value, list) else None)
+def test_cas_exec_writes_the_config_of_a_checkout_whose_path_has_a_quote(quoted_checkout, args, changed):
+    # The config path reaches Python as an argument, never as part of the code:
+    # spliced into the code, the quote ends the string and Python stops on a
+    # syntax error with the config unchanged.
+    checkout, before = quoted_checkout
+    result = _cas_exec(checkout, *args)
+    assert result.returncode == 0 and result.stderr == "", result.stderr
+    after = json.loads((checkout / "scripts" / "cas-executor-config.json").read_text())
+    assert after == {**before, **changed}
+
+
+def test_cas_exec_reads_the_config_and_roadmap_of_a_checkout_whose_path_has_a_quote(quoted_checkout):
+    checkout, _ = quoted_checkout
+    status = _cas_exec(checkout, "status")
+    assert "Interval:  5 min" in status.stdout and "Pause:     2029-12-31T00:00:00+00:00" in status.stdout, \
+        status.stdout + status.stderr
+    deferred = _cas_exec(checkout, "deferred")
+    assert "held: Held back" in deferred.stdout and "Reason: waits" in deferred.stdout, deferred.stderr
+
+
 def test_doc_update_check_is_silent_without_jq(tmp_path):
     # PATH with no jq; bash is invoked by absolute path
     result = subprocess.run([BASH, str(SCRIPTS / "doc_update_check.sh")], input='{"tool_input":{}}',
@@ -423,6 +478,66 @@ def test_secret_scan_job_verifies_the_gitleaks_download_and_scans_history():
     assert len(job["env"]["GITLEAKS_SHA256"]) == 64
     assert "--config .gitleaks.toml" in text
     assert '--log-opts="--all"' in text
+
+
+def test_no_checkout_step_leaves_the_token_in_the_git_config():
+    # No job pushes or fetches after its checkout, so none needs the token
+    # actions/checkout otherwise writes into the checkout's .git/config, where
+    # every later step (npm install scripts, the tests) could read it.
+    checkouts = [(name, job_name, step)
+                 for name in sorted(p.name for p in (REPO_ROOT / ".github" / "workflows").glob("*.yml"))
+                 for job_name, job in _workflow(name)["jobs"].items()
+                 for step in job["steps"] if step.get("uses", "").startswith("actions/checkout@")]
+    assert len(checkouts) >= 8, checkouts
+    for name, job_name, step in checkouts:
+        assert (step.get("with") or {}).get("persist-credentials") is False, f"{name} {job_name}"
+    for name in ("test.yml", "hook-integrity.yml"):
+        assert not re.search(r"\bgit (push|fetch|pull)\b", (REPO_ROOT / ".github" / "workflows" / name).read_text())
+
+
+# The one file .gitleaks.toml allows a 64-hex value in, as gitleaks names it.
+GOLDEN_SNAPSHOT = "tests/golden/medicine-waves-canonical/artifact.snapshot.json"
+
+
+@pytest.mark.requires_tools("git", "gitleaks")
+def test_the_gitleaks_allowlist_hides_a_hash_in_the_golden_snapshot_and_nothing_else(tmp_path):
+    # Every value is made here, so none of them is a secret, and each sits on
+    # a line whose key trips a default rule. The earlier allowlist matched any
+    # tests/golden/<dir>/artifact.snapshot.json at any depth, for any rule.
+    elsewhere = ["web/tests/golden/medicine-waves-canonical/artifact.snapshot.json",
+                 "tests/golden/another-spec/artifact.snapshot.json", "docs/notes.json"]
+    repo = tmp_path / "repo"
+    for path in elsewhere:
+        (repo / path).parent.mkdir(parents=True, exist_ok=True)
+        (repo / path).write_text(f'{{\n  "views/set-password.ejs": "{secrets.token_hex(32)}"\n}}\n')
+    # In the golden snapshot itself: a hash on the line that trips
+    # generic-api-key (hidden), the same rule on a value that is not 64
+    # lowercase hex characters, and another rule on a 64-hex value (both reported).
+    (repo / GOLDEN_SNAPSHOT).parent.mkdir(parents=True)
+    (repo / GOLDEN_SNAPSHOT).write_text(
+        '{\n'
+        f'  "views/set-password.ejs": "{secrets.token_hex(32)}",\n'
+        f'  "views/reset-password.ejs": "{secrets.token_hex(32).upper()}",\n'
+        f'  "coinbase_token": "{secrets.token_hex(32)}"\n'
+        '}\n')
+    env = _clean_env(GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid",
+                     GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.invalid", GIT_CONFIG_NOSYSTEM="1")
+    for args in (["init", "-q", "-b", "master"], ["add", "-A"], ["commit", "-qm", "values"]):
+        subprocess.run(["git", *args], cwd=repo, env=env, check=True, capture_output=True)
+
+    def scan(name, *how):
+        report = tmp_path / f"{name}.json"
+        result = subprocess.run(["gitleaks", "detect", *how, "--config", str(REPO_ROOT / ".gitleaks.toml"),
+                                 "--no-banner", "--redact", "--report-format", "json", "--report-path", str(report)],
+                                cwd=repo, env=env, capture_output=True, text=True, timeout=120)
+        assert report.exists(), result.stdout + result.stderr
+        return sorted((f["File"], f["StartLine"], f["RuleID"]) for f in json.loads(report.read_text()))
+
+    expected = sorted([*((path, 2, "generic-api-key") for path in elsewhere),
+                       (GOLDEN_SNAPSHOT, 3, "generic-api-key"), (GOLDEN_SNAPSHOT, 4, "coinbase-access-token")])
+    # as the CI job scans (the history) and as THREAT_MODEL.md scans (the tree, from the root)
+    assert scan("history", "--source", ".", "--log-opts=--all") == expected
+    assert scan("tree", "--no-git", "--source", ".") == expected
 
 
 def test_quickstart_job_proves_the_readme_quickstart_with_compose():

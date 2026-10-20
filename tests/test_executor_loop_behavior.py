@@ -29,9 +29,11 @@ the test runner (a top-level pytest.py, the same file hidden behind a
 node_modules, a test command rewritten behind `git update-index
 --skip-worktree`, a pytest configuration dropped in the directory above the
 worktree), by moving the ref the guard diffs against, or by committing to the
-branch after the tests ran. The sandbox's web test command and its Python
-tests can really fail (see test_gate_fails_a_branch_whose_tests_fail), so a
-merge in one of these tests means the gate was bypassed.
+branch after the tests ran. One relies on bytecode already on the target
+branch that Python would load in place of a package init's source. The
+sandbox's web test command and its Python tests can really fail (see
+test_gate_fails_a_branch_whose_tests_fail), so a merge in one of these tests
+means the gate was bypassed.
 
 A third group pins what the loop does around the ops API and its own commits:
 it does not push while a build is queued, building, testing or deploying, or
@@ -299,7 +301,8 @@ test ! -e BROKEN
 
 # What a test added by the "probe_gate" session writes down about the pytest
 # process it runs in: the gate, observed from inside.
-GATE_PROBE_TEST = """import json
+GATE_PROBE_TEST = """import _imp
+import json
 import os
 import sys
 
@@ -308,6 +311,9 @@ def test_record_how_the_gate_runs(request):
     config = request.config
     seen = {
         "safe_path": bool(sys.flags.safe_path),
+        "dont_write_bytecode": bool(sys.flags.dont_write_bytecode),
+        "check_hash_based_pycs": _imp.check_hash_based_pycs,
+        "PYTHONDONTWRITEBYTECODE": os.environ.get("PYTHONDONTWRITEBYTECODE"),
         "cwd": os.getcwd(),
         "rootdir": str(config.rootpath),
         "inifile": str(config.inipath),
@@ -907,12 +913,101 @@ def test_gate_runs_pytest_pinned_on_a_checkout_of_its_own(sb):
     assert Path(seen["confcutdir"]).resolve() == gate
     # -P: the working directory was not put on sys.path ahead of pytest
     assert seen["safe_path"] is True
+    # -B and PYTHONDONTWRITEBYTECODE=1 (which a Python process a test starts
+    # inherits): no bytecode is written; --check-hash-based-pycs always: a
+    # hash-based .pyc is compared with its source
+    assert seen["dont_write_bytecode"] is True
+    assert seen["PYTHONDONTWRITEBYTECODE"] == "1"
+    assert seen["check_hash_based_pycs"] == "always"
     # -c: a configuration file outside the repository, not one found by walking up
     assert sb.repo.resolve() not in Path(seen["inifile"]).resolve().parents
     assert seen["plugin_autoload_disabled"] is True
     assert seen["cacheprovider"] is False
     assert seen["env"] == {"PYTHONPATH": None, "PYTEST_ADDOPTS": None, "PYTEST_PLUGINS": None}
     assert not gate.exists(), "the gate checkout is removed after the tests"
+
+
+# A package init whose source and committed bytecode differ. The source writes
+# down that it ran and what its __pycache__ held at that moment; the bytecode
+# ends pytest with status 0 before a test can fail. The bytecode is compiled
+# by the python3 the loop runs (the loop puts the Homebrew directories first
+# on PATH; LOOP_PATH_LINE is that line of the script), as a hash-based .pyc
+# marked unchecked, which Python loads without comparing it with the source.
+SOURCE_INIT = """import json
+import os
+
+cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__pycache__")
+with open(os.path.join(os.environ["CAS_EXECUTOR_STATE_DIR"], "init-source-ran.json"), "w") as fh:
+    json.dump({"pycache": sorted(os.listdir(cache)) if os.path.isdir(cache) else None}, fh)
+"""
+BYTECODE_INIT = """import os
+
+open(os.path.join(os.environ["CAS_EXECUTOR_STATE_DIR"], "init-bytecode-ran"), "w").close()
+os._exit(0)
+"""
+COMPILE_UNCHECKED = """import importlib.util
+import py_compile
+import sys
+
+source, stand_in = sys.argv[1], sys.argv[2]
+print(py_compile.compile(stand_in, cfile=importlib.util.cache_from_source(source), dfile=source, doraise=True,
+                         invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH))
+"""
+LOOP_PATH_LINE = next(line for line in (SCRIPTS / "cas-roadmap-loop.sh").read_text().splitlines()
+                      if line.startswith("export PATH="))
+
+
+def test_gate_runs_the_source_not_bytecode_committed_beside_it(sb):
+    # The bytecode is on the target branch already, so the guard (which reads
+    # only the branch's own diff and refuses compiled Python there) never sees
+    # it: this is the gate on its own. The branch adds a failing test.
+    init = sb.repo / "tests" / "__init__.py"
+    init.write_text(SOURCE_INIT)
+    stand_in = sb.root / "stand_in_init.py"
+    stand_in.write_text(BYTECODE_INIT)
+    compiled = subprocess.run(["bash", "-c", f'{LOOP_PATH_LINE}\nexec python3 -c "$1" "$2" "$3"', "bash",
+                               COMPILE_UNCHECKED, str(init), str(stand_in)],
+                              env=sb.env, capture_output=True, text=True, check=True)
+    pyc = Path(compiled.stdout.strip()).relative_to(sb.repo).as_posix()
+    assert pyc.startswith("tests/__pycache__/__init__."), pyc
+    sb.git("add", "-f", "tests/__init__.py", pyc)
+    sb.git("commit", "-qm", "a package init and its bytecode")
+    sb.git("push", "-q", "origin", "master")
+    before = sb.head()
+    result = sb.run("broken_py")
+    assert not (sb.state / "init-bytecode-ran").exists(), "the committed bytecode ran in place of the source"
+    assert json.loads((sb.state / "init-source-ran.json").read_text()) == {"pycache": None}, \
+        "the committed __pycache__ was still in the gate checkout when the tests ran"
+    assert "Python tests failed" in result.stdout, result.stdout
+    _assert_nothing_merged(sb, before)
+    assert "tests/__pycache__" in sb.logs(), "the gate's log names what it removed"
+
+
+def test_the_gate_removes_compiled_python_in_any_letter_case_and_nothing_else(tmp_path):
+    # The loop's own gate_remove_bytecode on a tree that stands in for a gate
+    # checkout. A filesystem that ignores case finds __PYCACHE__ for
+    # __pycache__; a .pyc outside __pycache__ is imported when no source sits
+    # beside it. The web/node_modules link is not followed.
+    gate, outside = tmp_path / "gate", tmp_path / "outside"
+    removed = ["cli/deep/__PYCACHE__", "compose/legacy.pyc", "docs/__pycache__", "queue/old.PYO",
+               "tests/__pycache__"]
+    kept = ["cli/ext.cpython-312-darwin.so", "docs/pycache.md", "tests/test_ok.py", "web/node_modules"]
+    for path in ("cli/deep/__PYCACHE__/x.txt", "tests/__pycache__/__init__.cpython-312.pyc",
+                 "compose/legacy.pyc", "docs/__pycache__", "queue/old.PYO", *kept[:3],
+                 "outside/__pycache__/kept.cpython-312.pyc"):
+        target = (tmp_path if path.startswith("outside/") else gate) / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("")
+    (gate / "web").mkdir()
+    (gate / "web" / "node_modules").symlink_to(outside, target_is_directory=True)
+    probe = tmp_path / "remove.sh"
+    probe.write_text(_loop_text("gate_remove_bytecode") + '\ngate_remove_bytecode "$1"\n')
+    result = subprocess.run(["bash", str(probe), str(gate)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    assert sorted(os.path.relpath(line, gate) for line in result.stdout.splitlines()) == removed
+    left = sorted(str(p.relative_to(gate)) for p in gate.rglob("*") if p.is_file() or p.is_symlink())
+    assert left == kept
+    assert (outside / "__pycache__" / "kept.cpython-312.pyc").exists()
 
 
 def test_moving_the_base_ref_does_not_hide_a_rewritten_test_command(sb):
@@ -1048,6 +1143,12 @@ REFUSED_PATHS = [
     "pytest.py", "ipaddress.py", "sitecustomize.py", "shadow.pth", "pytest.pyc",
     "pluggy.cpython-312-darwin.so", "pytest.pyd",
     "tests/__init__.py", "cli/__init__.py", "json/__init__.py",
+    # compiled Python at any depth: Python loads it in place of the source the diff shows
+    "tests/__pycache__/conftest.cpython-312.pyc", "tests/__pycache__/__init__.cpython-312.pyc",
+    "compose/tests/__pycache__/test_build_pipeline.cpython-312-pytest-8.4.2.pyc",
+    "cli/__pycache__/build.cpython-312.opt-1.pyc", "tests/__pycache__/notes.txt", "Tests/__PyCache__/x.pyc",
+    "cli/helper.pyc", "queue/old.pyo", "coordinator/fast.cpython-312-darwin.so", "compose/ext.pyd",
+    "web/src/LEGACY.PYC",
     "plugin-1.0.dist-info/entry_points.txt", "plugin.egg-info/entry_points.txt",
     # files a version-manager shim reads to choose the interpreter
     ".python-version", ".tool-versions", "web/.nvmrc", "web/.node-version",
@@ -1080,6 +1181,8 @@ ALLOWED_PATHS = [
     "web/src/db/index.ts", "web/src/db/tls.ts", "web/src/db/schema.sql.md", "docs/Makefile.md",
     "docs/requirements.md", "web/src/styles/input.css", "web/public/style.css", "compose/widgets/compose.ejs",
     "web/src/railway.ts", "version.json",
+    # what only looks like compiled Python
+    "docs/pycache.md", "docs/__pycache__.md", "docs/a.pyc.md", "web/src/so.ts", "docs/notes.so.txt",
 ]
 
 

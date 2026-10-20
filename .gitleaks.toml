@@ -9,11 +9,20 @@ useDefault = true
 # "generated file path" -> "sha256 of its contents" (see
 # scripts/bless_golden.py). A sha256 digest on a line whose key contains
 # the word "password" (views/set-password.ejs) trips the generic-api-key
-# rule. The values are content hashes of test output, not credentials.
-# Scope: that file pattern only, and only 64-character hex values.
+# rule.
+# What it suppresses: a generic-api-key finding whose secret is exactly 64
+# lowercase hex characters, in the one file named in `paths`, and nothing
+# else. Every such value there is taken for a content hash; a real secret of
+# that shape (`openssl rand -hex 32` makes one) written into that file would
+# be hidden too. The path is matched as gitleaks names the file: relative to
+# the repository root in a history scan and in a `--no-git --source .` scan
+# run from the root (a `--no-git` scan given an absolute --source names it by
+# its absolute path, and then reports the hash). A snapshot blessed under
+# another name needs its own exact path here.
 [[allowlists]]
-description = "sha256 content hashes in golden-file snapshots"
+description = "sha256 content hashes in the golden-file snapshot"
 condition = "AND"
-paths = ['''tests/golden/[^/]+/artifact\.snapshot\.json$''']
+targetRules = ["generic-api-key"]
+paths = ['''^tests/golden/medicine-waves-canonical/artifact\.snapshot\.json$''']
 regexes = ['''^[0-9a-f]{64}$''']
 regexTarget = "secret"

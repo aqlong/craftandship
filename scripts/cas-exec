@@ -18,26 +18,26 @@ case "${1:-}" in
     launchctl unload "$PLIST" 2>/dev/null
     echo "Executor stopped" ;;
   fast)
-    python3 -c "import json; c=json.load(open('$CONFIG')); c['interval_minutes']=10; json.dump(c,open('$CONFIG','w'),indent=2)"
+    python3 -c "import json, sys; c=json.load(open(sys.argv[1])); c['interval_minutes']=10; json.dump(c,open(sys.argv[1],'w'),indent=2)" "$CONFIG"
     echo "Interval: 10 min" ;;
   slow)
-    python3 -c "import json; c=json.load(open('$CONFIG')); c['interval_minutes']=60; json.dump(c,open('$CONFIG','w'),indent=2)"
+    python3 -c "import json, sys; c=json.load(open(sys.argv[1])); c['interval_minutes']=60; json.dump(c,open(sys.argv[1],'w'),indent=2)" "$CONFIG"
     echo "Interval: 60 min" ;;
   normal)
-    python3 -c "import json; c=json.load(open('$CONFIG')); c['interval_minutes']=20; json.dump(c,open('$CONFIG','w'),indent=2)"
+    python3 -c "import json, sys; c=json.load(open(sys.argv[1])); c['interval_minutes']=20; json.dump(c,open(sys.argv[1],'w'),indent=2)" "$CONFIG"
     echo "Interval: 20 min" ;;
   parallel)
     N="${2:-2}"
     case "$N" in
       ''|*[!0-9]*) echo "usage: cas-exec parallel <N>   (N must be a whole number)" >&2; exit 2 ;;
     esac
-    python3 -c "import json; c=json.load(open('$CONFIG')); c['max_parallel']=$N; json.dump(c,open('$CONFIG','w'),indent=2)"
+    python3 -c "import json, sys; c=json.load(open(sys.argv[1])); c['max_parallel']=int(sys.argv[2]); json.dump(c,open(sys.argv[1],'w'),indent=2)" "$CONFIG" "$N"
     echo "Max parallel: $N" ;;
   pause)
-    python3 -c "import json; c=json.load(open('$CONFIG')); c['enabled']=False; json.dump(c,open('$CONFIG','w'),indent=2)"
+    python3 -c "import json, sys; c=json.load(open(sys.argv[1])); c['enabled']=False; json.dump(c,open(sys.argv[1],'w'),indent=2)" "$CONFIG"
     echo "Paused" ;;
   resume)
-    python3 -c "import json; c=json.load(open('$CONFIG')); c['enabled']=True; c['pause_until']=None; json.dump(c,open('$CONFIG','w'),indent=2)"
+    python3 -c "import json, sys; c=json.load(open(sys.argv[1])); c['enabled']=True; c['pause_until']=None; json.dump(c,open(sys.argv[1],'w'),indent=2)" "$CONFIG"
     echo "Resumed" ;;
   pause-until)
     [ -n "${2:-}" ] || { echo "usage: cas-exec pause-until <ISO-8601 timestamp, e.g. 2026-01-31T09:00:00+00:00>" >&2; exit 2; }
@@ -52,13 +52,13 @@ case "${1:-}" in
       echo "Enabled:   False"
     fi
     python3 -c "
-import json
-c = json.load(open('$CONFIG'))
+import json, sys
+c = json.load(open(sys.argv[1]))
 print(f'Interval:  {c[\"interval_minutes\"]} min')
 print(f'Parallel:  {c.get(\"max_parallel\", 1)}')
 print(f'Max/day:   {c[\"max_items_per_day\"]}')
 print(f'Budget:    \${c[\"max_budget_per_item_usd\"]}/item, \${c[\"daily_spend_ceiling_usd\"]}/day ceiling')
-print(f'Pause:     {c.get(\"pause_until\") or \"none\"}')"
+print(f'Pause:     {c.get(\"pause_until\") or \"none\"}')" "$CONFIG"
     pgrep -f cas-roadmap-loop > /dev/null 2>&1 && echo "Loop:      RUNNING" || echo "Loop:      STOPPED"
     # Show active worktrees
     local_wts=$(ls -d "$PROJECT_DIR/.worktrees/auto-"* 2>/dev/null | wc -l | tr -d ' ')
@@ -102,8 +102,8 @@ print(f'Pause:     {c.get(\"pause_until\") or \"none\"}')"
     fi ;;
   deferred)
     python3 -c "
-import json
-data = json.load(open('$PROJECT_DIR/coordinator/roadmap.json'))
+import json, sys
+data = json.load(open(sys.argv[1]))
 deferred = [i for i in data['items'] if i.get('status') == 'deferred']
 if not deferred:
     print('No deferred items')
@@ -113,7 +113,7 @@ else:
         reason = item.get('deferred_reason', 'no reason recorded')
         print(f\"  {item['id']}: {item.get('title', '?')[:50]}\")
         print(f\"    Reason: {reason}\")
-" ;;
+" "$PROJECT_DIR/coordinator/roadmap.json" ;;
   config)
     python3 -m json.tool "$CONFIG" ;;
   *)

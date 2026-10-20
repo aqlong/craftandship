@@ -3,6 +3,9 @@ name: Tests
 # Needs no repository secrets and no repository variables. Every environment
 # variable a job relies on is set in this file to a throwaway value, and
 # Postgres comes from a service container. Nothing here deploys or publishes.
+# No step pushes or fetches after the checkout, so every checkout sets
+# persist-credentials: false and the job token is not left in .git/config for
+# the steps that run the repository's code.
 
 on:
   # Manual trigger: re-run CI on demand without manufacturing a code push.
@@ -35,6 +38,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -79,6 +84,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
@@ -159,6 +166,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -228,6 +237,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Build the worker image
         run: docker build -f Dockerfile.worker -t cas-worker-image-check .
@@ -274,6 +285,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install gitleaks
         run: |
@@ -298,6 +310,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -373,6 +387,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -402,17 +418,18 @@ jobs:
         run: pip install -r ../requirements.worker.txt
 
       - name: Web integration tests against a real Postgres
-        # In the unit job these three files skip, because no database is
-        # configured there. Here they get an empty database of their own (kept
-        # apart from the browser fixtures) and execute the real schema and the
-        # real publish, payment, signup and crisis statements. Serial because
-        # each file applies schema.sql.
+        # In the unit job these files (schema.idempotency and every
+        # *.realdb.test.ts) skip, because no database is configured there. Here
+        # they get an empty database of their own (kept apart from the browser
+        # fixtures) and execute the real schema and the real publish, payment,
+        # signup, account-claim, support-KB and crisis statements. Serial
+        # because each file applies schema.sql.
         env:
           CAS_SCHEMA_TEST_DATABASE_URL: postgresql://cas:cas@localhost:5432/cas_web_integration
           CAS_WORKER_PYTHON: python
         run: |
           psql postgresql://cas:cas@localhost:5432/cas_test -c 'CREATE DATABASE cas_web_integration'
-          npx vitest run --no-file-parallelism tests/unit/schema.idempotency.test.ts tests/unit/money-path.realdb.test.ts tests/unit/crisis-phrasing.realdb.test.ts
+          npx vitest run --no-file-parallelism tests/unit/schema.idempotency.test.ts tests/unit/*.realdb.test.ts
 
       - name: Seed test database
         run: node tests/ui/seed-test-db.js
