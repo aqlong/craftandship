@@ -387,6 +387,10 @@ def _libpq_conn_args(database_url: str):
     if parsed.password:
         env["PGPASSWORD"] = parsed.password
     netloc = parsed.hostname or ""
+    # urlparse drops the brackets of an IPv6 literal; a URL needs them back,
+    # or "::1" followed by ":5432" no longer says where the port starts.
+    if ":" in netloc:
+        netloc = f"[{netloc}]"
     if parsed.username:
         netloc = f"{parsed.username}@{netloc}"
     if parsed.port:

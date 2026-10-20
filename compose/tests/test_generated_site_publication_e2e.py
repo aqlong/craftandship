@@ -262,8 +262,11 @@ def test_a_date_column_named_published_does_not_break_or_filter_the_listing(site
     """Only a BOOLEAN `published` column is the publication flag. Compared
     with TRUE, a DATE column is a type error in Postgres and the listing
     would answer 500 on every request."""
+    # current_schema(): with CAS_COMPOSE_TEST_DATABASE other schemas of the
+    # database can hold a `volumes` table of their own.
     assert site["query"]("SELECT data_type FROM information_schema.columns "
-                         "WHERE table_name = 'volumes' AND column_name = 'published'")[0][0] == "date"
+                         "WHERE table_schema = current_schema() AND table_name = 'volumes' "
+                         "AND column_name = 'published'")[0][0] == "date"
     visitor = Client(site["port"])
     listing = visitor.get("/volumes")
     assert listing.status == 200

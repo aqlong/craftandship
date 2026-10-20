@@ -21,6 +21,7 @@ import functools
 import html as html_module
 import logging
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -129,10 +130,37 @@ def _is_unsubscribed(to_email: str) -> bool:
             logger.debug("close failed, the connection was already gone: %s: %s", type(_guard_exc).__name__, _guard_exc)
 
 
+# The web app's redactSecretParams (web/src/utils/recent-errors.ts), in
+# Python: the value of every secret-bearing URL parameter (the token= of a
+# login link, among others) is replaced by "[redacted]" and the rest of the
+# text, the links included, is kept. A name is matched after "?" or "&" in
+# the forms a URL takes inside HTML or inside another URL (plain,
+# entity-encoded, percent-encoded once or twice), and a value runs to the
+# next separator, quote, angle bracket or blank. One linear pass.
+_SECRET_PARAM = r"(?:[a-z0-9_.-]*token|api[_-]?key|key|secret|signature|sig|code|password|session_id)"
+_PARAM_SEPARATOR = r"(?:[?&]|&amp;|&#0*38;|&#x0*26;|%(?:25)?3f|%(?:25)?26)"
+_PARAM_EQUALS = r"(?:=|%(?:25)?3d)"
+_SECRET_PARAM_VALUE_RE = re.compile(
+    rf"({_PARAM_SEPARATOR}{_SECRET_PARAM}{_PARAM_EQUALS})(?:(?!%(?:25)?(?:26|3f))[^\s\"'<>&#;])+",
+    re.IGNORECASE,
+)
+
+
+def _redact_secret_params(text: str) -> str:
+    """`text` with the value of every secret-bearing URL parameter replaced by "[redacted]"."""
+    return _SECRET_PARAM_VALUE_RE.sub(r"\1[redacted]", text or "")
+
+
 def _log_email(*, template: str, to_email: str, subject: str,
                status: str, status_code: int = 0, error_message: str = "",
                resend_id: str = "", duration_ms: int = 0, html_body: str = "") -> None:
-    """Log email send attempt to the email_log table (matches web pattern)."""
+    """Log email send attempt to the email_log table (matches web pattern).
+
+    The stored HTML has its secret URL parameters redacted
+    (_redact_secret_params), as the web app's sendEmail does, so the table and
+    /admin/emails cannot be used to replay a login link. Only the stored copy
+    is changed; the email itself carries the working link.
+    """
     conn = _get_db_conn()
     if not conn:
         return
@@ -144,7 +172,7 @@ def _log_email(*, template: str, to_email: str, subject: str,
                         error_message, resend_id, duration_ms, html_body)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 (template, to_email, subject, status, status_code,
-                 error_message, resend_id, duration_ms, html_body),
+                 error_message, resend_id, duration_ms, _redact_secret_params(html_body)),
             )
         conn.commit()
     except Exception as exc:

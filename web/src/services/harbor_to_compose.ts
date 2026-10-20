@@ -831,15 +831,20 @@ function stripQueryAndFragment(value: string): string {
 // The engine requires app_name to match [a-z][a-z0-9-]{0,62} (`_APP_NAME_RE`
 // in compose/build.py) and refuses the build otherwise. A name that slugs to
 // something starting with a digit ("9 Sample Studio") is therefore prefixed
-// rather than passed through.
+// rather than passed through. So is a name that starts with the platform's
+// reserved prefix (`_RESERVED_APP_NAME_PREFIX` in compose/build.py): the app
+// name becomes the site's Railway project name, and the platform refuses to
+// delete any project named with that prefix, so the engine refuses it too.
+const RESERVED_APP_NAME_PREFIX = 'craftandship';
+
 function sanitizeAppName(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) return null;
   const slug = trimmed.replace(/[^a-z0-9-]/g, '-').replace(/-{2,}/g, '-').replace(/^-|-$/g, '');
   if (!slug || slug.length < 2) return null;
-  const lettered = /^[a-z]/.test(slug) ? slug : `site-${slug}`;
-  return lettered.slice(0, 60);
+  const usable = /^[a-z]/.test(slug) && !slug.startsWith(RESERVED_APP_NAME_PREFIX);
+  return (usable ? slug : `site-${slug}`).slice(0, 60);
 }
 
 /** Engine: `_ADMIN_EMAIL_RE` (plus its 254 character limit). */

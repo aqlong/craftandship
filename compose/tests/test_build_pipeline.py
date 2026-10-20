@@ -2142,11 +2142,13 @@ class TestMagicLinkEmail:
         # Route loads the helper and calls it
         assert "require('../services/notify')" in src
         assert "sendMagicLinkEmail({" in src
-        # Builds the absolute URL from req.protocol (which honors the one
-        # trusted proxy hop) + the Host header. X-Forwarded-Host must NOT be
-        # read: any client can set it, and a link built from it would send
-        # the admin's login token to a host the requester chose.
-        assert "req.protocol + '://' + host + '/magic?token='" in src
+        # Builds the absolute URL on the site's own address (linkOrigin:
+        # SITE_ORIGIN, else the stored site_url), never on a request header:
+        # Host and X-Forwarded-Host are chosen by the client, and a link
+        # built from them would send the admin's login token to a host the
+        # requester chose. (test_generated_app_runtime.py runs it.)
+        assert "magicUrl: origin + '/magic?token=' + rawToken" in src
+        assert "req.get('host')" not in src
         assert "headers['x-forwarded-host']" not in src
         assert "get('x-forwarded-host')" not in src.lower()
         # Issuance is still logged (regression guard against ripping out the
@@ -4361,7 +4363,12 @@ def test_contact_form_uses_field_partial(resolved):
     # markup: one include, inside the loop over the form's fields.
     assert form.count("include('./field.ejs'") == 1
     assert "_fields.forEach(function(f) {" in form
-    assert "<input type=\"text\"" not in form and "<textarea" not in form
+    # The one hand-written input is the hidden honeypot, which is no field
+    # of the model (the same markup as form/public-submission.ejs).
+    honeypot = '<input type="text" name="website_url_hp" value="" tabindex="-1" autocomplete="off">'
+    assert form.count(honeypot) == 1
+    visible = form.replace(honeypot, "")
+    assert "<input type=\"text\"" not in visible and "<textarea" not in visible
     # Without form_fields the widget falls back to the default contact
     # shape: name, email, phone, the service select and message.
     for name in ("'name'", "'email'", "'phone'", "'service_interest'", "'message'"):
@@ -13370,8 +13377,9 @@ class TestSitemapXmlRoute:
 
     def test_sitemap_origin_falls_back_to_request_host_when_settings_blank(self, tmp_path):
         """When admin hasn't saved settings.site_url, the route derives
-        the origin from the request's host header (with x-forwarded-proto
-        support behind Railway's edge proxy)."""
+        the origin from the request's host header, with the scheme read
+        through req.protocol (which takes X-Forwarded-Proto only from the
+        one trusted proxy hop, Railway's edge), never from the raw header."""
         v1 = {
             "app_name": "sitemap-origin-fallback",
             "description": "Quiet studio.",
@@ -13379,7 +13387,8 @@ class TestSitemapXmlRoute:
         }
         build_dir = self._build_for(tmp_path, v1)
         seo_js = (build_dir / "routes" / "seo.js").read_text()
-        assert "x-forwarded-proto" in seo_js
+        assert "req.protocol === 'https'" in seo_js
+        assert "req.get('x-forwarded-proto')" not in seo_js
         assert "req.get('host')" in seo_js
         # Trailing slash on settings.site_url gets normalized.
         assert "replace(/\\/+$/, '')" in seo_js

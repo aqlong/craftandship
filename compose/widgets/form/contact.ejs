@@ -30,6 +30,12 @@
           <div class="bg-red-50 text-red-800 border border-red-200 rounded-lg px-4 py-3 text-sm" role="alert"><%= flashError %></div>
         <% } %>
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <!-- Honeypot (the same field as form/public-submission.ejs): real
+             users leave it blank, bots fill every input. POST /contact
+             answers a filled one like a real message and stores nothing. -->
+        <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+          <label>Website<input type="text" name="website_url_hp" value="" tabindex="-1" autocomplete="off"></label>
+        </div>
         <% _fields.forEach(function(f) {
           var _opts = { name: f.name, field_type: f.field_type || 'text', label: f.label || f.name, value: _v[f.name], required: !!f.required };
           if (f.name === 'service_interest') {

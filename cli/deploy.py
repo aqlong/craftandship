@@ -86,6 +86,11 @@ def magic_link_auth_enabled() -> bool:
 # Railway API, preventing unexpected input from influencing API calls.
 _APP_NAME_RE = re.compile(r"[^a-zA-Z0-9-]")
 
+# Every Railway project of the platform itself is named with this prefix, so
+# destroy_project refuses any project whose name starts with it (in any case),
+# and deploy() refuses to create a customer project with such a name.
+RESERVED_PROJECT_NAME_PREFIX = "craftandship"
+
 
 # ---------------------------------------------------------------------------
 # Input sanitization
@@ -2197,7 +2202,7 @@ def destroy_project(project_id, token):
 
     name_lower = project_name.lower()
     # Block anything whose name starts with "craftandship" or is in the explicit set
-    if name_lower.startswith("craftandship") or name_lower in protected_names:
+    if name_lower.startswith(RESERVED_PROJECT_NAME_PREFIX) or name_lower in protected_names:
         raise RuntimeError(
             f"destroy_project BLOCKED: project '{project_name}' ({project_id}) "
             f"matches protected name pattern. Add it to customer builds DB or "
@@ -2332,7 +2337,11 @@ def deploy(build_dir, custom_domain=None, *, password_login_probe=True):
     """Run the full Railway deployment pipeline; return deployment details.
 
     Security measures applied here:
-    - app_name is sanitized before any API call.
+    - app_name is sanitized before any API call, and a name with the
+      platform's reserved prefix is refused before a project exists.
+    - Once Railway reports the deployment successful, SITE_ORIGIN (the
+      Railway domain) is set on the app, so the links it emails do not come
+      from a request's Host header.
     - DATABASE_URL is logged only in redacted form.
     - project_token is never logged.
     - All subprocess calls use list form (no shell=True).
@@ -2363,7 +2372,8 @@ def deploy(build_dir, custom_domain=None, *, password_login_probe=True):
         otherwise the Railway-managed URL.
 
     Raises:
-        ValueError: If build_dir does not exist or app_name sanitizes to empty.
+        ValueError: If build_dir does not exist, or app_name sanitizes to empty
+            or starts with RESERVED_PROJECT_NAME_PREFIX (nothing is created).
         RuntimeError: On Railway API or deployment failures.
     """
     build_dir = str(Path(build_dir).resolve())
@@ -2379,6 +2389,17 @@ def deploy(build_dir, custom_domain=None, *, password_login_probe=True):
     app_name = sanitize_app_name(raw_app_name)
     if app_name != raw_app_name:
         print(f"  Note: app_name sanitized from '{raw_app_name}' to '{app_name}'")
+    # The project is named app_name, and destroy_project refuses every
+    # project whose name starts with the platform's prefix: a project created
+    # under such a name could never be cleaned up by the worker. The v2 spec
+    # gate refuses the prefix too (_spec_safety_errors in compose/build.py);
+    # this check also covers a v1 build and a name taken from the directory.
+    if app_name.lower().startswith(RESERVED_PROJECT_NAME_PREFIX):
+        raise ValueError(
+            f"app_name '{app_name}' starts with the platform's reserved prefix "
+            f"'{RESERVED_PROJECT_NAME_PREFIX}'; refusing to create a Railway project "
+            f"that destroy_project would refuse to delete"
+        )
 
     project_id = None
 
@@ -2461,6 +2482,19 @@ def deploy(build_dir, custom_domain=None, *, password_login_probe=True):
                 "health_check": "failed",
                 "deployment_status": deployment_status,
             }
+
+        # SITE_ORIGIN is the origin a generated site writes into the links it
+        # sends by email (the login link, the "View in admin" link of a form
+        # notification), in place of the request's Host header, which the
+        # client chooses (linkOrigin in the emitted middleware/settings.js).
+        # It is the Railway domain, which answers whether or not a custom
+        # domain's DNS is in place. The domain exists only now, after the
+        # first upload, so this is a second upsert. A deployment runs with the
+        # variables it was started with: the site reads SITE_ORIGIN from the
+        # next deployment of the service on, the one Railway starts for a
+        # variable change (its default; this repository cannot verify it) or
+        # any later one.
+        set_env_vars(project_id, environment_id, service_id, {"SITE_ORIGIN": f"https://{domain}"}, token)
 
         print(f"\nLive at: {live_url}")
         health_status = verify_health(live_url)

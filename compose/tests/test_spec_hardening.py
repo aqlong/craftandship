@@ -120,6 +120,10 @@ HOSTILE_SPECS = [
     ("app_name absolute", _set("app_name", "/tmp/x")),
     ("app_name trailing newline", _set("app_name", "coach\n")),
     ("app_name not a string", _set("app_name", ["coach"])),
+    # The platform's own Railway projects are named with this prefix, and
+    # destroy_project refuses to delete any project that is.
+    ("app_name reserved prefix", _set("app_name", "craftandship-x")),
+    ("app_name is the reserved prefix", _set("app_name", "craftandship")),
     ("model name with SQL", _models(_model(name="Thing; DROP TABLE users"))),
     ("model name trailing newline", _models(_model(name="Thing\n"))),
     ("model name not a string", _models(_model(name={"a": 1}))),
@@ -2033,11 +2037,14 @@ process.stdout.write(JSON.stringify(out));
     assert json.loads(proc.stdout) == [True, False, False, False, False, False, False, False]
 
 
-def test_magic_link_issue_ignores_forwarded_host_and_does_not_log_tokens_when_mail_works(app_files):
+def test_magic_link_issue_reads_no_request_header_for_the_link_and_does_not_log_tokens_when_mail_works(app_files):
+    """The text of the handler; test_generated_app_runtime.py runs it with a
+    spoofed Host header."""
     auth = app_files["routes/auth.js"]
     issue = auth[auth.index("router.post('/request-magic-link'"):auth.index("router.get('/magic-link-sent'")]
-    assert "req.headers['x-forwarded-host']" not in issue
-    assert "const host = String(req.get('host') || '');" in issue
+    assert "x-forwarded-host" not in issue.lower()
+    assert "req.get(" not in issue and "req.headers" not in issue and "req.protocol" not in issue
+    assert "const origin = await linkOrigin();" in issue
     mail, no_mail = issue.split("if (process.env.RESEND_API_KEY) {", 1)[1].split("} else {", 1)
     assert "rawToken" not in mail
     assert "rawToken" in no_mail.split("}", 1)[0]
@@ -2070,7 +2077,10 @@ def test_resource_router_rechecks_admin_session_and_hides_unpublished_rows():
     assert "req.session.role === 'admin'" in guard and "res.redirect('/login')" in guard
     detail = router[router.index("router.get('/:id'"):router.index("router.get('/:id/edit'")]
     assert "'SELECT * FROM articles WHERE id = $1' + (isAdmin ? '' : ' AND published = TRUE')" in detail
-    assert "/^[0-9]{1,9}$/.test(String(req.params.id))" in detail
+    # The id is checked once, for every :id route, before any handler runs
+    # (test_generated_app_runtime.py sends the requests).
+    param = router[router.index("router.param('id'"):router.index("// GET /: list.")]
+    assert "/^[0-9]{1,9}$/.test(String(id))" in param
 
 
 def test_composed_pages_hide_unpublished_rows():
@@ -2112,6 +2122,8 @@ def test_no_test_or_debug_bypass_in_emitted_code(app_files):
     allowed_env = {
         "SESSION_SECRET", "NODE_ENV", "PORT", "DATABASE_URL", "RESEND_API_KEY",
         "ADMIN_EMAIL", "SITE_NAME", "RESEND_FROM_DOMAIN",
+        # The origin of emailed links (linkOrigin); it relaxes no check.
+        "SITE_ORIGIN",
     }
     seen = set()
     for path, content in app_files.items():

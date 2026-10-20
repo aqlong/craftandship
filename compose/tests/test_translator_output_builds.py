@@ -485,6 +485,20 @@ def _engine_columns(files: dict, table: str) -> str:
     return schema[start:schema.index(");", start)]
 
 
+def test_a_business_named_with_the_platforms_reserved_prefix_still_builds(tmp_path):
+    """The engine refuses an app name that starts with "craftandship" (its
+    Railway project could never be deleted); the translator renames such a
+    business so the build goes through instead of failing every retry."""
+    names = ["CraftAndShip Studio", "craftandship", "Craftandship-Web"]
+    results = run_translator([extracted(app_name=name) for name in names], tmp_path)
+    for name, result in zip(names, results):
+        app_name = result["spec"]["app_name"]
+        assert not app_name.startswith("craftandship"), (name, app_name)
+        refused = BuildSpec.from_dict(dict(worker_spec(result["spec"]), app_name=name.lower().replace(" ", "-")))
+        assert validate_spec(refused), f"the engine must refuse {name!r} itself"
+        emitted_files(worker_spec(result["spec"]))
+
+
 def test_columns_the_engine_owns_are_left_to_the_engine(translated):
     for label, table in (("a created_at field that is text", "notes"), ("a created_at field that is a number", "notes"),
                          ("an id field of any type", "notes")):

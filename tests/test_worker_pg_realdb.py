@@ -496,6 +496,25 @@ class TestPreviewTransition:
         assert worker_pg._set_preview_status(conn, build, preview_url="https://new.example.test", attempt=_token(conn, build)) is True
         assert _row(conn, build)["review_status"] == "ai_review_queued"
 
+    def test_the_database_url_is_recorded_without_its_credentials(self, conn):
+        """The customer database's password stays with Railway (the app's
+        DATABASE_URL variable); the build row keeps where the database is."""
+        password = "pw-" + uuid.uuid4().hex
+        railway = worker_pg._railway_record(
+            "proj-1", "svc-1", "env-1",
+            "postgresql://railway:" + password + "@postgres.railway.internal:5432/railway",
+            "https://p.example.test")
+        build = _build(conn, _customer(conn), "deploying")
+        assert worker_pg._set_preview_status(conn, build, preview_url="https://p.example.test",
+                                             attempt=_token(conn, build), railway=railway) is True
+        with conn.cursor() as cur:
+            cur.execute("SELECT railway_project_id, railway_database_url FROM builds WHERE id = %s", (build,))
+            project, stored = cur.fetchone()
+        conn.commit()
+        assert project == "proj-1"
+        assert stored == "postgresql://***@postgres.railway.internal:5432/railway"
+        assert password not in stored
+
     @pytest.mark.parametrize("finished", ("live", "failed", "abandoned", "queued", "preview"))
     def test_a_stale_thread_cannot_pull_a_build_back_to_preview(self, conn, finished):
         build = _build(conn, _customer(conn), finished, review_status="approved", reviewed=True)

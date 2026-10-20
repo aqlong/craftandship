@@ -342,8 +342,9 @@ class TestPreviewWriteRecordsRailwayIds:
         return mock_conn, mock_cursor
 
     def test_one_statement_sets_preview_and_the_ids(self):
-        """provision_postgres generates a Postgres password that exists nowhere
-        else on the platform side, so the DATABASE_URL travels with the ids."""
+        """The DATABASE_URL travels with the ids, with its credentials masked:
+        the password provision_postgres generated stays with Railway (the
+        app's DATABASE_URL variable), not on the build row."""
         mock_conn, mock_cursor = self._conn()
         # Synthetic DSN assembled at runtime so no source line looks like a real credential.
         db_url = "postgresql://postgres:" + "secret-pw" + "@postgres.railway.internal:5432/railway"
@@ -361,7 +362,8 @@ class TestPreviewWriteRecordsRailwayIds:
             assert f"{column} = CASE WHEN %s THEN %s ELSE {column} END" in sql
         assert params == (
             "build-1", "pending",
-            True, "proj-1", True, "svc-1", True, "env-1", True, db_url,
+            True, "proj-1", True, "svc-1", True, "env-1",
+            True, "postgresql://***@postgres.railway.internal:5432/railway",
             "https://x.example.test", "build-1", ATTEMPT,
         )
         mock_conn.commit.assert_called_once()

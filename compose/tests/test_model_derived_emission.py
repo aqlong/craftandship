@@ -387,7 +387,8 @@ def test_contact_widget_renders_the_fields_it_is_given():
         "submitted": {"full_name": "Pat <Doe>", "company": "Example Co"},
     })
     names = re.findall(r'<(?:input|textarea|select)[^>]* name="([a-z_]+)"', out)
-    assert names == ["_csrf", "full_name", "email", "company", "message"]
+    # website_url_hp is the honeypot POST /contact checks; no model field.
+    assert names == ["_csrf", "website_url_hp", "full_name", "email", "company", "message"]
     assert 'value="Pat &lt;Doe&gt;"' in out and 'value="Example Co"' in out
     assert 'type="email"' in out and "<textarea" in out
     assert "admin_notes" not in out and 'name="phone"' not in out
@@ -399,7 +400,7 @@ def test_contact_widget_renders_the_fields_it_is_given():
         "submitted": {"name": "Pat", "message": "Hello there", "service_interest": "B"},
     })
     names = re.findall(r'<(?:input|textarea|select)[^>]* name="([a-z_]+)"', default)
-    assert names == ["_csrf", "name", "email", "phone", "service_interest", "message"]
+    assert names == ["_csrf", "website_url_hp", "name", "email", "phone", "service_interest", "message"]
     assert 'value="Pat"' in default and ">Hello there</textarea>" in default
     assert '<option value="B" selected>B</option>' in default
     assert "Optional." in default and 'placeholder="How can I support you?"' in default

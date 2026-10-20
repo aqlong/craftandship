@@ -17,6 +17,7 @@ servers on loopback.
 """
 
 import http.server
+import json
 import os
 import sys
 import threading
@@ -690,6 +691,113 @@ class TestDestroyProjectFailsClosed:
              patch("deploy.destroy_project", side_effect=RuntimeError("destroy_project BLOCKED: x")):
             with pytest.raises(RuntimeError, match="the real failure"):
                 deploy.deploy(str(build_dir))
+
+
+class TestReservedProjectName:
+    """destroy_project refuses every project whose name starts with
+    "craftandship" (the platform's own projects do). A customer project with
+    such a name could never be cleaned up, so deploy() refuses the name
+    before anything is created."""
+
+    RESERVED = ["craftandship-foo", "CraftAndShip-Studio", "--craftandship", "craftandship", "Craftandship_x"]
+
+    @pytest.mark.parametrize("name", RESERVED)
+    def test_deploy_refuses_the_reserved_prefix_before_any_railway_call(self, tmp_path, name):
+        build_dir = tmp_path / "app"
+        build_dir.mkdir()
+        (build_dir / "package.json").write_text(json.dumps({"name": name}))
+        operations = []
+
+        def recording_gql(query, variables=None, token=None, **kwargs):
+            operations.append(query)
+            raise AssertionError("no Railway call may be made")
+
+        with patch("deploy.check_railway_cli"), patch("deploy.get_token", return_value="t"), \
+             patch("deploy.gql", side_effect=recording_gql), patch("builtins.print"):
+            with pytest.raises(ValueError, match="reserved prefix"):
+                deploy.deploy(str(build_dir))
+        assert operations == []
+
+    @pytest.mark.parametrize("name", RESERVED)
+    def test_every_refused_name_is_one_destroy_project_would_refuse(self, name):
+        """The two sides agree: what deploy() refuses to create is exactly
+        what destroy_project refuses to delete."""
+        def lookup(query, variables=None, token=None, **kwargs):
+            if "projectDelete" in query:
+                raise AssertionError("the delete must not be sent")
+            return {"project": {"id": "p", "name": deploy.sanitize_app_name(name)}}
+
+        with patch.dict(os.environ, {"RAILWAY_PROJECT_ID": "platform-project"}, clear=False), \
+             patch("deploy.gql", side_effect=lookup):
+            with pytest.raises(RuntimeError, match="BLOCKED"):
+                deploy.destroy_project("p", token="t")
+
+    def test_a_name_that_only_contains_the_prefix_is_deployed(self, tmp_path):
+        build_dir = tmp_path / "app"
+        build_dir.mkdir()
+        (build_dir / "package.json").write_text('{"name": "my-craftandship-site"}')
+        with patch("deploy.check_railway_cli"), patch("deploy.get_token", return_value="t"), \
+             patch("deploy.create_project", side_effect=RuntimeError("stop here")) as create, \
+             patch("builtins.print"):
+            with pytest.raises(RuntimeError, match="stop here"):
+                deploy.deploy(str(build_dir))
+        create.assert_called_once_with("my-craftandship-site", "t")
+
+
+class TestSiteOrigin:
+    """deploy() gives the app SITE_ORIGIN, the Railway domain, which the
+    generated site uses for the links it emails instead of a request's Host
+    header (compose/tests/test_generated_app_runtime.py runs that side)."""
+
+    def _deploy(self, tmp_path, *, custom_domain=None, wait_effect=None):
+        build_dir = tmp_path / "app"
+        build_dir.mkdir()
+        (build_dir / "package.json").write_text('{"name": "app"}')
+        events = []
+
+        def capture_env(project_id, environment_id, service_id, variables, token):
+            events.append(("env", service_id, dict(variables)))
+
+        def domain(environment_id, service_id, token):
+            events.append(("domain", service_id))
+            return "app-production.up.railway.example"
+
+        with patch("deploy.check_railway_cli"), patch("deploy.get_token", return_value="t"), \
+             patch("deploy.create_project", return_value="proj-1"), \
+             patch("deploy.get_environment_id", return_value="env-1"), \
+             patch("deploy.create_service", return_value="svc-1"), \
+             patch("deploy.provision_postgres", return_value=("db-1", _DB_URL)), \
+             patch("deploy.set_env_vars", side_effect=capture_env), \
+             patch("deploy.deploy_source", return_value="dep-1"), \
+             patch("deploy.wait_for_deployment", side_effect=wait_effect), \
+             patch("deploy.generate_domain", side_effect=domain), \
+             patch("deploy.add_custom_domain", return_value={"domain": "www.owner.example"}), \
+             patch("deploy.verify_health", return_value="ok"), \
+             patch("builtins.print"):
+            result = deploy.deploy(str(build_dir), custom_domain=custom_domain, password_login_probe=False)
+        return result, events
+
+    def test_site_origin_is_the_railway_domain_set_once_the_domain_exists(self, tmp_path):
+        result, events = self._deploy(tmp_path)
+        assert result["health_check"] == "ok"
+        origin_sets = [i for i, e in enumerate(events) if e[0] == "env" and "SITE_ORIGIN" in e[2]]
+        assert len(origin_sets) == 1
+        kind, service, variables = events[origin_sets[0]]
+        assert service == "svc-1"
+        assert variables == {"SITE_ORIGIN": "https://app-production.up.railway.example"}
+        assert events.index(("domain", "svc-1")) < origin_sets[0]
+
+    def test_with_a_custom_domain_site_origin_is_still_the_railway_domain(self, tmp_path):
+        """The custom domain answers only once its DNS points at Railway."""
+        result, events = self._deploy(tmp_path, custom_domain="www.owner.example")
+        assert result["live_url"] == "https://www.owner.example"
+        origins = [e[2]["SITE_ORIGIN"] for e in events if e[0] == "env" and "SITE_ORIGIN" in e[2]]
+        assert origins == ["https://app-production.up.railway.example"]
+
+    def test_a_crashed_deployment_is_returned_without_it(self, tmp_path):
+        result, events = self._deploy(tmp_path, wait_effect=deploy.DeploymentEnded("CRASHED", 1))
+        assert result["deployment_status"] == "CRASHED"
+        assert not [e for e in events if e[0] == "env" and "SITE_ORIGIN" in e[2]]
 
 
 # ---------------------------------------------------------------------------

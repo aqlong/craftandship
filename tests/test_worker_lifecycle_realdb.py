@@ -32,6 +32,7 @@ otherwise.
 
 import logging
 import os
+import re
 import sys
 import threading
 import time
@@ -127,8 +128,10 @@ class FakeRailway:
     the deployed app. Everything the worker does with their results is real."""
 
     def __init__(self, *, health="ok", later_health=None, deploy_error=None, project="proj-new",
-                 deployment_status=None, deploy_logs=None, unreadable_logs=False):
+                 deployment_status=None, deploy_logs=None, unreadable_logs=False, database_url=None):
         self.project = project
+        # The DATABASE_URL deploy() reports for the new database (None: none).
+        self.database_url = database_url
         self.health = health
         self.later_health = list(later_health or [])
         self.deploy_error = deploy_error
@@ -153,7 +156,7 @@ class FakeRailway:
             "railway_project_id": self.project,
             "railway_service_id": f"svc-{self.project}",
             "railway_environment_id": f"env-{self.project}",
-            "database_url": None,
+            "database_url": self.database_url,
             "health_check": self.health,
         }
         if self.deployment_status is not None:
@@ -274,6 +277,22 @@ def _monitored_projects(conn) -> list:
     return rows
 
 
+def _email_body(conn, template) -> str:
+    with conn.cursor() as cur:
+        cur.execute("SELECT html_body FROM email_log WHERE template = %s ORDER BY id DESC LIMIT 1", (template,))
+        body = cur.fetchone()[0]
+    conn.commit()
+    return body
+
+
+def _stored_database_url(conn, build_id):
+    with conn.cursor() as cur:
+        cur.execute("SELECT railway_database_url FROM builds WHERE id = %s", (build_id,))
+        stored = cur.fetchone()[0]
+    conn.commit()
+    return stored
+
+
 def _logged(conn, build_id) -> str:
     with conn.cursor() as cur:
         cur.execute("SELECT message FROM build_logs WHERE build_id = %s ORDER BY id", (build_id,))
@@ -347,7 +366,10 @@ class TestAFailedRedeployNeverTouchesTheAnnouncedProject:
         worker leaves it alone and names it in a warning."""
         customer = _customer(conn)
         build = _previewed_build(conn, builds_root, customer)
-        railway = FakeRailway(health="ok", project="proj-redeployed")
+        database_password = "pw-" + uuid.uuid4().hex
+        railway = FakeRailway(health="ok", project="proj-redeployed",
+                              database_url=f"postgresql://railway:{database_password}"
+                                           "@postgres.railway.internal:5432/railway")
 
         with caplog.at_level(logging.WARNING, logger="worker_pg"):
             self._requeue_and_run(conn, build, railway)
@@ -363,7 +385,19 @@ class TestAFailedRedeployNeverTouchesTheAnnouncedProject:
                    for record in caplog.records), "the superseded project must be named"
         assert _emails(conn, "preview_ready") == [
             ("preview_ready", _customer_email(conn, customer), "skipped")]
-        assert "Magic link login URL: https://proj-redeployed.example.test/magic?token=" in _logged(conn, build)
+        # The login link is in the email only: build_logs (the owner's log
+        # API, the admin pages) says where it is, and email_log keeps the
+        # body with the token redacted.
+        logged = _logged(conn, build)
+        assert "token=" not in logged and "/magic" not in logged
+        assert worker_pg.LOGIN_LINK_EMAILED_LOG_LINE in logged
+        body = _email_body(conn, "preview_ready")
+        assert "https://proj-redeployed.example.test/magic?token=[redacted]" in body
+        assert not re.search(r"token=[0-9a-f]{64}", body)
+        # The database URL is stored without its credentials.
+        stored_url = _stored_database_url(conn, build)
+        assert stored_url == "postgresql://***@postgres.railway.internal:5432/railway"
+        assert database_password not in stored_url
 
     def test_a_retried_attempt_removes_its_project_before_the_next_one_deploys(
             self, conn, builds_root, railway_token, no_waiting):

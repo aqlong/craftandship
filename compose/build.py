@@ -434,6 +434,12 @@ class BuildSpec:
 # their classes out ([A-Za-z0-9_]) carry the flag too, so that adding a
 # `\d` to one of them later cannot reopen this.
 _APP_NAME_RE = re.compile(r"[a-z][a-z0-9-]{0,62}", re.ASCII)
+# The app name becomes the name of the site's Railway project (cli/deploy.py
+# reads it from package.json). destroy_project refuses every project whose
+# name starts with this prefix, because the platform's own projects do, so a
+# site named with it could never be cleaned up. The gate refuses it here and
+# deploy() refuses it again before it creates a project.
+_RESERVED_APP_NAME_PREFIX = "craftandship"
 _MODEL_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,59}", re.ASCII)
 _FIELD_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,62}", re.ASCII)
 _MODEL_SLUG_RE = re.compile(r"[a-z][a-z0-9-]{0,62}", re.ASCII)
@@ -865,6 +871,10 @@ def _spec_safety_errors(spec: "BuildSpec") -> List[str]:
 
     if not isinstance(spec.app_name, str) or not _APP_NAME_RE.fullmatch(spec.app_name):
         errors.append("app_name must be lowercase slug")
+    elif spec.app_name.lower().startswith(_RESERVED_APP_NAME_PREFIX):
+        errors.append(
+            f"app_name may not start with the platform's reserved prefix {_RESERVED_APP_NAME_PREFIX!r}"
+        )
 
     if spec.admin_email and (
         not isinstance(spec.admin_email, str)
@@ -4091,6 +4101,20 @@ function requireRole(role) {
   return requireAnyRole([role]);
 }
 
+// A changed password ends every OTHER session of the account, so a session
+// someone else holds (a copied cookie, a browser left signed in elsewhere)
+// stops working; the session that made the change stays signed in.
+// connect-pg-simple stores each session as JSON in user_sessions.sess, with
+// the userId the sign-in wrote. Called by POST /set-password and POST
+// /admin/change-password after the new hash is stored.
+async function endOtherSessions(req) {
+  const db = require('../db');
+  await db.query(
+    "DELETE FROM user_sessions WHERE sid <> $1 AND sess->>'userId' = $2",
+    [String(req.sessionID || ''), String(req.session.userId)]
+  );
+}
+
 // Constant-time comparison of the submitted token with the session's.
 // Rejects anything that is not a non-empty string (an absent session token
 // must never match an absent submitted one).
@@ -4145,7 +4169,7 @@ function validateCsrfToken(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requireAdmin, requireRole, requireAnyRole, validateCsrfToken };
+module.exports = { requireAuth, requireAdmin, requireRole, requireAnyRole, validateCsrfToken, endOtherSessions };
 '''
     return ("middleware/auth.js", contents)
 
@@ -4179,6 +4203,10 @@ def emit_middleware_rate_limit_js(rs: ResolvedSpec) -> tuple:
         mailbox flooding and table growth.
       - formLimiter: public form posts (contact, newsletter, custom forms),
         which write a row and may send an admin notification.
+      - magicLinkOpenLimiter: HEAD and GET /magic. Neither spends a token,
+        but each answers whether one is valid, so they are limited too
+        (more loosely than the POSTs: mail scanners and link previews open
+        a link before its owner does).
 
     Limits of this design, stated so nobody assumes more: the counters live
     in process memory (they reset on restart and are not shared between
@@ -4203,8 +4231,11 @@ const authLimiter = limiter(15, 10);
 const magicLinkRequestLimiter = limiter(60, 5);
 // Public form posts: 20 per 15 minutes.
 const formLimiter = limiter(15, 20);
+// Opening a login link (HEAD or GET /magic, which check a token without
+// spending it): 60 per 15 minutes.
+const magicLinkOpenLimiter = limiter(15, 60);
 
-module.exports = { authLimiter, magicLinkRequestLimiter, formLimiter };
+module.exports = { authLimiter, magicLinkRequestLimiter, formLimiter, magicLinkOpenLimiter };
 '''
     return ("middleware/rate-limit.js", contents)
 
@@ -4499,6 +4530,33 @@ async function loadSettings() {{
   }}
 }}
 
+// The scheme and host of a URL that is http or https, or ''.
+function _httpOrigin(value) {{
+  if (typeof value !== 'string' || !value.trim()) return '';
+  try {{
+    const url = new URL(value.trim());
+    return (url.protocol === 'https:' || url.protocol === 'http:') ? url.origin : '';
+  }} catch (e) {{
+    return '';
+  }}
+}}
+
+// The origin of the links this site sends out of band: the login link it
+// emails and the "View in admin" link of a form notification. It is
+// SITE_ORIGIN, which the deploy sets from the site's Railway domain, else
+// the site_url stored in site_settings, else '' (no absolute link can be
+// made). It is never taken from a request: the Host header is chosen by
+// whoever sends the request, and so is X-Forwarded-Proto, so a link built
+// from them could point the recipient at a host the sender controls. (The
+// middleware below fills site_url from the request only on its own copy for
+// the page being rendered; loadSettings returns what the database holds.)
+async function linkOrigin() {{
+  const fromEnv = _httpOrigin(process.env.SITE_ORIGIN);
+  if (fromEnv) return fromEnv;
+  const stored = await loadSettings();
+  return _httpOrigin(stored && stored.site_url);
+}}
+
 const _NAV_ITEMS = {json.dumps(_default_nav_items(rs))};
 const _ADMIN_NAV_ITEMS = {json.dumps(_default_admin_nav_items(rs))};
 
@@ -4554,7 +4612,7 @@ async function siteSettingsMiddleware(req, res, next) {{
 
 function invalidateSettingsCache() {{ _cachedSettings = null; }}
 
-module.exports = {{ siteSettingsMiddleware, loadSettings, invalidateSettingsCache }};
+module.exports = {{ siteSettingsMiddleware, loadSettings, invalidateSettingsCache, linkOrigin }};
 '''
     return ("middleware/settings.js", contents)
 
@@ -4775,8 +4833,9 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const router = express.Router();
 const db = require('../db');
-const { validateCsrfToken } = require('../middleware/auth');
-const { authLimiter, magicLinkRequestLimiter } = require('../middleware/rate-limit');
+const { validateCsrfToken, endOtherSessions } = require('../middleware/auth');
+const { authLimiter, magicLinkRequestLimiter, magicLinkOpenLimiter } = require('../middleware/rate-limit');
+const { linkOrigin } = require('../middleware/settings');
 
 // Session fixation defense: issue a NEW session id at the moment of login,
 // so an id an attacker planted in (or read from) the browser beforehand is
@@ -4888,7 +4947,9 @@ router.post('/login', authLimiter, validateCsrfToken, async (req, res) => {
 // 410 otherwise. It does NOT consume the token (no UPDATE used_at), so a
 // link can be checked without burning it:
 //   curl -I "https://app.example.com/magic?token=<raw>" -> 200 = good
-router.head('/magic', async (req, res) => {
+// That answer is a validity check, so HEAD and GET are rate limited per
+// address (magicLinkOpenLimiter) like the POSTs that spend a token.
+router.head('/magic', magicLinkOpenLimiter, async (req, res) => {
   const rawToken = (req.query && req.query.token) ? String(req.query.token) : '';
   if (!rawToken || rawToken.length < 16) return res.status(410).end();
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
@@ -4921,7 +4982,7 @@ router.head('/magic', async (req, res) => {
 // was necessarily incomplete; an always-non-consuming GET closes the
 // hole for every client, known or unknown. This matches the behavior
 // of Slack, Notion, Substack, and Linear.
-router.get('/magic', async (req, res) => {
+router.get('/magic', magicLinkOpenLimiter, async (req, res) => {
   const rawToken = (req.query && req.query.token) ? String(req.query.token) : '';
   if (!rawToken || rawToken.length < 16) {
     return res.redirect('/login?error=invalid-token');
@@ -5067,6 +5128,8 @@ router.post('/set-password', authLimiter, validateCsrfToken, async (req, res) =>
     }
     const hash = await bcrypt.hash(new_password, 10);
     await db.query('UPDATE users SET password = $1, password_set = TRUE WHERE id = $2', [hash, req.session.userId]);
+    // Every other session of this account is signed out.
+    await endOtherSessions(req);
     // The login-link allowance is spent: the next change needs the password.
     delete req.session.loginLinkAt;
     req.session.save(() => res.redirect(landingFor(req.session.role)));
@@ -5105,15 +5168,14 @@ router.post('/request-magic-link', magicLinkRequestLimiter, validateCsrfToken, a
         'INSERT INTO magic_link_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
         [userId, tokenHash, expiresAt]
       );
-      // Absolute URL for the emailed link. req.protocol honors
-      // X-Forwarded-Proto from the one trusted proxy hop (`trust proxy`
-      // in server.js); the host is the Host header the edge routed on.
-      // X-Forwarded-Host is deliberately NOT read: it is a plain request
-      // header any client can set, and trusting it would let an attacker
-      // request a link for the admin's address that points at a host the
-      // attacker controls, then collect the token when the admin clicks.
-      const host = String(req.get('host') || '');
-      const magicUrl = req.protocol + '://' + host + '/magic?token=' + rawToken;
+      // The emailed link is absolute, and its origin is the site's own
+      // address (linkOrigin in middleware/settings.js: SITE_ORIGIN, else the
+      // stored site_url), never this request's Host or X-Forwarded-*
+      // headers. Those are chosen by whoever sends the request: built from
+      // them, a link requested for the admin's address could point at a host
+      // the requester controls and hand over the token when the admin
+      // clicks. With no known address there is no link to email.
+      const origin = await linkOrigin();
       // A login token is a credential. The else branch below is the ONE
       // place this app writes one to its log, and it runs only when no
       // RESEND_API_KEY is set: nothing can be emailed then, and the log is
@@ -5121,17 +5183,20 @@ router.post('/request-magic-link', magicLinkRequestLimiter, validateCsrfToken, a
       // mail provider and nowhere else; if that send fails the link is
       // lost (the owner requests another one), it is not logged instead.
       if (process.env.RESEND_API_KEY) {
-        console.log('[magic-link] issued for user', userId);
+        if (origin) console.log('[magic-link] issued for user', userId);
+        else console.error('[magic-link] not emailed for user', userId, ': the site address is unknown (set SITE_ORIGIN)');
       } else {
         console.log('[magic-link] issued for user', userId, '(no RESEND_API_KEY, link logged for operator recovery): /magic?token=' + rawToken);
       }
-      try {
-        const { sendMagicLinkEmail } = require('../services/notify');
-        sendMagicLinkEmail({ to: realEmail, magicUrl }).catch(err => {
-          console.error('[magic-link-email] send failed:', err && err.message);
-        });
-      } catch (loadErr) {
-        console.error('[magic-link-email] could not load services/notify:', loadErr && loadErr.message);
+      if (origin) {
+        try {
+          const { sendMagicLinkEmail } = require('../services/notify');
+          sendMagicLinkEmail({ to: realEmail, magicUrl: origin + '/magic?token=' + rawToken }).catch(err => {
+            console.error('[magic-link-email] send failed:', err && err.message);
+          });
+        } catch (loadErr) {
+          console.error('[magic-link-email] could not load services/notify:', loadErr && loadErr.message);
+        }
       }
     }
   } catch (e) {
@@ -5244,7 +5309,9 @@ const PUBLIC_ROUTES = {paths_js_literal};
 function siteOrigin(req, res) {{
   const cfg = (res.locals && res.locals.settings && res.locals.settings.site_url) || '';
   if (cfg) return String(cfg).replace(/\\/+$/, '');
-  const proto = (req.secure || req.get('x-forwarded-proto') === 'https') ? 'https' : 'http';
+  // req.protocol reads X-Forwarded-Proto only from the one trusted proxy
+  // hop (`trust proxy` in server.js); anything but https is http.
+  const proto = req.protocol === 'https' ? 'https' : 'http';
   return proto + '://' + (req.get('host') || 'localhost');
 }}
 
@@ -5972,7 +6039,7 @@ def emit_routes_admin_dashboard_js(rs: ResolvedSpec) -> tuple:
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const db = require('../db');
-const {{ requireAuth, requireRole, validateCsrfToken }} = require('../middleware/auth');
+const {{ requireAuth, requireRole, validateCsrfToken, endOtherSessions }} = require('../middleware/auth');
 
 const CLEARABLE_TABLES = {json.dumps(all_tables)};
 
@@ -6036,6 +6103,8 @@ router.post('/change-password', requireAuth, requireRole('admin'), validateCsrfT
     }}
     const hash = await bcrypt.hash(new_password, 10);
     await db.query('UPDATE users SET password = $1, password_set = TRUE WHERE id = $2', [hash, req.session.userId]);
+    // Every other session of this account is signed out.
+    await endOtherSessions(req);
     req.session.flash_success = 'Password updated.';
     req.session.save(() => res.redirect('/admin'));
   }} catch (e) {{
@@ -6054,8 +6123,9 @@ router.post('/clear-all', requireAuth, requireRole('admin'), validateCsrfToken, 
     req.session.flash_success = 'All content data cleared. User accounts and settings preserved.';
     req.session.save(() => res.redirect('/admin'));
   }} catch (e) {{
+    // The database's error text goes to the log only.
     console.error(e);
-    req.session.flash_error = 'Failed to clear data: ' + e.message;
+    req.session.flash_error = 'Could not clear the data. Please try again.';
     req.session.save(() => res.redirect('/admin'));
   }}
 }});
@@ -6261,8 +6331,9 @@ router.post('/settings', requireAuth, requireRole('admin'), validateCsrfToken, a
     req.session.flash_success = 'Site settings saved.';
     req.session.save(() => res.redirect('/admin/settings'));
   }} catch (e) {{
+    // The database's error text goes to the log only.
     console.error(e);
-    req.session.flash_error = 'Could not save settings: ' + e.message;
+    req.session.flash_error = 'Could not save the settings. Please try again.';
     req.session.save(() => res.redirect('/admin/settings'));
   }}
 }});
@@ -6695,16 +6766,19 @@ def emit_routes_pages_js(rs: ResolvedSpec) -> tuple:
     req.session.flash_success = __SUCCESS__;
     // Fire-and-forget admin notification. Does NOT block the redirect;
     // missing RESEND_API_KEY logs once and skips the network call so the
-    // form still works on apps that have not wired mail.
+    // form still works on apps that have not wired mail. The "View in
+    // admin" link is built on the site's own address (linkOrigin), never on
+    // this request's Host header, which the submitter chooses; with no
+    // known address the email goes out without the link.
     try {
       const newId = insertRes && insertRes.rows && insertRes.rows[0] && insertRes.rows[0].id;
-      const scheme = (req.secure || req.get('x-forwarded-proto') === 'https') ? 'https' : 'http';
-      const manageUrl = scheme + '://' + (req.get('host') || '') + '/admin/__ADMIN_SLUG__' + (newId ? ('/' + newId) : '');
-      sendAdminNotification({
-        subject: 'New __TITLE__ submission',
-        summary: 'Someone just submitted the __TITLE__ form on your site.',
-        fields: submitted,
-        manageUrl,
+      linkOrigin().then(function(origin) {
+        return sendAdminNotification({
+          subject: 'New __TITLE__ submission',
+          summary: 'Someone just submitted the __TITLE__ form on your site.',
+          fields: submitted,
+          manageUrl: origin ? (origin + '/admin/__ADMIN_SLUG__' + (newId ? ('/' + newId) : '')) : '',
+        });
       }).catch(function(e) { console.error('[notify] admin-notify async failed:', e && e.message); });
     } catch (_notifyErr) {
       // Never block the redirect on a notification glitch.
@@ -6762,6 +6836,7 @@ def emit_routes_pages_js(rs: ResolvedSpec) -> tuple:
         "const db = require('../db');\n"
         "const { requireAuth, requireRole, requireAnyRole, validateCsrfToken } = require('../middleware/auth');\n"
         "const { formLimiter } = require('../middleware/rate-limit');\n"
+        "const { linkOrigin } = require('../middleware/settings');\n"
         "const { sendAdminNotification } = require('../services/notify');\n\n"
     )
     contents = header_imports + "\n\n".join(handlers) + "\n\nmodule.exports = router;\n"
@@ -7965,6 +8040,17 @@ def _contact_post_handler_js(rs: ResolvedSpec) -> str:
 });'''.replace("__VIEW__", page_id)
     return _fill_template("""router.post('/contact', formLimiter, validateCsrfToken, async (req, res) => {
   try {
+    // Honeypot, as on the custom form pages: real users leave
+    // website_url_hp blank, bots fill every input. The bot gets the same
+    // answer as a real sender and nothing is stored.
+    if (req.body && req.body.website_url_hp) {
+      return res.render('__VIEW__', {
+        title: 'Thanks',
+        layout: 'layout-public',
+        preselected_service: '',
+        flashSuccess: __THANKS__
+      });
+    }
     const { processPublicForm } = require('../middleware/fields');
     // The contact model's visitor-facing columns, from the spec, each with
     // the checks a value must pass before anything is stored.
@@ -7989,7 +8075,7 @@ def _contact_post_handler_js(rs: ResolvedSpec) -> str:
       title: 'Thanks',
       layout: 'layout-public',
       preselected_service,
-      flashSuccess: 'Thank you for reaching out! We will get back to you soon.'
+      flashSuccess: __THANKS__
     });
   } catch (e) {
     console.error(e);
@@ -8002,6 +8088,7 @@ def _contact_post_handler_js(rs: ResolvedSpec) -> str:
         "INSERT_SQL": _public_insert_sql(model, [f["name"] for f in fields]),
         "VIEW": page_id,
         "MIDDOT": chr(0x00B7),
+        "THANKS": json.dumps("Thank you for reaching out! We will get back to you soon."),
     })
 
 
@@ -8057,6 +8144,11 @@ def _newsletter_post_handler_js(rs: ResolvedSpec) -> str:
     )
     return _fill_template("""router.post('/newsletter-signup', formLimiter, validateCsrfToken, async (req, res) => {
   try {
+    // Honeypot, as on the custom form pages: a filled website_url_hp is a
+    // bot. It gets the same answer as a real signup and nothing is stored.
+    if (req.body && req.body.website_url_hp) {
+      return res.redirect('/#newsletter-success');
+    }
     // Same sanitize + pattern check the admin CRUD applies to an email
     // column; anything that is not one plausible address is ignored.
     const { sanitizeField, validateField } = require('../middleware/fields');
@@ -8373,6 +8465,18 @@ router.use((req, res, next) => {{
   next();
 }});
 
+// Ids are SERIAL integers. Every route below that takes an :id (view, edit,
+// update, delete) answers 404 for anything else before its handler or a
+// query sees the value ("new" is routed before /:id). The one value let
+// through is a visitor's on a public mount whose URLs belong to an archetype
+// page: GET /:id hands those requests on to that page (a slug, not an id),
+// and the other :id routes refuse every visitor there.
+router.param('id', (req, res, next, id) => {{
+  if (/^[0-9]{{1,9}}$/.test(String(id))) return next();
+  if (!req.baseUrl.startsWith('/admin/') && COLLIDES_WITH_ARCHETYPE_PAGE) return next();
+  return res.status(404).render('error-404', {{ title: '404', layout: 'layout-public' }});
+}});
+
 // GET /: list. Branches on req.baseUrl. Admin view supports
 // table sort (?sort=col&order=asc|desc) + pagination (?page=N&per_page=N);
 // column whitelist prevents SQL injection on the ORDER BY.
@@ -8548,6 +8652,8 @@ router.post('/', yieldPublicPost, validateCsrfToken, async (req, res) => {{
     req.session.flash_success = '{resource_name_human} created.';
     req.session.save(() => res.redirect('/admin/{slug}'));
   }} catch (e) {{
+    // The database's own error text (constraint, column and value names)
+    // goes to the log only; the page says that the save failed.
     console.error(e);
     try {{
       {_belongs_to_parent_fetch_js(bt_info)}
@@ -8556,7 +8662,7 @@ router.post('/', yieldPublicPost, validateCsrfToken, async (req, res) => {{
         layout: 'layout-admin',
         mode: 'new',
         record: null,
-        error: e.message,
+        error: 'Could not save. Please check the fields and try again.',
         parent_rows
       }});
     }} catch (_e2) {{
@@ -8577,11 +8683,7 @@ router.get('/:id', async (req, res, next) => {{
     if (!isAdmin && COLLIDES_WITH_ARCHETYPE_PAGE) {{
       return next();
     }}
-    // Ids are SERIAL integers. Anything else ("new" is routed above; a
-    // typo or a probe is not) is a 404, not a database type error.
-    if (!/^[0-9]{{1,9}}$/.test(String(req.params.id))) {{
-      return res.status(404).render('error-404', {{ title: '404', layout: 'layout-public' }});
-    }}
+    // The id is a plain integer here (router.param above).
     {public_detail_gate}
     // The public detail page applies the same filter as the public
     // listing, so an unpublished row cannot be read by guessing its id.
@@ -8684,8 +8786,9 @@ router.post('/:id/update', validateCsrfToken, async (req, res) => {{
     req.session.flash_success = '{resource_name_human} updated.';
     req.session.save(() => res.redirect('/admin/{slug}'));
   }} catch (e) {{
+    // The database's error text stays in the log (see POST / above).
     console.error(e);
-    req.session.flash_error = 'Could not save: ' + e.message;
+    req.session.flash_error = 'Could not save. Please check the fields and try again.';
     req.session.save(() => res.redirect('/admin/{slug}/' + req.params.id + '/edit'));
   }}
 }});
@@ -8698,8 +8801,13 @@ router.post('/:id/delete', validateCsrfToken, async (req, res) => {{
     req.session.flash_success = '{resource_name_human} deleted.';
     req.session.save(() => res.redirect('/admin/{slug}'));
   }} catch (e) {{
+    // The database's error text stays in the log (see POST / above); the
+    // message is chosen by the error code alone (23503: a row of another
+    // table still refers to this one).
     console.error(e);
-    req.session.flash_error = 'Delete failed: ' + e.message;
+    req.session.flash_error = (e && e.code === '23503')
+      ? 'Could not delete: other entries still refer to this one.'
+      : 'Could not delete. Please try again.';
     req.session.save(() => res.redirect('/admin/{slug}'));
   }}
 }});

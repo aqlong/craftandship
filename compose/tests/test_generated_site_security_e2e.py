@@ -21,9 +21,9 @@ their models, the per-address login limit, and the CSP nonce.
 
 Budget to keep in mind before adding requests: the generated app allows
 10 POSTs per 15 minutes per address across /login, /magic/consume and
-/set-password (site A spends 7 of them; the last test of site B spends all
-of that site's), 5 login-link requests per hour, and 20 public form posts
-per 15 minutes.
+/set-password (site A spends 9 of them; the last test of site B spends all
+of that site's), 60 HEAD or GET /magic per 15 minutes, 5 login-link
+requests per hour, and 20 public form posts per 15 minutes.
 
 Same prerequisites as test_compose_end_to_end.py (node, a local
 PostgreSQL, builds/sample-healer/node_modules); the module skips without
@@ -53,6 +53,7 @@ MEMBER = "member@site-a.example"
 EDITOR = "editor@site-a.example"
 PLAIN_USER = "user@site-a.example"
 HEALER_ADMIN = "admin@sample-healer.example"
+SITE_B_ORIGIN = "https://site-b.example"
 TOKEN_RE = re.compile(r"[0-9a-f]{64}")
 
 
@@ -593,7 +594,7 @@ def test_contact_form_shows_and_stores_the_fields_of_the_contact_model(site_a, a
     form = page.text[page.text.index('<form action="/contact"'):]
     form = form[:form.index("</form>")]
     assert re.findall(r'<(?:input|textarea|select)[^>]* name="([a-z_]+)"', form) == [
-        "_csrf", "full_name", "email", "company", "message"]
+        "_csrf", "website_url_hp", "full_name", "email", "company", "message"]
     token = csrf_in(form)
 
     incomplete = visitor.post("/contact", {"_csrf": token, "full_name": "", "email": "Sam@Example.org",
@@ -607,6 +608,12 @@ def test_contact_form_shows_and_stores_the_fields_of_the_contact_model(site_a, a
     row = site_a["query"](
         "SELECT full_name, email, company, message FROM contact_inquiries WHERE full_name = 'Sam Roe'")
     assert row == [("Sam Roe", "sam@example.org", None, "Please write back")]
+
+    # The honeypot filled in: the same thanks, and nothing stored.
+    bot = visitor.post("/contact", {"_csrf": token, "website_url_hp": "http://spam.example", "full_name": "Bot",
+                                    "email": "bot@example.org", "message": "Buy now"})
+    assert bot.status == 200 and "Thank you for reaching out" in bot.text
+    assert site_a["query"]("SELECT COUNT(*) FROM contact_inquiries WHERE full_name = 'Bot'")[0][0] == 0
 
     # The dashboard's "recent inquiries" card reads the same model.
     dashboard = admin_session["client"].get("/admin")
@@ -671,6 +678,37 @@ def test_inline_scripts_carry_the_response_nonce_and_nothing_else_may_run(site_a
     assert reply.headers.get("X-Content-Type-Options") == "nosniff"
 
 
+# ---- password change (runs last of site A's tests) ----
+
+def test_changing_the_password_signs_the_accounts_other_sessions_out(site_a, admin_session):
+    """Two more browsers signed in as the admin, beside the module's own
+    admin session. A password set in one of them ends the others in the
+    real session store; the browser that set it stays signed in. Runs last
+    of site A's tests: it signs out the shared admin session as well."""
+    changer, consumed, _raw = sign_in(site_a, ADMIN)
+    assert (consumed.status, consumed.location) == (302, "/admin")
+    other, consumed, _raw = sign_in(site_a, ADMIN)
+    assert (consumed.status, consumed.location) == (302, "/admin")
+    for browser in (changer, other, admin_session["client"]):
+        assert browser.get("/admin").status == 200
+    admin_id = site_a["query"]("SELECT id FROM users WHERE email = %s", (ADMIN,))[0][0]
+    sessions = lambda: site_a["query"](  # noqa: E731
+        "SELECT COUNT(*) FROM user_sessions WHERE sess->>'userId' = %s", (str(admin_id),))[0][0]
+    assert sessions() >= 3
+
+    token = csrf_in(changer.get("/admin/settings").text)
+    new_password = " ".join(["a", "new", "phrase", secrets.token_hex(4)])
+    changed = changer.post("/admin/change-password", {"_csrf": token, "new_password": new_password})
+    assert (changed.status, changed.location) == (302, "/admin")
+
+    assert site_a["query"]("SELECT password IS NOT NULL FROM users WHERE id = %s", (admin_id,))[0][0]
+    assert changer.get("/admin").status == 200
+    for browser in (other, admin_session["client"]):
+        refused = browser.get("/admin")
+        assert (refused.status, refused.location) == (302, "/login")
+    assert sessions() == 1
+
+
 # ---------------------------------------------------------------------------
 # Site B: production mode, a mail key, outgoing mail recorded
 # ---------------------------------------------------------------------------
@@ -702,6 +740,8 @@ def site_b(tmp_path_factory):
         "CAS_TEST_FETCH_LOG": str(fetch_log),
         # Not a credential: a random value that only has to be non-empty.
         "RESEND_API_KEY": "test-" + secrets.token_hex(12),
+        # What deploy() sets: the site's own address, for the links it emails.
+        "SITE_ORIGIN": SITE_B_ORIGIN,
     }
     with boot_generated_app(out, admin_email=HEALER_ADMIN, node_env="production", extra_env=env) as running:
         running["fetch_log"] = fetch_log
@@ -709,9 +749,13 @@ def site_b(tmp_path_factory):
 
 
 def test_with_a_mail_key_the_login_link_goes_to_the_mailbox_and_not_to_the_log(site_b):
+    """The link is built on SITE_ORIGIN, not on the request: the request
+    names another host in Host and X-Forwarded-Host, and the link does not
+    follow it."""
     visitor = Client(site_b["port"], https_proxy=True)
     reply = visitor.post("/request-magic-link",
-                         {"_csrf": visitor.csrf("/request-magic-link"), "email": HEALER_ADMIN})
+                         {"_csrf": visitor.csrf("/request-magic-link"), "email": HEALER_ADMIN},
+                         headers={"Host": "attacker.example", "X-Forwarded-Host": "attacker.example"})
     assert (reply.status, reply.location) == (302, "/magic-link-sent")
 
     calls = [json.loads(line) for line in site_b["fetch_log"].read_text(encoding="utf-8").splitlines()]
@@ -719,7 +763,8 @@ def test_with_a_mail_key_the_login_link_goes_to_the_mailbox_and_not_to_the_log(s
     assert len(mail) == 1
     body = json.loads(mail[0]["body"])
     assert body["to"] == [HEALER_ADMIN]
-    link = re.search(r"https://localhost:\d+/magic\?token=([0-9a-f]{64})", body["html"])
+    assert "attacker.example" not in mail[0]["body"]
+    link = re.search(re.escape(SITE_B_ORIGIN) + r"/magic\?token=([0-9a-f]{64})", body["html"])
     assert link, body["html"][:200]
     raw = link.group(1)
     assert token_state(site_b, raw) == (False, True), "the mailed link is the real, unused one"
@@ -754,6 +799,15 @@ def test_newsletter_signup_stores_the_address_in_the_subscriber_model(site_b):
     total = site_b["query"]("SELECT COUNT(*) FROM newsletter_subscribers")[0][0]
     reply = visitor.post("/newsletter-signup", {"_csrf": visitor.csrf("/"), "email": "not an address"})
     assert reply.status == 302
+    assert site_b["query"]("SELECT COUNT(*) FROM newsletter_subscribers")[0][0] == total
+    # The signup form carries the honeypot; filled in, it gets the same
+    # answer as a real signup and nothing is stored.
+    home = visitor.get("/").text
+    form = home[home.index('<form action="/newsletter-signup"'):]
+    assert 'name="website_url_hp"' in form[:form.index("</form>")]
+    reply = visitor.post("/newsletter-signup", {"_csrf": csrf_in(home), "email": "bot@example.org",
+                                                "website_url_hp": "http://spam.example"})
+    assert (reply.status, reply.location) == (302, "/#newsletter-success")
     assert site_b["query"]("SELECT COUNT(*) FROM newsletter_subscribers")[0][0] == total
 
 

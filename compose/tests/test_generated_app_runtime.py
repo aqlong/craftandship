@@ -7,13 +7,15 @@ in the text but does not guard is caught.
 
 Real: Express, express-rate-limit and bcrypt (from web/node_modules, the same
 majors the generated package.json asks for), and the emitted routers,
-middleware/auth.js, middleware/rate-limit.js, middleware/fields.js and
-services/notify.js.
+middleware/auth.js, middleware/rate-limit.js, middleware/fields.js,
+middleware/settings.js and services/notify.js.
 
 Stand-ins, and therefore NOT covered here: the database (db.js is replaced by
-a recorder that returns canned rows), the session store (each request's
-session is supplied by the test as JSON), res.render (it answers with the
-view name and a few locals as JSON, so no template runs) and server.js.
+a recorder that returns canned rows, or raises an error the test names), the
+session store (each request's session is supplied by the test as JSON),
+res.render (it answers with the view name and a few locals as JSON, so no
+template runs), the mail provider (global fetch records what notify.js would
+send and answers 200) and server.js.
 compose/tests/test_compose_end_to_end.py boots the whole generated site
 against Postgres when its dependencies are installed.
 
@@ -24,6 +26,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import secrets
 import shutil
 import subprocess
 import time
@@ -56,12 +60,28 @@ function hashFor(password) {
 }
 const db = {
   calls: [],
+  params: [],
   fixture: {},
   pool: {},
   query: async function (text, params) {
     const sql = String(text).replace(/\s+/g, ' ').trim();
     db.calls.push(sql);
+    db.params.push(params === undefined ? null : params);
     const f = db.fixture || {};
+    // A statement the test wants to fail, the way node-postgres fails one:
+    // an Error whose message is the server's text, with its SQLSTATE code.
+    if (f.failOn && sql.indexOf(f.failOn) === 0) {
+      const error = new Error(f.failWith || 'stand-in database error');
+      if (f.failCode) error.code = f.failCode;
+      throw error;
+    }
+    if (sql.indexOf('SELECT key, value FROM site_settings') === 0) {
+      const rows = f.siteSettings || [];
+      return { rows: rows, rowCount: rows.length };
+    }
+    if (sql.indexOf('SELECT id, email FROM users WHERE LOWER(email)') === 0) {
+      return { rows: [{ id: 1, email: 'owner@example.com' }], rowCount: 1 };
+    }
     if (sql.indexOf('SELECT COUNT(*)') === 0) return { rows: [{ total: 0, count: '0' }], rowCount: 1 };
     if (sql.indexOf('SELECT password FROM users') === 0) {
       if (f.user === 'missing') return { rows: [], rowCount: 0 };
@@ -83,9 +103,12 @@ module.exports = db;
 """
 
 # argv[1]: the built app directory. argv[2]: JSON plan
-# {router, mount?, requests: [{method, path, session, form, db}]}. `mount` is
-# where the router is attached ("/" unless given; a model's router is also
-# mounted at /admin/<slug>, where it serves the admin).
+# {router, mount?, requests: [{method, path, session, form, db, headers?, sid?,
+# expectMail?}]}. `mount` is where the router is attached ("/" unless given; a
+# model's router is also mounted at /admin/<slug>, where it serves the admin).
+# `headers` are sent as they are (a test's own Host header, for one); `sid` is
+# the request's session id (req.sessionID); with `expectMail` the harness
+# waits up to two seconds for the fire-and-forget mail the request starts.
 _HARNESS = r"""
 const path = require('path');
 const http = require('http');
@@ -96,6 +119,14 @@ const plan = JSON.parse(process.argv[2]);
 // goes to stderr.
 console.log = console.info = console.debug = console.error;
 const db = require(path.join(appDir, 'db.js'));
+
+// The mail provider: services/notify.js posts to it with fetch. Each call is
+// recorded with its JSON body and answered 200; nothing leaves the machine.
+const mails = [];
+global.fetch = async function (url, options) {
+  mails.push({ url: String(url), body: JSON.parse((options && options.body) || 'null') });
+  return { ok: true, status: 200, text: async function () { return '{}'; }, json: async function () { return {}; } };
+};
 
 let lastSession = null;
 const app = express();
@@ -109,12 +140,16 @@ app.use(function (req, res, next) {
   };
   session.destroy = function (cb) { if (cb) cb(); };
   req.session = session;
+  req.sessionID = req.headers['x-test-sid'] || 'sid-under-test';
   lastSession = session;
   res.locals.settings = { site_name: 'Test' };
   res.render = function (view, locals) {
     const l = locals || {};
-    res.json({ view: view, error: l.error || null,
-               needs_current: l.needs_current === undefined ? null : l.needs_current });
+    const shown = { view: view, error: l.error || null,
+                    needs_current: l.needs_current === undefined ? null : l.needs_current };
+    if (l.flashSuccess) shown.flashSuccess = l.flashSuccess;
+    if (l.flashError) shown.flashError = l.flashError;
+    res.json(shown);
   };
   next();
 });
@@ -124,7 +159,8 @@ app.use(function (req, res) { res.status(404).json({ view: 'no-route' }); });
 function send(port, r) {
   return new Promise(function (resolve, reject) {
     const body = r.form ? new URLSearchParams(r.form).toString() : '';
-    const headers = { 'x-test-session': JSON.stringify(r.session || {}) };
+    const headers = Object.assign({ 'x-test-session': JSON.stringify(r.session || {}) }, r.headers || {});
+    if (r.sid) headers['x-test-sid'] = r.sid;
     if (r.method === 'POST') {
       headers['content-type'] = 'application/x-www-form-urlencoded';
       headers['content-length'] = Buffer.byteLength(body);
@@ -152,8 +188,14 @@ const server = app.listen(0, '127.0.0.1', async function () {
     for (const r of plan.requests) {
       db.fixture = r.db || {};
       const before = db.calls.length;
+      const mailsBefore = mails.length;
       const out = await send(port, r);
+      for (let waited = 0; r.expectMail && mails.length === mailsBefore && waited < 2000; waited += 20) {
+        await new Promise(function (resolve) { setTimeout(resolve, 20); });
+      }
       out.sql = db.calls.slice(before);
+      out.params = db.params.slice(before);
+      out.mails = mails.slice(mailsBefore);
       out.session = JSON.parse(JSON.stringify(lastSession || {}));
       results.push(out);
     }
@@ -168,19 +210,27 @@ const server = app.listen(0, '127.0.0.1', async function () {
 """
 
 
-def _run(app_dir: Path, router: str, requests: list, mount: str = "/") -> list:
-    env = {
+def _run_with_log(app_dir: Path, router: str, requests: list, mount: str = "/",
+                  env: dict = None) -> tuple:
+    """The results and what the generated code wrote to its log (stderr).
+    `env` adds environment variables of the node process."""
+    child_env = {
         "PATH": os.environ.get("PATH", ""),
         "NODE_PATH": str(WEB_MODULES),
         "NODE_ENV": "test",
     }
+    child_env.update(env or {})
     proc = subprocess.run(
         [NODE, "-e", _HARNESS, str(app_dir),
          json.dumps({"router": router, "mount": mount, "requests": requests})],
-        capture_output=True, text=True, cwd=str(app_dir), env=env, timeout=120,
+        capture_output=True, text=True, cwd=str(app_dir), env=child_env, timeout=120,
     )
     assert proc.returncode == 0, proc.stderr[-1500:]
-    return json.loads(proc.stdout)
+    return json.loads(proc.stdout), proc.stderr
+
+
+def _run(app_dir: Path, router: str, requests: list, mount: str = "/", env: dict = None) -> list:
+    return _run_with_log(app_dir, router, requests, mount=mount, env=env)[0]
 
 
 def _inserts(result: dict) -> list:
@@ -430,3 +480,254 @@ def test_set_password_is_rate_limited_like_login(app_dir):
     assert [r["status"] for r in results[:10]] == [200] * 10
     assert results[10]["status"] == 429
     assert results[10]["sql"] == []
+
+
+# ---------------------------------------------------------------------------
+# Links the site sends by email: built on its own address, not on the Host
+# header of the request that caused the email
+# ---------------------------------------------------------------------------
+
+# Not a credential: a random value that only has to be non-empty.
+MAIL_ENV = {"RESEND_API_KEY": "test-" + secrets.token_hex(12), "ADMIN_EMAIL": "owner@example.com"}
+SPOOFED = {"Host": "evil.example", "X-Forwarded-Proto": "https", "X-Forwarded-Host": "evil.example"}
+STORED_SITE_URL = {"siteSettings": [{"key": "site_url", "value": "https://stored-site.example/"}]}
+
+
+def _one_mail(result: dict) -> dict:
+    assert [m["url"] for m in result["mails"]] == ["https://api.resend.com/emails"], result["mails"]
+    return result["mails"][0]["body"]
+
+
+@pytest.mark.parametrize("label, env, db, expected", [
+    ("SITE_ORIGIN", {"SITE_ORIGIN": "https://owner-site.example"}, {}, "https://owner-site.example"),
+    ("the stored site_url", {}, STORED_SITE_URL, "https://stored-site.example"),
+    ("no address", {}, {}, None),
+    ("a SITE_ORIGIN that is not http(s)", {"SITE_ORIGIN": "javascript:alert(1)//x"}, {}, None),
+])
+def test_a_form_notification_links_to_the_sites_own_address_and_never_to_the_request_host(
+        app_dir, label, env, db, expected):
+    """A visitor chooses the Host and X-Forwarded-* headers of the form post
+    that triggers the owner's notification. The "View in admin" link uses
+    SITE_ORIGIN (which deploy() sets), else the stored site_url, else no link."""
+    (post,) = _run(app_dir, "pages", [
+        {"method": "POST", "path": "/book", "session": ANON, "headers": SPOOFED, "expectMail": True, "db": db,
+         "form": {"_csrf": "t0ken", "name": "Visitor"}},
+    ], env=dict(MAIL_ENV, **env))
+    assert (post["status"], post["location"]) == (302, "/book")
+    mail = _one_mail(post)
+    assert mail["to"] == ["owner@example.com"]
+    assert "evil.example" not in json.dumps(mail), label
+    if expected:
+        assert f'href="{expected}/admin/booking-requests/7"' in mail["html"], label
+    else:
+        assert "View in admin" not in mail["html"] and "href=" not in mail["html"], label
+
+
+@pytest.mark.parametrize("label, env, db, expected", [
+    ("SITE_ORIGIN", {"SITE_ORIGIN": "https://owner-site.example"}, {}, "https://owner-site.example"),
+    ("the stored site_url", {}, STORED_SITE_URL, "https://stored-site.example"),
+])
+def test_a_requested_login_link_points_at_the_sites_own_address_whatever_the_host_header(
+        app_dir, label, env, db, expected):
+    (post,) = _run(app_dir, "auth", [
+        {"method": "POST", "path": "/request-magic-link", "session": ANON, "headers": SPOOFED,
+         "expectMail": True, "db": db, "form": {"_csrf": "t0ken", "email": "OWNER@example.com"}},
+    ], env=dict(MAIL_ENV, **env))
+    assert (post["status"], post["location"]) == (302, "/magic-link-sent")
+    mail = _one_mail(post)
+    assert mail["to"] == ["owner@example.com"]
+    assert "evil.example" not in json.dumps(mail), label
+    assert re.search(re.escape(expected) + r"/magic\?token=[0-9a-f]{64}\"", mail["html"]), label
+
+
+def test_with_no_known_address_a_login_link_is_not_emailed_and_not_logged(app_dir):
+    """A mail key but neither SITE_ORIGIN nor a stored site_url: the app
+    cannot build a link it trusts, so it sends none (and still does not
+    write the token to its log, because a mail key is set)."""
+    (post,), log = _run_with_log(app_dir, "auth", [
+        {"method": "POST", "path": "/request-magic-link", "session": ANON, "headers": SPOOFED,
+         "expectMail": True, "form": {"_csrf": "t0ken", "email": "owner@example.com"}},
+    ], env=MAIL_ENV)
+    assert (post["status"], post["location"]) == (302, "/magic-link-sent")
+    assert post["mails"] == []
+    assert "[magic-link] not emailed for user 1" in log
+    assert not re.search(r"[0-9a-f]{64}", log)
+
+
+# ---------------------------------------------------------------------------
+# Admin record routes: the id, and what a database error shows
+# ---------------------------------------------------------------------------
+
+ADMIN_RECORDS = "/admin/booking-requests"
+
+
+def test_a_record_route_answers_404_for_an_id_that_is_not_a_number_before_any_query(app_dir):
+    """GET /:id checked its id; edit, update and delete passed any value to
+    Postgres (a 500 page). One router.param check now answers 404 for all of
+    them before a statement is sent."""
+    token = {"_csrf": "t0ken"}
+    junk_ids = ("abc", "1e3", "12345678901", "-1", "7;DROP")
+    plan = []
+    for junk in junk_ids:
+        plan += [
+            {"method": "GET", "path": f"{ADMIN_RECORDS}/{junk}", "session": ADMIN},
+            {"method": "GET", "path": f"{ADMIN_RECORDS}/{junk}/edit", "session": ADMIN},
+            {"method": "POST", "path": f"{ADMIN_RECORDS}/{junk}/update", "session": ADMIN,
+             "form": dict(token, name="x")},
+            {"method": "POST", "path": f"{ADMIN_RECORDS}/{junk}/delete", "session": ADMIN, "form": token},
+        ]
+    plan.append({"method": "GET", "path": f"{ADMIN_RECORDS}/7/edit", "session": ADMIN})
+    results = _run(app_dir, "booking-requests", plan, mount=ADMIN_RECORDS)
+    *refused, control = results
+    for request, reply in zip(plan, refused):
+        assert (reply["status"], reply["body"]["view"]) == (404, "error-404"), request["path"]
+        assert reply["sql"] == [], request["path"]
+    # Control: a numeric id reaches the query.
+    assert control["sql"] == ["SELECT * FROM booking_requests WHERE id = $1"]
+
+
+# A server error text that names a constraint, a column and a value.
+DB_ERROR = 'duplicate key value violates unique constraint "booking_requests_secret_idx" (name)=(Kept Private)'
+
+
+def test_a_database_error_goes_to_the_log_and_the_admin_sees_a_fixed_message(app_dir):
+    form = {"_csrf": "t0ken", "name": "Changed"}
+    update, delete, delete_referenced, create = _run(app_dir, "booking-requests", [
+        {"method": "POST", "path": f"{ADMIN_RECORDS}/7/update", "session": ADMIN, "form": form,
+         "db": {"failOn": "UPDATE booking_requests", "failWith": DB_ERROR}},
+        {"method": "POST", "path": f"{ADMIN_RECORDS}/7/delete", "session": ADMIN, "form": {"_csrf": "t0ken"},
+         "db": {"failOn": "DELETE FROM booking_requests", "failWith": DB_ERROR}},
+        {"method": "POST", "path": f"{ADMIN_RECORDS}/7/delete", "session": ADMIN, "form": {"_csrf": "t0ken"},
+         "db": {"failOn": "DELETE FROM booking_requests", "failWith": DB_ERROR, "failCode": "23503"}},
+        {"method": "POST", "path": ADMIN_RECORDS, "session": ADMIN, "form": form,
+         "db": {"failOn": "INSERT INTO booking_requests", "failWith": DB_ERROR}},
+    ], mount=ADMIN_RECORDS)
+    assert (update["status"], update["location"]) == (302, f"{ADMIN_RECORDS}/7/edit")
+    assert update["session"]["flash_error"] == "Could not save. Please check the fields and try again."
+    assert (delete["status"], delete["location"]) == (302, ADMIN_RECORDS)
+    assert delete["session"]["flash_error"] == "Could not delete. Please try again."
+    assert delete_referenced["session"]["flash_error"] == "Could not delete: other entries still refer to this one."
+    assert create["body"]["view"] == "booking-requests/new"
+    assert create["body"]["error"] == "Could not save. Please check the fields and try again."
+
+    (settings,), settings_log = _run_with_log(app_dir, "admin-settings", [
+        {"method": "POST", "path": "/admin/settings", "session": ADMIN,
+         "form": {"_csrf": "t0ken", "site_name": "Renamed"},
+         "db": {"failOn": "INSERT INTO site_settings", "failWith": DB_ERROR}},
+    ], mount="/admin")
+    assert settings["session"]["flash_error"] == "Could not save the settings. Please try again."
+    (cleared,), cleared_log = _run_with_log(app_dir, "admin-dashboard", [
+        {"method": "POST", "path": "/admin/clear-all", "session": ADMIN, "form": {"_csrf": "t0ken"},
+         "db": {"failOn": "DELETE FROM", "failWith": DB_ERROR}},
+    ], mount="/admin")
+    assert cleared["session"]["flash_error"] == "Could not clear the data. Please try again."
+    # The detail is in the server's log, for the operator.
+    assert DB_ERROR in settings_log and DB_ERROR in cleared_log
+
+
+# ---------------------------------------------------------------------------
+# Opening a login link
+# ---------------------------------------------------------------------------
+
+def test_opening_a_login_link_is_rate_limited_per_address(app_dir):
+    """HEAD and GET /magic say whether a token is valid without spending it.
+    They share one limit of 60 requests per 15 minutes per address."""
+    link = "/magic?token=" + "e" * 64
+    plan = ([{"method": "HEAD", "path": link, "session": ANON}] * 30
+            + [{"method": "GET", "path": link, "session": ANON}] * 30
+            + [{"method": "HEAD", "path": link, "session": ANON},
+               {"method": "GET", "path": link, "session": ANON}])
+    results = _run(app_dir, "auth", plan)
+    assert [r["status"] for r in results[:30]] == [410] * 30
+    assert all((r["status"], r["location"]) == (302, "/login?error=invalid-token") for r in results[30:60])
+    assert [r["status"] for r in results[60:]] == [429, 429]
+    assert results[60]["sql"] == [] and results[61]["sql"] == []
+
+
+# ---------------------------------------------------------------------------
+# Honeypot on the contact form and the newsletter signup
+# ---------------------------------------------------------------------------
+
+HONEYPOT = {"website_url_hp": "http://spam.example"}
+
+
+def test_a_filled_honeypot_on_the_contact_form_is_answered_like_a_message_and_not_stored(app_dir):
+    message = {"_csrf": "t0ken", "name": "Pat Doe", "email": "pat@example.org", "message": "Hello there"}
+    bot, person = _run(app_dir, "pages", [
+        {"method": "POST", "path": "/contact", "session": ANON, "form": dict(message, **HONEYPOT)},
+        {"method": "POST", "path": "/contact", "session": ANON, "form": message},
+    ])
+    assert bot["status"] == 200 and bot["body"]["flashSuccess"] == person["body"]["flashSuccess"]
+    assert _inserts(bot) == []
+    assert [sql.split(" (")[0] for sql in _inserts(person)] == ["INSERT INTO contact_inquiries"]
+
+
+@pytest.fixture(scope="module")
+def healer_dir(tmp_path_factory):
+    """The healer sample, which shows the newsletter signup; db.js replaced
+    by the recorder."""
+    os.environ["CAS_LINT_EXTERNAL_URLS"] = "skip"
+    out = tmp_path_factory.mktemp("runtime-healer") / "app"
+    build_app(json.loads((FIXTURES / "sample-healer-spec.json").read_text(encoding="utf-8")), output_dir=out)
+    (out / "db.js").write_text(_DB_STUB, encoding="utf-8")
+    return out
+
+
+def test_a_filled_honeypot_on_the_newsletter_signup_is_answered_like_a_signup_and_not_stored(healer_dir):
+    signup = {"_csrf": "t0ken", "email": "reader@example.org"}
+    bot, person = _run(healer_dir, "pages", [
+        {"method": "POST", "path": "/newsletter-signup", "session": ANON, "form": dict(signup, **HONEYPOT)},
+        {"method": "POST", "path": "/newsletter-signup", "session": ANON, "form": signup},
+    ])
+    assert (bot["status"], bot["location"]) == (302, "/#newsletter-success")
+    assert (person["status"], person["location"]) == (302, "/#newsletter-success")
+    assert bot["sql"] == []
+    assert [sql.split(" (")[0] for sql in _inserts(person)] == ["INSERT INTO newsletter_subscribers"]
+
+
+def test_the_contact_form_and_the_newsletter_signup_carry_the_honeypot_field(app_dir, healer_dir):
+    """The field the handlers check is in the forms the widgets render (the
+    booted-site tests read it from the rendered pages)."""
+    for view in (app_dir / "views" / "widgets" / "form" / "contact.ejs",
+                 healer_dir / "views" / "widgets" / "cta" / "newsletter-inline.ejs"):
+        text = view.read_text(encoding="utf-8")
+        assert 'name="website_url_hp" value="" tabindex="-1" autocomplete="off"' in text, view.name
+        assert text.index('name="website_url_hp"') < text.index("</form>"), view.name
+
+
+# ---------------------------------------------------------------------------
+# A changed password signs the account's other sessions out
+# ---------------------------------------------------------------------------
+
+END_OTHER_SESSIONS = "DELETE FROM user_sessions WHERE sid <> $1 AND sess->>'userId' = $2"
+
+
+def test_a_password_change_ends_the_accounts_other_sessions(app_dir):
+    """Both places a password is set send the statement, keeping the session
+    that made the change. (test_generated_site_security_e2e.py runs it
+    against the real session store.)"""
+    (first_time,) = _run(app_dir, "auth", [
+        {"method": "POST", "path": "/set-password", "session": ADMIN, "sid": "sid-of-the-changer",
+         "form": NEW, "db": {}},
+    ])
+    assert (first_time["status"], first_time["location"]) == (302, "/admin")
+    ended = [i for i, sql in enumerate(first_time["sql"]) if sql == END_OTHER_SESSIONS]
+    assert len(ended) == 1 and first_time["params"][ended[0]] == ["sid-of-the-changer", "1"]
+    updated = first_time["sql"].index(_password_updates(first_time)[0])
+    assert updated < ended[0], "the sessions end after the new hash is stored"
+
+    (admin_change,) = _run(app_dir, "admin-dashboard", [
+        {"method": "POST", "path": "/admin/change-password", "session": ADMIN, "sid": "sid-of-the-changer",
+         "form": {"_csrf": "t0ken", "new_password": _REPLACEMENT}, "db": {}},
+    ], mount="/admin")
+    assert (admin_change["status"], admin_change["location"]) == (302, "/admin")
+    ended = [i for i, sql in enumerate(admin_change["sql"]) if sql == END_OTHER_SESSIONS]
+    assert len(ended) == 1 and admin_change["params"][ended[0]] == ["sid-of-the-changer", "1"]
+    assert admin_change["session"]["flash_success"] == "Password updated."
+
+    # A refused change ends nothing.
+    (refused,) = _run(app_dir, "auth", [
+        {"method": "POST", "path": "/set-password", "session": ADMIN, "form": NEW,
+         "db": {"userPassword": CURRENT}},
+    ])
+    assert END_OTHER_SESSIONS not in refused["sql"]

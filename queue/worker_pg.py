@@ -861,15 +861,15 @@ def _set_preview_status(conn, build_id: str, *, preview_url: str = None, attempt
     is a _railway_record; pass None for a local build that deployed nothing,
     and the row's Railway columns are left as they are.
 
-    railway_database_url holds the Postgres password that provision_postgres
-    (cli/deploy.py) generated. On the platform side that password exists
-    nowhere else, so the URL is kept on the build row for an operator who
-    later needs to connect to the customer database. Its host is the private
-    name postgres.railway.internal, so it is the credentials that are useful
-    from outside the customer's Railway project, not the address.
-    (monitor/backup.py does not read this column; it asks Railway's variables
-    query for DATABASE_URL. Which of the two can be relied on cannot be
-    established from this repository.)
+    railway_database_url is stored with its user and password replaced by
+    "***" (redact_url_credentials): the host, port and database name of the
+    customer database stay, the password provision_postgres (cli/deploy.py)
+    generated does not. No code reads the column. The password is kept by Railway
+    itself, as the DATABASE_URL variable of the app service and
+    POSTGRES_PASSWORD of the database service (both set by cli/deploy.py);
+    monitor/backup.py reads DATABASE_URL from Railway's variables query.
+    Whether that query answers with it at every point after a deploy cannot
+    be established from this repository.
 
     A review verdict belongs to the deployment that was reviewed. Every arrival
     here follows a pipeline run that deployed again (a first build, a rebuild,
@@ -925,7 +925,7 @@ def _set_preview_status(conn, build_id: str, *, preview_url: str = None, attempt
                 has_railway, record["project_id"],
                 has_railway, record["service_id"],
                 has_railway, record["environment_id"],
-                has_railway, record["database_url"],
+                has_railway, redact_url_credentials(record["database_url"]),
                 preview_url, build_id, attempt_value,
             ),
         )
@@ -1346,7 +1346,7 @@ def _generate_magic_link_token():
     same way, sha256 over the hex STRING (not the decoded bytes), so the hashes
     match; tests/test_worker_pg.py::TestMagicLinkToken cross-checks this
     against Node's crypto. The raw token only ever appears in the link that is
-    emailed to the customer and in the "Magic link login URL" build_logs row.
+    emailed to the customer (see _announce_preview).
     """
     raw_token = secrets.token_hex(32)
     token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
@@ -1406,6 +1406,15 @@ def _inject_magic_link_token(build_dir, token_hash, customer_token_hash=None) ->
 def _build_magic_link_url(live_url, raw_token):
     """Construct the magic link URL for the deployed app."""
     return f"{live_url.rstrip('/')}/magic?token={raw_token}"
+
+
+# What build_logs records about the login link of a deployed build: where it
+# is. The link itself is never written to build_logs (see _announce_preview).
+# Shown to the site's owner on the build's status page.
+LOGIN_LINK_EMAILED_LOG_LINE = (
+    "Your login link is in the email that says your website is ready for review; "
+    "it is not shown in this log."
+)
 
 
 def _append_log(conn, build_id: str, stage: str, message: str) -> None:
@@ -3787,16 +3796,14 @@ def _run_pipeline(job: dict, conn, _metrics_out: list = None) -> dict:
                 raise BuildNoLongerOwnedError(
                     "preview write matched no row; this thread no longer owns the build"
                 )
-            # Surface the customer magic link for the local path too, so
-            # scripts/cas-magic-link can find it. The raw token is generated in
-            # Stage 3.9; it is written to the build_logs row only (against a
-            # localhost URL the operator can rewrite to the port the local app
-            # runs on) and never to the process log.
+            # A local build sends no email, and the login link is not written
+            # to build_logs or to the process log either. The site run locally
+            # issues one at /request-magic-link and, with no mail key, prints
+            # it to its own console.
             if customer_token:
-                local_magic_url = f"http://localhost:4600/magic?token={customer_token}"
                 _append_log(conn, build_id, "preview",
-                            f"Magic link login URL: {local_magic_url}")
-                logger.info("Build %s: local magic link written to build_logs", build_id)
+                            "Local build: no login link is recorded. Request one at /request-magic-link "
+                            "on the running site; without a mail key the site prints it to its console.")
             return {"live_url": None, "local_preview": True}
 
         _start_stage("deploying")
@@ -4484,10 +4491,11 @@ def _announce_preview(conn, job: dict, live_url: str, railway: Optional[dict],
     In order: monitor registration (health checks and daily backups start),
     the "ready for review" log line, the admin's "review needed" email (once
     per arrival at preview, so again after every rebuild; not sent when
-    CAS_HARBOR_AUTO_REVIEW=true, see _initial_review_status), the janitor, the
-    login link (a build_logs row and the customer's email) and the customer's
-    "preview ready" email. Every step is best effort: the build is already in
-    preview and nothing here may send it down the retry or failure path.
+    CAS_HARBOR_AUTO_REVIEW=true, see _initial_review_status), the janitor, a
+    build_logs row saying where the login link is (the link itself goes into
+    the customer's "preview ready" email only) and that email. Every step is
+    best effort: the build is already in preview and nothing here may send it
+    down the retry or failure path.
 
     The normal path and the supervisor's zombie recovery both end here, so a
     deploy that a stuck thread finished is announced like any other.
@@ -4551,11 +4559,16 @@ def _announce_preview(conn, job: dict, live_url: str, railway: Optional[dict],
         except Exception as janitor_exc:
             logger.warning("Build %s: clean-up of old builds skipped: %s", build_id, janitor_exc)
 
+        # The login link is a credential (opening it signs in as the site's
+        # admin), so it goes into the customer's email and nowhere else: not
+        # into build_logs, which the owner's log API and the admin pages
+        # show, and not into email_log, where the mailer stores the body
+        # with its token redacted.
         magic_link_url = ""
         if login_token and live_url:
             magic_link_url = _build_magic_link_url(live_url, login_token)
-            _append_log(conn, build_id, "preview", f"Magic link login URL: {magic_link_url}")
-            logger.info("Build %s: magic link generated (written to build_logs and the customer email)", build_id)
+            _append_log(conn, build_id, "preview", LOGIN_LINK_EMAILED_LOG_LINE)
+            logger.info("Build %s: login link generated for the customer email", build_id)
 
         try:
             send_preview_ready(customer_email, customer_name, app_name, live_url, build_id, admin_email, tier, magic_link_url=magic_link_url)

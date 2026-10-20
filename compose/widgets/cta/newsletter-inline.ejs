@@ -11,6 +11,13 @@
     <% } %>
     <form action="/newsletter-signup" method="POST" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <!-- Honeypot (the same field as form/public-submission.ejs): real
+           users leave it blank, bots fill every input. POST
+           /newsletter-signup answers a filled one like a real signup and
+           stores nothing. -->
+      <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+        <label>Website<input type="text" name="website_url_hp" value="" tabindex="-1" autocomplete="off"></label>
+      </div>
       <label for="newsletter-inline-email" class="sr-only">Email address</label>
       <input type="email" id="newsletter-inline-email" name="email" required aria-label="Email address" placeholder="<%= (typeof placeholder !== 'undefined' && placeholder) ? placeholder : 'Your email address' %>" class="flex-1 px-4 py-3 rounded-md border-0 font-body text-sm text-gray-900" style="background: rgba(255,255,255,0.95);" />
       <button type="submit" class="font-body font-medium px-6 py-3 rounded-md transition-opacity hover:opacity-90 min-h-[44px]" style="background-color: var(--color-on-primary); color: var(--color-primary);"><%= (typeof button_text !== 'undefined' && button_text) ? button_text : 'Subscribe' %></button>

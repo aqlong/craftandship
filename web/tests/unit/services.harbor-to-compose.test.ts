@@ -2307,6 +2307,15 @@ describe('translator: values the build engine would refuse are dropped, with a w
       expect(withModels([], { app_name: 'Sample Studio' }).spec.app_name).toBe('sample-studio');
     });
 
+    it('an app name with the platform\'s reserved prefix is prefixed so the engine builds it', () => {
+      // The app name becomes the Railway project name, and the platform
+      // refuses to delete a project whose name starts with "craftandship".
+      expect(withModels([], { app_name: 'CraftAndShip Studio' }).spec.app_name).toBe('site-craftandship-studio');
+      expect(withModels([], { app_name: 'craftandship' }).spec.app_name).toBe('site-craftandship');
+      expect(withModels([], { app_name: '--Craftandship--Web' }).spec.app_name).toBe('site-craftandship-web');
+      expect(withModels([], { app_name: 'My Craftandship Fan Site' }).spec.app_name).toBe('my-craftandship-fan-site');
+    });
+
     it('keeps a plain admin email and drops anything else', () => {
       expect(withModels([], { admin_email: ' Maya@Example.com ' }).spec.admin_email).toBe('maya@example.com');
       for (const hostile of ['ask the keeper', 'maya@localhost', 'maya@example.com\nbcc: x@y.example', "maya'@example.com", 'a@b.c d']) {
@@ -2399,9 +2408,13 @@ describe.skipIf(!engineAvailable)('translator rules match compose/build.py', () 
     for (const sample of ['maya@example.com', 'a.b+c@sub.example.org', 'maya@localhost', 'x@y', "m'@example.com", 'a b@example.com', '@example.com']) {
       expect(isEngineSafeAdminEmail(sample), sample).toBe(sample.length <= 254 && engineEmail.test(sample));
     }
-    for (const name of ['9 Sample Studio', 'Sample Studio', '--x--', '42', 'Zoe!', 'a'.repeat(90), '9' + 'a'.repeat(90)]) {
+    const reserved = source.match(/^_RESERVED_APP_NAME_PREFIX = "([a-z]+)"$/m);
+    expect(reserved, '_RESERVED_APP_NAME_PREFIX in compose/build.py').not.toBeNull();
+    for (const name of ['9 Sample Studio', 'Sample Studio', '--x--', '42', 'Zoe!', 'a'.repeat(90), '9' + 'a'.repeat(90),
+                        'CraftAndShip', 'craftandship-web', ' Craftandship studio ', 'craftandship'.repeat(8)]) {
       const emitted = translateExtractedSpecToV1(baseInput({ app_name: name })).spec.app_name;
       expect(engineAppName.test(emitted), `${name} -> ${emitted}`).toBe(true);
+      expect(emitted.startsWith(reserved![1]), `${name} -> ${emitted}`).toBe(false);
     }
   });
 

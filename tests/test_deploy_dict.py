@@ -21,6 +21,17 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "cli"))
 
 
+def _app_variables(mock_vars, service_id="svc-123"):
+    """Every variable deploy() set on the app service, across all its
+    set_env_vars calls: the main upsert and the SITE_ORIGIN upsert that
+    follows the first successful deployment."""
+    merged = {}
+    for call in mock_vars.call_args_list:
+        if call[0][2] == service_id:
+            merged.update(call[0][3])
+    return merged
+
+
 @pytest.fixture(autouse=True)
 def _no_live_probes(monkeypatch):
     """Keep deploy() from probing the (fictional) live URL over the network."""
@@ -62,9 +73,9 @@ class TestDeployReturnsDict:
         assert result["railway_project_id"] == "proj-789"
         assert result["railway_service_id"] == "svc-123"
         assert result["railway_environment_id"] == "env-456"
-        # database_url is the auto-generated Postgres connection string;
-        # the worker persists it so the password can be recovered for ops
-        # access (Railway variables GraphQL returns empty after deploy).
+        # database_url is the auto-generated Postgres connection string, as
+        # deploy() set it on the app; the worker stores it on the build row
+        # with its credentials masked (_set_preview_status).
         assert result["database_url"] == "postgresql://x"
         assert result["health_check"] == "ok"
 
@@ -128,8 +139,8 @@ class TestDeployReturnsDict:
 
         deploy(str(build_dir))
 
-        call_args = mock_vars.call_args
-        env_dict = call_args[0][3]  # 4th positional arg is the variables dict
+        env_dict = _app_variables(mock_vars)
+        assert "DATABASE_URL" in env_dict  # the main upsert was seen
         assert "RESEND_API_KEY" not in env_dict
         assert "platform-mail-key-value" not in env_dict.values()
 
@@ -161,7 +172,7 @@ class TestDeployReturnsDict:
 
         deploy(str(build_dir))
 
-        env_dict = mock_vars.call_args[0][3]
+        env_dict = _app_variables(mock_vars)
         assert env_dict["RESEND_API_KEY"] == "app-only-mail-key-value"
         assert "platform-mail-key-value" not in env_dict.values()
 
@@ -193,8 +204,8 @@ class TestDeployReturnsDict:
 
         deploy(str(build_dir))
 
-        call_args = mock_vars.call_args
-        env_dict = call_args[0][3]
+        env_dict = _app_variables(mock_vars)
+        assert "DATABASE_URL" in env_dict  # the main upsert was seen
         assert "RESEND_API_KEY" not in env_dict
 
 

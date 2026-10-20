@@ -287,7 +287,9 @@ def test_deploy_sets_production_and_never_sets_test_mode(tmp_path, monkeypatch):
          patch.object(deploy_mod, "verify_auth", return_value="ok"):
         deploy_mod.deploy(str(build_dir))
 
-    env_vars = set_vars.call_args[0][3]
+    # The first call carries the app's environment; a later one adds
+    # SITE_ORIGIN once the Railway domain exists.
+    env_vars = set_vars.call_args_list[0][0][3]
     assert env_vars["NODE_ENV"] == "production"
     assert "TEST_MODE" not in env_vars
 

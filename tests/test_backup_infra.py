@@ -98,6 +98,38 @@ class TestPruneBackups:
 
 
 # ---------------------------------------------------------------------------
+# The connection URL handed to pg_dump and psql
+# ---------------------------------------------------------------------------
+
+class TestLibpqConnArgs:
+    """_libpq_conn_args moves the password into PGPASSWORD and rebuilds the
+    URL without it; the rebuilt URL must name the same server."""
+
+    def test_an_ipv6_host_keeps_its_brackets(self):
+        from urllib.parse import urlparse
+        from psycopg2 import extensions
+        import monitor.backup as backup_module
+
+        password = "pw-" + "q" * 12
+        safe_url, env = backup_module._libpq_conn_args("postgresql://u:" + password + "@[::1]:5432/db?sslmode=require")
+        assert password not in safe_url and env["PGPASSWORD"] == password
+        parsed = urlparse(safe_url)
+        assert (parsed.hostname, parsed.port, parsed.username, parsed.password) == ("::1", 5432, "u", None)
+        # And libpq, which is what pg_dump and psql use, reads it the same way.
+        assert extensions.parse_dsn(safe_url) == {
+            "user": "u", "host": "::1", "port": "5432", "dbname": "db", "sslmode": "require"}
+
+    @pytest.mark.parametrize("host", ["postgres.railway.internal", "127.0.0.1"])
+    def test_a_host_name_or_an_ipv4_address_is_unchanged(self, host):
+        import monitor.backup as backup_module
+
+        password = "pw-" + "r" * 12
+        safe_url, env = backup_module._libpq_conn_args("postgresql://u:" + password + "@" + host + ":5432/db")
+        assert safe_url == f"postgresql://u@{host}:5432/db"
+        assert env["PGPASSWORD"] == password
+
+
+# ---------------------------------------------------------------------------
 # restore()
 # ---------------------------------------------------------------------------
 
@@ -551,6 +583,27 @@ class TestSnapshotAndRestoreAgainstRealPostgres:
             cur.execute("UPDATE backup_probe SET note = 'DAMAGED' WHERE id = 1")
             cur.execute("DELETE FROM backup_probe WHERE id = 2")
             cur.execute("INSERT INTO backup_probe VALUES (3, 'written after the snapshot')")
+
+    def test_a_database_url_with_an_ipv6_host_is_dumped_and_restored(self, db, scratch_pg_url):
+        """The same database reached at its IPv6 loopback literal. The URL
+        handed to pg_dump and psql keeps the brackets; without them
+        "::1:5432" is not a host and a port."""
+        import psycopg2
+        from psycopg2 import extensions
+        import monitor.backup as backup_module
+
+        params = extensions.parse_dsn(scratch_pg_url)
+        try:
+            psycopg2.connect(extensions.make_dsn(**{**params, "host": "::1", "connect_timeout": "3"})).close()
+        except psycopg2.OperationalError:
+            pytest.skip("the local PostgreSQL does not answer on ::1")
+        ipv6_url = self._as_url(extensions.make_dsn(**{**params, "host": "[::1]"}))
+        assert "@[::1]" in ipv6_url or "//[::1]" in ipv6_url, ipv6_url
+        with patch.object(backup_module, "get_service_database_url", return_value=ipv6_url):
+            path = backup_module.snapshot(self.APP, reason="test")
+            self._damage(db)
+            backup_module.restore(self.APP, path)
+        assert self._rows(db) == [(1, "original one"), (2, "original two")]
 
     def test_restore_brings_back_the_snapshot(self, db):
         import monitor.backup as backup_module

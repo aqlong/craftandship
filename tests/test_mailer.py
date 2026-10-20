@@ -21,6 +21,7 @@ real DB writes happen. The tests lock down five load-bearing invariants:
 """
 
 import os
+import secrets
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -416,3 +417,125 @@ class TestLoginFallbackIsTruthful:
         html = send.call_args.kwargs["html"]
         assert "sent separately" not in html
         assert "Reply here" in html
+
+
+class TestStoredBodyKeepsNoLoginToken:
+    """email_log.html_body is shown on /admin/emails. The login link in the
+    "preview ready" email signs in as the site's admin, so the stored copy
+    has its token redacted the way the web app's sendEmail redacts it; the
+    email itself carries the working link."""
+
+    TOKEN = secrets.token_hex(32)
+
+    class _Connection:
+        def __init__(self, rows):
+            self.rows = rows
+
+        def cursor(self):
+            connection = self
+
+            class _Cursor:
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    return False
+
+                def execute(self, sql, params):
+                    connection.rows.append(params)
+
+            return _Cursor()
+
+        def commit(self):
+            pass
+
+        def close(self):
+            pass
+
+    def _send_preview_ready(self, monkeypatch, api_key):
+        if api_key:
+            monkeypatch.setenv("RESEND_API_KEY", api_key)
+        else:
+            monkeypatch.delenv("RESEND_API_KEY", raising=False)
+        stored, posted = [], []
+        answer = MagicMock(ok=True, status_code=200)
+        answer.json.return_value = {"id": "re-1"}
+
+        def post(url, **kwargs):
+            posted.append(kwargs["json"])
+            return answer
+
+        with patch.object(_mailer_module, "_get_db_conn", return_value=self._Connection(stored)), \
+             patch.object(_mailer_module, "_is_unsubscribed", return_value=False), \
+             patch.object(_mailer_module, "provider_post", side_effect=post):
+            _mailer_module.send_preview_ready(
+                "c@example.test", "N", "demo", "https://demo.example.test", "b-1", "", "build",
+                magic_link_url="https://demo.example.test/magic?token=" + self.TOKEN,
+            )
+        assert len(stored) == 1
+        return stored[0], posted
+
+    @pytest.mark.parametrize("api_key", ["test-mail-key-value", None])
+    def test_the_stored_body_has_the_link_without_its_token(self, monkeypatch, api_key):
+        row, posted = self._send_preview_ready(monkeypatch, api_key)
+        status, html_body = row[3], row[8]
+        assert status == ("sent" if api_key else "skipped")
+        assert self.TOKEN not in html_body
+        assert "https://demo.example.test/magic?token=[redacted]" in html_body
+        if api_key:
+            assert self.TOKEN in posted[0]["html"], "the email itself keeps the working link"
+
+
+# The cases the web app's own tests give redactSecretParams
+# (web/tests/unit/utils.redaction.test.ts), and a few more.
+_SECRET = "s3cr3t" + "Value" + "9"
+_REDACTION_CORPUS = [
+    f"/reset-password?token={_SECRET}",
+    f"/unsubscribe?email=a%40example.com&token={_SECRET}",
+    f"/x?token={_SECRET}&keep=1",
+    f'<a href="https://example.com/r?a=1&amp;token={_SECRET}">x</a>',
+    f'<a href="https://example.com/r?a=1&#38;token={_SECRET}">x</a>',
+    f'<a href="https://example.com/r?a=1&#x26;token={_SECRET}">x</a>',
+    f"https://example.com/go?next=%2Freset-password%3Ftoken%3D{_SECRET}%26verified%3D1",
+    f"https://example.com/go?next=%2Fa%3fx%3d1%26token%3d{_SECRET}",
+    f"https://example.com/go?u=%252Freset-password%253Ftoken%253D{_SECRET}",
+    f"/x?TOKEN={_SECRET} and /y?Reset_Token={_SECRET}#frag",
+    "/gallery?page=2&sort=new", "/try?utm_source=mail&utm_campaign=spring", "/x?monkey=1&zipcode=78701",
+    f"<p>/magic?token={_SECRET};rest</p> '/a?code={_SECRET}' <b>/b?sig={_SECRET}</b>",
+] + [f"/x?{name}={_SECRET}" for name in (
+    "reset_token", "access_token", "api_key", "api-key", "apikey", "key", "secret",
+    "signature", "sig", "code", "password", "session_id")]
+
+_WEB_REDACTION_DRIVER = r"""
+const fs = require('fs');
+const path = require('path');
+const webDir = process.argv[1];
+const ts = require(path.join(webDir, 'node_modules', 'typescript'));
+const source = fs.readFileSync(path.join(webDir, 'src', 'utils', 'recent-errors.ts'), 'utf8');
+const compiled = ts.transpileModule(source, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText;
+const mod = { exports: {} };
+new Function('exports', 'require', 'module', compiled)(mod.exports, require, mod);
+const corpus = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(corpus.map((text) => mod.exports.redactSecretParams(text))));
+"""
+
+
+def test_the_redaction_is_the_web_apps():
+    """The same corpus through the web app's redactSecretParams (compiled
+    from its TypeScript source) and through the mailer's port of it."""
+    import json
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    web = ROOT / "web"
+    if node is None or not (web / "node_modules" / "typescript").exists():
+        pytest.skip("needs node and web/node_modules/typescript (run `cd web && npm ci`)")
+    proc = subprocess.run([node, "-e", _WEB_REDACTION_DRIVER, str(web)], input=json.dumps(_REDACTION_CORPUS),
+                          capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 0, proc.stderr[-800:]
+    web_results = json.loads(proc.stdout)
+    assert [_mailer_module._redact_secret_params(text) for text in _REDACTION_CORPUS] == web_results
+    assert sum(_SECRET in text for text in web_results) == 0
