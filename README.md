@@ -3,7 +3,7 @@
 [![Tests](https://github.com/aqlong/craftandship/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/aqlong/craftandship/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Craft & Ship turned a conversation into a deployed website for healers, therapists and event producers. A visitor talked to an AI companion, a model extracted a structured spec from the conversation, code with no model in it composed a complete Express, EJS and Postgres site from that spec, a worker deployed it to its own Railway project, and a review step decided whether it could be marked live. It ran in production from March 2026. Real customers used it and gave feedback; none had become a paying subscriber when I stopped developing it. It is no longer developed and the site is still online.
+Craft & Ship turned a conversation into a deployed website for healers, therapists and event producers. A visitor talked to an AI companion, a model extracted a structured spec from the conversation, code with no model in it composed a complete Express, EJS and Postgres site from that spec, a worker deployed it to its own Railway project, and a review step decided whether it could be marked live. It ran in production from March 2026. Real customers used it and gave feedback; none had become a paying subscriber when I stopped developing it. It is no longer developed and the site was taken offline in October 2026.
 
 I built it as the director of an AI coding agent, which wrote the code. I chose what to build and for whom, decided how much to automate, and made the agent prove its work. [How I built this](#how-i-built-this) says what that covered and what it did not.
 

@@ -1,6 +1,6 @@
 # Key design decisions: reference detail
 
-> Historical document from July 2026; the system is no longer developed and the site is still online.
+> Historical document from July 2026; the system is no longer developed and the site was taken offline in October 2026.
 
 > **Scope:** secondary/descriptive Key Design Decisions extracted from CLAUDE.md. The top-level CLAUDE.md keeps only the behavioral contracts that are frequent bug sources (CSRF, EJS escaping, session.save, SE Review Gate, etc.); everything else lives here for reference. Statements below are checked against the code as of the final review round; entries under the dated "Migrated from CLAUDE.md" heading are historical records of shipped features.
 

@@ -1,6 +1,6 @@
 # Craft & Ship Living Platform: Technical Architecture
 
-> Historical document from April 2026; the system is no longer developed and the site is still online.
+> Historical document from April 2026; the system is no longer developed and the site was taken offline in October 2026.
 
 > **Built differently from this draft:** the Harbor price literals ended up as `harborSubscriptionPrice` / `harborSlidingScalePrice` in `web/src/app.ts` and the `HARBOR_SUBSCRIPTION_*` constants in `web/src/services/stripe.ts`; the proposed web/src/types/subscription.ts module was never created, and the companion tests are in `web/tests/unit/companion/`. Memory does not use pgvector: `keeper_memory.embedding` is a `DOUBLE PRECISION[]` column and cosine similarity runs in JavaScript (see the comment above `keeper_memory` in `web/src/db/schema.sql`). Nothing in the schema or code implements the Harbor pipeline tables of 2.4 and section 5 (`harbor_contributions`, `harbor_patterns`, `harbor_charts`), the longitudinal markers of 2.5 and 8.4 (`keeper_markers`), the trust phases of 3.6 (`trust_phase`), voice intake (7.4 and section 11) or the soft-cap counters of 10.3.
 

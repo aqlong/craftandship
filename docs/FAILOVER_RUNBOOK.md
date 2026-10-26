@@ -1,6 +1,6 @@
 # Failover & Disaster Recovery Runbook
 
-> Historical document; the system is no longer developed and the site is still online. The procedures below describe the production setup as it was. The Render and Fly.io failover options in section 4 were written as contingency procedures; this repository holds no record of either being used.
+> Historical document; the system is no longer developed and the site was taken offline in October 2026. The procedures below describe the production setup as it was. The Render and Fly.io failover options in section 4 were written as contingency procedures; this repository holds no record of either being used.
 
 This document provides step-by-step procedures for handling infrastructure outages affecting Craft & Ship production services on Railway.
 

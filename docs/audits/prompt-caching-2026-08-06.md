@@ -1,6 +1,6 @@
 # Prompt caching audit, 2026-08-06
 
-> Historical document from August 2026; the system is no longer developed and the site is still online. "Production" below means the stored build records of the platform database that the audit read.
+> Historical document from August 2026; the system is no longer developed and the site was taken offline in October 2026. "Production" below means the stored build records of the platform database that the audit read.
 
 Status: findings only. No code changes accompanied this audit; treat all four findings below as **open**.
 

@@ -1,6 +1,6 @@
 # Railway Disaster Recovery Playbook
 
-> Historical document from April 2026; the system is no longer developed and the site is still online.
+> Historical document from April 2026; the system is no longer developed and the site was taken offline in October 2026.
 >
 > Written 2026-04-09 after production was deleted twice in one day.
 > It was the single source of truth for recovering CraftAndShip on Railway.

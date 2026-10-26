@@ -6,7 +6,7 @@
 
 Craft & Ship is an agentic web-app creation platform. Customers describe a web app in plain English through a chat intake flow. The platform produces a structured JSON spec, builds the app, tests it and deploys it to Railway. Three product words mean less than they suggest: **preview** and **live** are statuses in the platform database (a preview is a public site, and marking a build live changes nothing on it), and **review** is a verdict recorded on the build row (a human reviewer by design; see the note under Craft Quality Policy for the automated review mode added in June 2026). `SECURITY.md`, "Preview, review and live", has the definitions.
 
-The system ran in production from March 2026. It is no longer developed and the site is still online; this repository is the archived codebase.
+The system ran in production from March 2026. It is no longer developed and the site was taken offline in October 2026; this repository is the archived codebase.
 
 Two build engines exist side by side:
 

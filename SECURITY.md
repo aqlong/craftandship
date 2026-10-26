@@ -1,6 +1,6 @@
 # Security
 
-Craft & Ship ran in production from March 2026. It is no longer developed and the site is still online, but nothing here is maintained for deployment. This repository is the archived codebase of that system, and the code the site runs may differ from it. There is no bug bounty and no response-time commitment.
+Craft & Ship ran in production from March 2026. It is no longer developed and the site was taken offline in October 2026, but nothing here is maintained for deployment. This repository is the archived codebase of that system, and the code the site ran may differ from it. There is no bug bounty and no response-time commitment.
 
 This file has the status of the repository, how to report a problem, and the definitions of three product words that every other security statement depends on. The detail is in two documents:
 

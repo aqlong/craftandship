@@ -1,6 +1,6 @@
 # Monitor, ops, scripts, executor
 
-> Historical document from April 2026; the system is no longer developed and the site is still online.
+> Historical document from April 2026; the system is no longer developed and the site was taken offline in October 2026.
 
 > **Scope:** modules outside the build pipeline, health monitor, self-healing ops agent, developer scripts, and the local roadmap executor. Extracted from CLAUDE.md to keep the root context file focused on load-bearing decisions.
 

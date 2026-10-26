@@ -9,7 +9,7 @@
 
 This is an account of the review the code received before it was published, and of the security review that followed publication, written so a reader can judge the process and its limits. It lists what was found, what was changed in behavior, and what was not verified. It is a companion to [THREAT_MODEL.md](THREAT_MODEL.md) and [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md), which hold the threat model, the controls and the known limitations, and to [ARCHITECTURE.md](../ARCHITECTURE.md).
 
-The system ran in production from March 2026. It is no longer developed and the site is still online. The review below was done on a snapshot of that code, after development stopped, so none of it was done against the live site.
+The system ran in production from March 2026. It is no longer developed and the site was taken offline in October 2026. The review below was done on a snapshot of that code, after development stopped, so none of it was done against the live site.
 
 ## Who did the work
 

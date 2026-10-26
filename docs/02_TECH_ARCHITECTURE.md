@@ -1,6 +1,6 @@
 # Craft & Ship: Technical Architecture
 
-> Historical document from May 2026; the system is no longer developed and the site is still online.
+> Historical document from May 2026; the system is no longer developed and the site was taken offline in October 2026.
 
 **Version:** 0.3 (updated to reflect actual implementation as of March 29, 2026)
 **Last updated:** March 29, 2026

@@ -1,6 +1,6 @@
 # Contributing
 
-This codebase is archived. The system it describes is no longer developed and the site is still online; nothing here is under active development. An issue or a pull request may not be reviewed quickly, or at all, and a repository set to archived on GitHub accepts neither. For anything larger than a fix, forking is the faster route.
+This codebase is archived. The system it describes is no longer developed and the site was taken offline in October 2026; nothing here is under active development. An issue or a pull request may not be reviewed quickly, or at all, and a repository set to archived on GitHub accepts neither. For anything larger than a fix, forking is the faster route.
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md) first; it says where each piece lives and which files are the hard ones.
 

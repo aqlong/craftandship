@@ -1,6 +1,6 @@
 # Craft & Ship Brand Voice
 
-> Historical document from April 2026; the system is no longer developed and the site is still online. It is kept because the pre-commit lint (`scripts/check_brand_voice.py`) and several tests enforce its hard rules.
+> Historical document from April 2026; the system is no longer developed and the site was taken offline in October 2026. It is kept because the pre-commit lint (`scripts/check_brand_voice.py`) and several tests enforce its hard rules.
 
 This is the authoritative voice guide for every customer-facing surface: landing, pricing, how-it-works, gallery, intake, chat, status, dashboard, payment, contact, auth views, emails, meta tags, legal copy (tone only, not the binding terms), and the support knowledge base. Read this before touching any copy. The pre-commit hook enforces the hard rules; the rest is taste.
 
