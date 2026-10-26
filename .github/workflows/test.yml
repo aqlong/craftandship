@@ -30,7 +30,7 @@ concurrency:
 jobs:
   unit:
     name: Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -58,7 +58,7 @@ jobs:
 
   python:
     name: Python Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # tests/ runs twice here (default and v1) and includes tests that drive the
     # real executor loop in throwaway repositories, which take several minutes.
     timeout-minutes: 60
@@ -161,7 +161,7 @@ jobs:
     # docker-compose.yml, web/.env copied from the template, the app built and
     # started, and the home page served. No service container: compose provides
     # the database exactly as it does for a reader following the README.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
@@ -232,7 +232,7 @@ jobs:
     # PostgreSQL apt repository are downloaded, so this job needs the network
     # and takes a few minutes. The server password is generated here and used
     # only for this run.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
@@ -275,7 +275,7 @@ jobs:
     # Scans the full history of the checkout with gitleaks, using the rules
     # and the single allowlist entry in .gitleaks.toml. The release tarball is
     # verified against its published SHA-256 before it runs.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       GITLEAKS_VERSION: "8.30.1"
@@ -299,7 +299,7 @@ jobs:
 
   audit:
     name: Dependency Audit (advisory)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     # Advisory, not a gate: new advisories are published continuously against
     # pinned dependencies, so a hard gate on an archived repo would turn red
@@ -344,7 +344,7 @@ jobs:
 
   ui:
     name: UI Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: unit
     defaults:
